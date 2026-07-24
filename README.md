@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — eleven that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — sixteen that earn their place.
 
-The six newest were chosen by checking the existing skill ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keeping only problems **no prominent skill already solves** — recovering lost git work, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, and an evidence-grounded dev diary.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, and cache-correctness review.
 
 ## The skills
 
@@ -21,6 +21,11 @@ The six newest were chosen by checking the existing skill ecosystem first (offic
 | **[portability-audit](skills/portability-audit/SKILL.md)** | Sweeps a codebase for Windows/POSIX hazards — POSIX-only shell-outs, path separators, CRLF, reserved filenames, case collisions — and fixes them + adds the CI matrix | "make this work on Windows", "a Windows user says it's broken", "cross-platform" |
 | **[backfill-pilot](skills/backfill-pilot/SKILL.md)** | Writes production data backfills with the seven non-negotiables: batched, keyset-paginated, resumable, undoable, dry-run-first, throttled, verified | "backfill", "fix the data in prod", "migrate existing rows" |
 | **[devlog](skills/devlog/SKILL.md)** | Turns today's *real* git activity across your repos into a short, honest dev-diary entry committed to a journal repo — no activity, no entry | "devlog", "log today", "write today's entry" |
+| **[skew-check](skills/skew-check/SKILL.md)** | Reviews a diff for mixed-version deploy hazards — can old and new code share queues, caches, sessions, and contracts during the rollout window (and survive rollback)? | "safe to roll out?", canary/rolling deploy prep, renamed fields crossing process boundaries |
+| **[clock-sweep](skills/clock-sweep/SKILL.md)** | Systematic datetime/timezone audit — naive datetimes, DST-unsafe math, offset-as-zone, date-vs-instant confusion — swept across the whole codebase, verified under hostile TZs | "times are off by an hour", "broke after DST", "handle timezones properly" |
+| **[secret-spill](skills/secret-spill/SKILL.md)** | Incident response for a credential in git history: rotate first, assess blast radius, purge with filter-repo, verify with scanners — in that order | "I committed my API key", "GitGuardian emailed me", scanner found a real token |
+| **[job-warden](skills/job-warden/SKILL.md)** | Six-question correctness review for cron jobs, workers, and queue consumers: idempotency, overlap, schedule honesty, poison messages, batch semantics, dead-man's-switch | "add a cron job", "process this queue", duplicate/missed job runs |
+| **[stale-guard](skills/stale-guard/SKILL.md)** | Proves your caches can't serve wrong data: every write path invalidates, every key contains every dimension that changes the value, stampedes and negative-caching handled | "users see old data", "shows the wrong user's data", "is this caching correct" |
 
 ## What makes these different
 
@@ -59,7 +64,7 @@ cp -r claude-code-skills/skills/* ~/.claude/skills/
 
 Either way, start (or restart) Claude Code and the skills are live. Claude invokes them automatically when your request matches — or call one by name, e.g. `/ship-it`. Run `/skills` to confirm they loaded.
 
-> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all eleven at once is fine, but if you only want the security review, just take `security-sweep`.
+> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all sixteen at once is fine, but if you only want the security review, just take `security-sweep`.
 
 ## Using them
 

@@ -2,7 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — five that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — eleven that earn their place.
+
+The six newest were chosen by checking the existing skill ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keeping only problems **no prominent skill already solves** — recovering lost git work, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, and an evidence-grounded dev diary.
 
 ## The skills
 
@@ -13,6 +15,12 @@ Every skill here is written the way the [official skill guidance](https://docs.a
 | **[security-sweep](skills/security-sweep/SKILL.md)** | Reviews the working diff for *exploitable* issues (injection, IDOR, secrets, SSRF…) and reports only findings with a concrete attack path | "security review", "any vulnerabilities here", "is this safe to ship" |
 | **[changelog](skills/changelog/SKILL.md)** | Turns git history since the last tag into user-facing release notes, grouped by impact, breaking changes flagged | "release notes", "what changed since v1.2", "update the changelog" |
 | **[codebase-tour](skills/codebase-tour/SKILL.md)** | Orients you in an unfamiliar repo by tracing a real code path and ending at "here's where you'd make your change" | "how does this work", "where do I start", "walk me through this codebase" |
+| **[git-rescue](skills/git-rescue/SKILL.md)** | Calm-paramedic recovery of "lost" work: secures the scene with backup refs, finds the commits via reflog/fsck/remote, restores with the smallest safe operation | "I lost my changes", "the rebase destroyed everything", "I committed to main by accident" |
+| **[migration-guard](skills/migration-guard/SKILL.md)** | Reviews a schema migration like the database will execute it in prod: locks, deploy-order breakage, data loss, honest rollbacks — verdict BLOCK/CAUTION/SAFE | "is this migration safe", "will this lock the table", any ALTER headed for real data |
+| **[env-detective](skills/env-detective/SKILL.md)** | Cracks "works on my machine": enumerates the delta between the two environments, ranks it by base rates, binary-searches it with experiments | "passes locally but fails in CI", "only fails in Docker", "green here, red there" |
+| **[portability-audit](skills/portability-audit/SKILL.md)** | Sweeps a codebase for Windows/POSIX hazards — POSIX-only shell-outs, path separators, CRLF, reserved filenames, case collisions — and fixes them + adds the CI matrix | "make this work on Windows", "a Windows user says it's broken", "cross-platform" |
+| **[backfill-pilot](skills/backfill-pilot/SKILL.md)** | Writes production data backfills with the seven non-negotiables: batched, keyset-paginated, resumable, undoable, dry-run-first, throttled, verified | "backfill", "fix the data in prod", "migrate existing rows" |
+| **[devlog](skills/devlog/SKILL.md)** | Turns today's *real* git activity across your repos into a short, honest dev-diary entry committed to a journal repo — no activity, no entry | "devlog", "log today", "write today's entry" |
 
 ## What makes these different
 
@@ -51,7 +59,7 @@ cp -r claude-code-skills/skills/* ~/.claude/skills/
 
 Either way, start (or restart) Claude Code and the skills are live. Claude invokes them automatically when your request matches — or call one by name, e.g. `/ship-it`. Run `/skills` to confirm they loaded.
 
-> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all five at once is fine, but if you only want the security review, just take `security-sweep`.
+> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all eleven at once is fine, but if you only want the security review, just take `security-sweep`.
 
 ## Using them
 

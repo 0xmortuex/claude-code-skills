@@ -8,7 +8,7 @@ prominent existing skills (research first, write second) — see README.
 ## Pack quality
 - [ ] `examples/` directory: one short real transcript per skill showing the trigger firing and the output shape (start with git-rescue and migration-guard)
 - [ ] CONTRIBUTING.md: the novelty-check bar, the SKILL.md house style (pushy description, "why" in the body, boundaries section), and how to test a skill locally
-- [ ] Frontmatter validator script (`tools/validate.py`: name matches dir, description length sane, required sections present) + CI workflow running it
+- [x] Frontmatter validator script (`tools/validate.py`) + CI. Checks per skill: closed `---` frontmatter, `name` present + kebab-case + equal to the directory, `description` within [40, 1024] chars, and a matching `# <name>` H1 in the body. Plus two cross-file checks against README.md: every skill is linked, and every `skills/<x>/SKILL.md` link resolves. Stdlib only (no yaml dep). `.github/workflows/validate.yml` runs it on push/PR. Passes on all 16 skills today; verified it fails (exit 1) on a name/description/link-broken fixture.
 - [ ] README: add a "which skill do I want?" decision table mapping symptoms → skill
 
 ## Future skills (research-verified novel, 2026-07-24 sweep — sketches in the item)

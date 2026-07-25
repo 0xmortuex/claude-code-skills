@@ -84,6 +84,13 @@ you:  just cloned this thing and I'm lost, where do I even start
         tells you which file to open for what you're trying to change
 ```
 
+## Examples
+
+Want to see a skill's trigger and output shape before trying it on your own
+repo? [`examples/`](examples/) has short, representative transcripts —
+currently [git-rescue](examples/git-rescue.md) and
+[migration-guard](examples/migration-guard.md), with more to follow.
+
 ## Contributing
 
 Got a skill that pulls its weight? Open a PR. The bar: it should be grounded (reads real state, doesn't guess), honest (no inflated output), and explain its reasoning so Claude does it well across many different repos — not just the one you tested on. One tight, well-triggered skill beats five vague ones.

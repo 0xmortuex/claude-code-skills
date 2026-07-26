@@ -95,6 +95,8 @@ currently [git-rescue](examples/git-rescue.md) and
 
 Got a skill that pulls its weight? Open a PR. The bar: it should be grounded (reads real state, doesn't guess), honest (no inflated output), and explain its reasoning so Claude does it well across many different repos — not just the one you tested on. One tight, well-triggered skill beats five vague ones.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the novelty-check bar, the `SKILL.md` house style, and how to test a skill locally before opening a PR.
+
 ## License
 
 MIT — copy them, fork them, adapt them to your own workflow.

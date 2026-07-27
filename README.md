@@ -27,6 +27,29 @@ Every skill added since the original five went through the same filter: research
 | **[job-warden](skills/job-warden/SKILL.md)** | Six-question correctness review for cron jobs, workers, and queue consumers: idempotency, overlap, schedule honesty, poison messages, batch semantics, dead-man's-switch | "add a cron job", "process this queue", duplicate/missed job runs |
 | **[stale-guard](skills/stale-guard/SKILL.md)** | Proves your caches can't serve wrong data: every write path invalidates, every key contains every dimension that changes the value, stampedes and negative-caching handled | "users see old data", "shows the wrong user's data", "is this caching correct" |
 
+## Which skill do I want?
+
+Not sure which one fires for your situation? Match the symptom:
+
+| If you're seeing... | Use |
+|----------------------|-----|
+| Tests/lint pass locally but you're not sure it's actually ready to push | [ship-it](skills/ship-it/SKILL.md) |
+| Your README is thin, outdated, or embarrassing | [readme-forge](skills/readme-forge/SKILL.md) |
+| A diff touches auth, user input, or secrets and you want to know if it's exploitable | [security-sweep](skills/security-sweep/SKILL.md) |
+| You're cutting a release and need a changelog or release notes | [changelog](skills/changelog/SKILL.md) |
+| You just cloned or inherited a repo and don't know where to start | [codebase-tour](skills/codebase-tour/SKILL.md) |
+| You ran `reset --hard`, botched a rebase, or force-pushed and think work is gone | [git-rescue](skills/git-rescue/SKILL.md) |
+| You're about to run an `ALTER TABLE` or migration against a table with real data | [migration-guard](skills/migration-guard/SKILL.md) |
+| "Works on my machine" but the same commit fails in CI, Docker, or on a teammate's machine | [env-detective](skills/env-detective/SKILL.md) |
+| A Windows user reports your CLI/tool is broken | [portability-audit](skills/portability-audit/SKILL.md) |
+| You need to fix or migrate data already sitting in a live production table | [backfill-pilot](skills/backfill-pilot/SKILL.md) |
+| You want an honest dev-diary entry built from today's actual git activity | [devlog](skills/devlog/SKILL.md) |
+| You're about to do a rolling/canary deploy and old and new code might share state | [skew-check](skills/skew-check/SKILL.md) |
+| Times are off by an hour, or something broke right after a DST change | [clock-sweep](skills/clock-sweep/SKILL.md) |
+| You just committed an API key, token, or credential to git | [secret-spill](skills/secret-spill/SKILL.md) |
+| A cron job or queue worker double-processes, misses runs, or dies silently | [job-warden](skills/job-warden/SKILL.md) |
+| Users report seeing stale data, or someone else's data | [stale-guard](skills/stale-guard/SKILL.md) |
+
 ## What makes these different
 
 Most skill packs are thin wrappers — a description and three bullet points. These are written to actually change the quality of the output:

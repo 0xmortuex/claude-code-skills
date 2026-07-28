@@ -1,6 +1,6 @@
 ---
 name: devlog
-description: Turn today's REAL coding activity into a short dev-diary entry and commit it to a journal repo. Use when the user says "devlog", "write today's entry", "log today", "update my diary/journal", or wraps up a session with "note down what we did today". Grounded in actual git history across the user's repos — never invented; if nothing happened, it writes nothing. Great for learning-in-public, TIL streaks, and future-you archaeology ("when did I fix that and why?").
+description: Turn today's REAL coding activity into a short dev-diary entry and commit it to a journal repo. Use when the user says "devlog", "write today's entry", "log today", "update my diary/journal", or wraps up a session with "note down what we did today". Also handles "devlog week", "weekly rollup", or "summarize this week", which distills the week's already-written daily entries into one summary instead of re-reading git history. Grounded in actual git history and past entries — never invented; if nothing happened, it writes nothing. Great for learning-in-public, TIL streaks, and future-you archaeology ("when did I fix that and why?").
 ---
 
 # devlog
@@ -60,6 +60,32 @@ Sections are optional except the first — drop TIL/Tomorrow when there's nothin
 ## Commit
 
 In JOURNAL_REPO: `git add` the entry, commit as `devlog: YYYY-MM-DD`, and push if a remote exists. One entry per day — if today's already exists, *append/merge* into it rather than overwriting (sessions happen more than once a day).
+
+## Weekly rollup (`devlog week`)
+
+Triggered by "devlog week", "weekly rollup", "summarize this week", or similar. This is a *synthesis* of entries already written, not a fresh git dig — the daily entries are the source of truth, so read those, not the repos again.
+
+1. **Gather.** Find the daily entries for the last 7 days (today back through 6 days ago), which may span two `entries/YYYY/MM/` folders if the week crosses a month boundary. Skip missing days silently — a devlog streak has gaps, and that's fine.
+2. **If zero entries exist for the window**, say so and write nothing — same anti-invention rule as the daily entry.
+3. **Write** to `entries/weekly/YYYY-Www.md` (ISO week number, e.g. `entries/weekly/2026-W30.md`) — a separate top-level folder, not `entries/YYYY/MM/`, so the week's file never collides with a day and never has to pick one of two months when the week spans a boundary.
+
+```markdown
+# Week 2026-W30 (Jul 21–27)
+
+**Days logged:** 4/7 · **Repos touched:** mortnet, Mort
+
+## Threads
+- RTL8139 RX ring landed Mon, ICMP replies started Wed — still WIP Fri
+  ("dispatch is WIP" carried over three days running).
+
+## TIL, worth keeping
+- QEMU's SLIRP answers ARP for 10.0.2.2 itself (Wed).
+
+## Open into next week
+- <pulled from the last daily entry's "Tomorrow" section, if present>
+```
+
+Group by theme/thread across the week rather than re-listing each day verbatim — the value of a rollup is compression, not concatenation. A thread mentioned in multiple days' entries (like a WIP feature) becomes one line noting progression, not three repeated bullets. Commit as `devlog: week of YYYY-MM-DD` (Monday's date) in the same JOURNAL_REPO commit/push flow as the daily entry.
 
 ## Boundaries
 

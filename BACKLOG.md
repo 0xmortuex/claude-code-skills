@@ -19,4 +19,4 @@ prominent existing skills (research first, write second) — see README.
 ## Skill improvements
 - [ ] ship-it: add a monorepo note (run checks only for affected packages; how to detect the workspace layout)
 - [ ] env-detective: add a worked end-to-end example (CI log → delta table → binary search → fix)
-- [ ] devlog: support a weekly rollup entry (`devlog week`) summarizing the week's dailies
+- [x] devlog: support a weekly rollup entry (`devlog week`) summarizing the week's dailies. Added a "Weekly rollup" section to `skills/devlog/SKILL.md`: triggers on "devlog week"/"weekly rollup"/"summarize this week", synthesizes (not re-digs) from the last 7 days of already-written daily entries, writes to `entries/weekly/YYYY-Www.md` (ISO week, separate from `entries/YYYY/MM/` so month-spanning weeks don't collide), groups by thread instead of concatenating days. Updated the frontmatter description and README row/triggers to match.

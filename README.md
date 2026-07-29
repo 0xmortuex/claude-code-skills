@@ -111,8 +111,9 @@ you:  just cloned this thing and I'm lost, where do I even start
 
 Want to see a skill's trigger and output shape before trying it on your own
 repo? [`examples/`](examples/) has short, representative transcripts —
-currently [git-rescue](examples/git-rescue.md) and
-[migration-guard](examples/migration-guard.md), with more to follow.
+currently [git-rescue](examples/git-rescue.md),
+[migration-guard](examples/migration-guard.md), and
+[env-detective](examples/env-detective.md), with more to follow.
 
 ## Contributing
 

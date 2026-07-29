@@ -6,7 +6,7 @@ The pack's bar for NEW skills: the problem must be real and verified uncovered b
 prominent existing skills (research first, write second) — see README.
 
 ## Pack quality
-- [x] `examples/` directory: one short real transcript per skill showing the trigger firing and the output shape (start with git-rescue and migration-guard). Done for those two (`examples/git-rescue.md`, `examples/migration-guard.md`), linked from README. Follow-up: still need examples for the other 14 skills — do a few at a time, not all at once.
+- [x] `examples/` directory: one short real transcript per skill showing the trigger firing and the output shape (start with git-rescue and migration-guard). Done for those two (`examples/git-rescue.md`, `examples/migration-guard.md`), linked from README. `examples/env-detective.md` added since (see Skill improvements below). Follow-up: still need examples for the other 13 skills — do a few at a time, not all at once.
 - [x] CONTRIBUTING.md: the novelty-check bar, the SKILL.md house style (pushy description, "why" in the body, boundaries section), and how to test a skill locally. Linked from README's Contributing section.
 - [x] Frontmatter validator script (`tools/validate.py`) + CI. Checks per skill: closed `---` frontmatter, `name` present + kebab-case + equal to the directory, `description` within [40, 1024] chars, and a matching `# <name>` H1 in the body. Plus two cross-file checks against README.md: every skill is linked, and every `skills/<x>/SKILL.md` link resolves. Stdlib only (no yaml dep). `.github/workflows/validate.yml` runs it on push/PR. Passes on all 16 skills today; verified it fails (exit 1) on a name/description/link-broken fixture.
 - [x] README: add a "which skill do I want?" decision table mapping symptoms → skill. Done — one row per skill, symptom-first phrasing pulled from each SKILL.md's own trigger language, linked to its SKILL.md.
@@ -18,5 +18,5 @@ prominent existing skills (research first, write second) — see README.
 
 ## Skill improvements
 - [ ] ship-it: add a monorepo note (run checks only for affected packages; how to detect the workspace layout)
-- [ ] env-detective: add a worked end-to-end example (CI log → delta table → binary search → fix)
+- [x] env-detective: add a worked end-to-end example (CI log → delta table → binary search → fix). Added `examples/env-detective.md` (TZ-delta test failure: delta table, TZ-toggle binary search, class-level fix over a `.skip`), linked from `examples/README.md` and the main README's Examples section.
 - [x] devlog: support a weekly rollup entry (`devlog week`) summarizing the week's dailies. Added a "Weekly rollup" section to `skills/devlog/SKILL.md`: triggers on "devlog week"/"weekly rollup"/"summarize this week", synthesizes (not re-digs) from the last 7 days of already-written daily entries, writes to `entries/weekly/YYYY-Www.md` (ISO week, separate from `entries/YYYY/MM/` so month-spanning weeks don't collide), groups by thread instead of concatenating days. Updated the frontmatter description and README row/triggers to match.

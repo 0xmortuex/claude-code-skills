@@ -22,12 +22,25 @@ Different projects, different commands. Look before you leap:
 - **Rust:** `cargo test`, `cargo clippy`, `cargo fmt --check`.
 - **Go:** `go test ./...`, `go vet`, `gofmt -l`.
 - **Anything:** a `Makefile`, `justfile`, `.pre-commit-config.yaml`, or a CI file (`.github/workflows/*`) is the source of truth for what "passing" means. Prefer the commands CI runs.
+- **Monorepo:** look for `pnpm-workspace.yaml`, `lerna.json`, `nx.json`, `turbo.json`, a root `package.json` with a `workspaces` field, a `go.work`, or a root `Cargo.toml` with a `[workspace]` table. Any of these means there are multiple packages, and a single top-level test/lint/build command is often either wrong (doesn't exist) or wasteful (rebuilds everything for a one-line change).
 
 If you genuinely can't find any checks, say so rather than inventing them — running a made-up command that "passes" is worse than reporting there's nothing to run.
 
 ### 2. Run them, narrowest-relevant-scope first
 
 Run the checks that cover the changed files first (fast feedback), then broaden. Report what you ran and the result plainly. Don't hide a failure behind optimistic phrasing.
+
+**In a monorepo, scope to the packages you actually touched.** Running every package's suite because one file changed in one package is slow, and it's not even what most monorepo CI does — CI is usually scoped the same way. Map the changed files (`git diff --name-only` against the merge-base) to the package(s) that own them, then reach for the tool's native affected/filter mechanism instead of the blanket command:
+
+- pnpm workspaces: `pnpm --filter <pkg>... test` (the `...` pulls in dependents)
+- Nx: `nx affected -t test,lint,build`
+- Turborepo: `turbo run test --filter=...[<base-branch>]`
+- Lerna: `lerna run test --since <base-branch>`
+- Yarn workspaces: `yarn workspaces foreach --since test`
+- Cargo workspace: `cargo test -p <changed-crate>`
+- Go workspace (`go.work`): `go test ./<changed-module>/...`
+
+Broaden back to the full-repo command when the diff touches something shared — a root lint/tsconfig, a workspace-wide dependency bump, a shared package other packages depend on — since that's exactly the case where scoping to one package would miss real breakage elsewhere. If you can't confidently tell which packages are affected, say so and either run the full command or ask, rather than guessing a subset and reporting it as "checked."
 
 ### 3. Fix what breaks — then re-run
 

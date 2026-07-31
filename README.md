@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — sixteen that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — seventeen that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, and cache-correctness review.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, and crash-safe local file I/O.
 
 ## The skills
 
@@ -26,6 +26,7 @@ Every skill added since the original five went through the same filter: research
 | **[secret-spill](skills/secret-spill/SKILL.md)** | Incident response for a credential in git history: rotate first, assess blast radius, purge with filter-repo, verify with scanners — in that order | "I committed my API key", "GitGuardian emailed me", scanner found a real token |
 | **[job-warden](skills/job-warden/SKILL.md)** | Six-question correctness review for cron jobs, workers, and queue consumers: idempotency, overlap, schedule honesty, poison messages, batch semantics, dead-man's-switch | "add a cron job", "process this queue", duplicate/missed job runs |
 | **[stale-guard](skills/stale-guard/SKILL.md)** | Proves your caches can't serve wrong data: every write path invalidates, every key contains every dimension that changes the value, stampedes and negative-caching handled | "users see old data", "shows the wrong user's data", "is this caching correct" |
+| **[atomic-io](skills/atomic-io/SKILL.md)** | Finds truncate-then-write of local state files and fixes them with temp-file → fsync → atomic rename, single-writer locks, and validate-on-read recovery | "config file came back empty after a crash", "make this crash-safe", "atomic write" |
 
 ## Which skill do I want?
 
@@ -49,6 +50,7 @@ Not sure which one fires for your situation? Match the symptom:
 | You just committed an API key, token, or credential to git | [secret-spill](skills/secret-spill/SKILL.md) |
 | A cron job or queue worker double-processes, misses runs, or dies silently | [job-warden](skills/job-warden/SKILL.md) |
 | Users report seeing stale data, or someone else's data | [stale-guard](skills/stale-guard/SKILL.md) |
+| A config/checkpoint/cache file came back empty or corrupted after a crash | [atomic-io](skills/atomic-io/SKILL.md) |
 
 ## What makes these different
 
@@ -87,7 +89,7 @@ cp -r claude-code-skills/skills/* ~/.claude/skills/
 
 Either way, start (or restart) Claude Code and the skills are live. Claude invokes them automatically when your request matches — or call one by name, e.g. `/ship-it`. Run `/skills` to confirm they loaded.
 
-> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all sixteen at once is fine, but if you only want the security review, just take `security-sweep`.
+> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all seventeen at once is fine, but if you only want the security review, just take `security-sweep`.
 
 ## Using them
 

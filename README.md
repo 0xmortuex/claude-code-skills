@@ -117,8 +117,9 @@ Want to see a skill's trigger and output shape before trying it on your own
 repo? [`examples/`](examples/) has short, representative transcripts —
 currently [git-rescue](examples/git-rescue.md),
 [migration-guard](examples/migration-guard.md),
-[env-detective](examples/env-detective.md), and
-[atomic-io](examples/atomic-io.md), with more to follow.
+[env-detective](examples/env-detective.md),
+[atomic-io](examples/atomic-io.md), and
+[tombstone](examples/tombstone.md), with more to follow.
 
 ## Contributing
 

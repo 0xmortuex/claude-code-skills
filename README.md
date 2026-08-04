@@ -118,8 +118,9 @@ repo? [`examples/`](examples/) has short, representative transcripts —
 currently [git-rescue](examples/git-rescue.md),
 [migration-guard](examples/migration-guard.md),
 [env-detective](examples/env-detective.md),
-[atomic-io](examples/atomic-io.md), and
-[tombstone](examples/tombstone.md), with more to follow.
+[atomic-io](examples/atomic-io.md),
+[tombstone](examples/tombstone.md), and
+[skew-check](examples/skew-check.md), with more to follow.
 
 ## Contributing
 

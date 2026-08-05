@@ -119,8 +119,9 @@ currently [git-rescue](examples/git-rescue.md),
 [migration-guard](examples/migration-guard.md),
 [env-detective](examples/env-detective.md),
 [atomic-io](examples/atomic-io.md),
-[tombstone](examples/tombstone.md), and
-[skew-check](examples/skew-check.md), with more to follow.
+[tombstone](examples/tombstone.md),
+[skew-check](examples/skew-check.md), and
+[job-warden](examples/job-warden.md), with more to follow.
 
 ## Contributing
 

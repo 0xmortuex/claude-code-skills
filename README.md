@@ -120,8 +120,9 @@ currently [git-rescue](examples/git-rescue.md),
 [env-detective](examples/env-detective.md),
 [atomic-io](examples/atomic-io.md),
 [tombstone](examples/tombstone.md),
-[skew-check](examples/skew-check.md), and
-[job-warden](examples/job-warden.md), with more to follow.
+[skew-check](examples/skew-check.md),
+[job-warden](examples/job-warden.md), and
+[security-sweep](examples/security-sweep.md), with more to follow.
 
 ## Contributing
 

@@ -12,6 +12,7 @@ you can see what "good" looks like before you try a skill on your own repo.
 - [tombstone.md](tombstone.md)
 - [skew-check.md](skew-check.md)
 - [job-warden.md](job-warden.md)
+- [security-sweep.md](security-sweep.md)
 
 Want to add one for another skill? Keep it short (a realistic trigger message,
 then the key beats of the response — not a full essay) and make sure it

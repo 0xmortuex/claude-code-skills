@@ -121,8 +121,9 @@ currently [git-rescue](examples/git-rescue.md),
 [atomic-io](examples/atomic-io.md),
 [tombstone](examples/tombstone.md),
 [skew-check](examples/skew-check.md),
-[job-warden](examples/job-warden.md), and
-[security-sweep](examples/security-sweep.md), with more to follow.
+[job-warden](examples/job-warden.md),
+[security-sweep](examples/security-sweep.md), and
+[changelog](examples/changelog.md), with more to follow.
 
 ## Contributing
 

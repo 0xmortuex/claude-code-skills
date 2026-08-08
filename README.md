@@ -122,8 +122,9 @@ currently [git-rescue](examples/git-rescue.md),
 [tombstone](examples/tombstone.md),
 [skew-check](examples/skew-check.md),
 [job-warden](examples/job-warden.md),
-[security-sweep](examples/security-sweep.md), and
-[changelog](examples/changelog.md), with more to follow.
+[security-sweep](examples/security-sweep.md),
+[changelog](examples/changelog.md), and
+[backfill-pilot](examples/backfill-pilot.md), with more to follow.
 
 ## Contributing
 

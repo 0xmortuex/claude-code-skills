@@ -123,8 +123,9 @@ currently [git-rescue](examples/git-rescue.md),
 [skew-check](examples/skew-check.md),
 [job-warden](examples/job-warden.md),
 [security-sweep](examples/security-sweep.md),
-[changelog](examples/changelog.md), and
-[backfill-pilot](examples/backfill-pilot.md), with more to follow.
+[changelog](examples/changelog.md),
+[backfill-pilot](examples/backfill-pilot.md), and
+[stale-guard](examples/stale-guard.md), with more to follow.
 
 ## Contributing
 

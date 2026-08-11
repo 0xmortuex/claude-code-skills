@@ -125,8 +125,9 @@ currently [git-rescue](examples/git-rescue.md),
 [security-sweep](examples/security-sweep.md),
 [changelog](examples/changelog.md),
 [backfill-pilot](examples/backfill-pilot.md),
-[stale-guard](examples/stale-guard.md), and
-[secret-spill](examples/secret-spill.md), with more to follow.
+[stale-guard](examples/stale-guard.md),
+[secret-spill](examples/secret-spill.md), and
+[ship-it](examples/ship-it.md), with more to follow.
 
 ## Contributing
 

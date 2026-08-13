@@ -19,6 +19,7 @@ you can see what "good" looks like before you try a skill on your own repo.
 - [secret-spill.md](secret-spill.md)
 - [ship-it.md](ship-it.md)
 - [clock-sweep.md](clock-sweep.md)
+- [codebase-tour.md](codebase-tour.md)
 
 Want to add one for another skill? Keep it short (a realistic trigger message,
 then the key beats of the response — not a full essay) and make sure it

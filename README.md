@@ -127,8 +127,9 @@ currently [git-rescue](examples/git-rescue.md),
 [backfill-pilot](examples/backfill-pilot.md),
 [stale-guard](examples/stale-guard.md),
 [secret-spill](examples/secret-spill.md),
-[ship-it](examples/ship-it.md), and
-[clock-sweep](examples/clock-sweep.md), with more to follow.
+[ship-it](examples/ship-it.md),
+[clock-sweep](examples/clock-sweep.md), and
+[codebase-tour](examples/codebase-tour.md), with more to follow.
 
 ## Contributing
 

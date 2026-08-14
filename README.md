@@ -128,8 +128,9 @@ currently [git-rescue](examples/git-rescue.md),
 [stale-guard](examples/stale-guard.md),
 [secret-spill](examples/secret-spill.md),
 [ship-it](examples/ship-it.md),
-[clock-sweep](examples/clock-sweep.md), and
-[codebase-tour](examples/codebase-tour.md), with more to follow.
+[clock-sweep](examples/clock-sweep.md),
+[codebase-tour](examples/codebase-tour.md), and
+[portability-audit](examples/portability-audit.md), with more to follow.
 
 ## Contributing
 

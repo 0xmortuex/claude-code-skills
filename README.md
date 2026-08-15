@@ -129,8 +129,9 @@ currently [git-rescue](examples/git-rescue.md),
 [secret-spill](examples/secret-spill.md),
 [ship-it](examples/ship-it.md),
 [clock-sweep](examples/clock-sweep.md),
-[codebase-tour](examples/codebase-tour.md), and
-[portability-audit](examples/portability-audit.md), with more to follow.
+[codebase-tour](examples/codebase-tour.md),
+[portability-audit](examples/portability-audit.md), and
+[devlog](examples/devlog.md), with more to follow.
 
 ## Contributing
 

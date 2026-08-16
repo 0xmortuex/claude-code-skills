@@ -130,8 +130,9 @@ currently [git-rescue](examples/git-rescue.md),
 [ship-it](examples/ship-it.md),
 [clock-sweep](examples/clock-sweep.md),
 [codebase-tour](examples/codebase-tour.md),
-[portability-audit](examples/portability-audit.md), and
-[devlog](examples/devlog.md), with more to follow.
+[portability-audit](examples/portability-audit.md),
+[devlog](examples/devlog.md), and
+[readme-forge](examples/readme-forge.md) — every skill in the pack has one.
 
 ## Contributing
 

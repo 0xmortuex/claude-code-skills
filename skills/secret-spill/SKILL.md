@@ -36,7 +36,7 @@ With rotation done, purging is hygiene (keeps scanners quiet, stops future re-le
 
 ## 4. Verify
 
-- Re-scan **all refs**, not the working tree: `gitleaks git` / `trufflehog git file://. --branch=--all-branches` style, covering branches, tags, and the reflog.
+- Re-scan **all refs**, not the working tree: `gitleaks git --log-opts="--all --reflog"` / `trufflehog git file://. --all-branches` style, covering branches, tags, and the reflog. Plain `gitleaks git` only walks the current branch's history — without `--log-opts`, a clean result proves nothing about secrets sitting on other branches.
 - Grep CI logs and build artifacts for the secret string.
 - Confirm the old credential is actually dead: make a real call with it and expect an auth failure. "I clicked revoke" is a hypothesis; a 401 is a fact.
 

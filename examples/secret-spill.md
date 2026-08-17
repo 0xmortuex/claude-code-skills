@@ -69,7 +69,7 @@ to one paragraph:
 
 ```
 Verify:
-  - gitleaks git --all-branches — clean, including tags and reflog
+  - gitleaks git --log-opts="--all --reflog" — clean, including tags and reflog
   - grepped CI build logs for the key substring — no hits
   - called the Stripe API with the old key: 401. It's actually dead, not
     just "revoked" in name.

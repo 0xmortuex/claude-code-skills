@@ -23,6 +23,7 @@ Walk the migration against these classes. Report only what applies.
 
 **1. Locks / downtime**
 - `CREATE INDEX` without `CONCURRENTLY` (Postgres): full write-lock for the whole build. Concurrent builds can't run inside a transaction — the migration tool needs `atomic = False` / `disable_ddl_transaction!`.
+- A `CONCURRENTLY` build that fails partway (deadlock, uniqueness violation hit mid-scan) does *not* roll back cleanly like a normal `CREATE INDEX` — it leaves an `INVALID` index behind that still costs write overhead on every insert/update. After any suspicious or interrupted concurrent build, check for it (`\d tablename` or `pg_indexes`) and `DROP INDEX CONCURRENTLY` it before retrying — don't assume a failed run left nothing behind.
 - Full-table rewrites: type changes (`ALTER COLUMN TYPE`), `NOT NULL` on MySQL, volatile defaults on old Postgres — the table is locked while every row is copied.
 - `ADD CONSTRAINT ... FOREIGN KEY` / `CHECK` without `NOT VALID` (Postgres): validates every row under lock. Safe pattern: add `NOT VALID`, then `VALIDATE CONSTRAINT` separately (takes a weaker lock).
 - Even a "fast" ALTER needs a brief exclusive lock — behind one long-running query it queues, and *every later query queues behind it*. Recommend a `lock_timeout` so the migration gives up instead of freezing the app.

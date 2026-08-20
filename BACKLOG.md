@@ -49,6 +49,65 @@ Read every remaining un-reverified `SKILL.md` in full against current sources/be
 - `ship-it`, `devlog`, `codebase-tour`, `readme-forge`: no external-fact claims to drift-check (these are process/methodology skills, not tool-syntax reference) — read in full, no inaccuracy found.
 No fixes were needed this round — everything read checked out. This closes the drift-audit thread opened in the 2026-08-17 note; future drift risk is now about *new* tool-syntax changes (Postgres/MySQL/git/CI releases) rather than an unverified backlog.
 
+## Novelty sweep + new skill (2026-08-20)
+Ran a fresh two-track novelty sweep (the direction left open by the 2026-08-19 note) across
+Claude skill marketplaces (claudskills, mcpmarket, lobehub, crossaitools, smithery),
+awesome-claude-code lists, `obra/superpowers`, `anthropics/skills`, and GitHub-wide
+`filename:SKILL.md` code search. Results — both previously-noted candidates died, one new one shipped:
+
+- [x] **(a) worker startup / readiness audit — REJECTED, not novel.** "Health Check Endpoints"
+  (originating from `aj-geddes/useful-ai-prompts`, the same source that killed `clean-exit`) is
+  mirrored across mcpmarket, claudskills.com, claudemarketplaces, aimcp, and claudedirectory, and
+  explicitly covers liveness/readiness separation, dependency checks, probe failure config, and
+  startup delays. Also found `robotijn/ctoc` → `health-check-validator` (near-exact scope match:
+  startupProbe gating on migrations/cache warmup, deep-readiness checks, probe timing budgets),
+  `FluxonLab/Skillry` → `09-startup-health-readiness`, and lobehub `prod-readiness-review`. Only the
+  migrations-race-at-boot and cold-pool-warmup slices are uncovered — too thin to carry a skill, and
+  shipping it would repeat the `clean-exit` mistake in mirror image. Closed as a documented non-starter.
+- [x] **(b) PII / data-retention audit — REJECTED, not novel.** `getsentry/warden-skills` →
+  `skills/wrdn-pii/SKILL.md` (57★, official Sentry org, actively maintained) covers candidate (b)
+  almost verbatim: real PII reaching logs, metrics tags, Sentry scope, analytics events, committed
+  fixtures, URL query strings, exports, caches, and session replay, with better exclusion heuristics
+  (placeholder/reserved-IP/role-alias filtering) than a fresh skill would ship with.
+  `alpha-omega-security/scrutineer` → `skills/audit-pii/SKILL.md` (187★) is a second direct match and
+  explicitly traces sources→sinks documenting audience *and retention*. The one thin remaining slice
+  (retention windows / purge lifecycle at code level) sits inside `tombstone`'s territory — an internal
+  duplicate as much as an external one. Closed as a documented non-starter.
+- [x] **`blast-guard` — SHIPPED (verified novel).** Pre-send review for code that messages a real
+  user audience (bulk email/push/SMS/chat). Verified uncovered: `filename:SKILL.md` searches on
+  bulk-send safety terms returned only marketing/copywriting content (`CosmoBlk/email-marketing-bible`,
+  `ever-just/agentskills`); marketplace hits are agent-side email *tools* (mcpmarket
+  `gmail-send-for-claude-code`, `email-management-automation`) — dry-run for the agent's own sends,
+  not a review of product code that mails users. Nothing in `obra/superpowers` or
+  `travisvn/awesome-claude-skills`. In-pack: `job-warden` Q1 covers duplicate *sends* via idempotency
+  but nothing about audience correctness, suppression lists, caps, or irreversibility; `backfill-pilot`
+  is the data analogue with no messaging equivalent. Grounded in two real incidents rather than a
+  hypothetical: a staging push token misconfigured against the production app sent a "test"
+  notification to ~30,000 real users (medium.com/@ruchiram4), and Shutterfly's birth-announcement
+  congratulations email went to a distribution far wider than the intended recent-purchaser segment.
+  Added `skills/blast-guard/SKILL.md`, README skills-table row + decision-table row, intro paragraph
+  updated (eighteen → nineteen, rejected-candidates list extended). `python tools/validate.py` passes 19/19.
+
+Follow-ups discovered this run:
+- [ ] `examples/blast-guard.md` — the only skill in the pack without a worked example. README's Examples
+  section currently says so explicitly; revert that wording to "every skill in the pack has one" once
+  written. Good scenario: a winback campaign whose audience query returns 41k instead of the expected
+  3k (unbounded `last_login <` filter, no `deleted_at IS NULL`), caught by the dry-run COUNT before send.
+- [ ] Money rounding/allocation audit — **partially covered**, viable only if narrowed. `mvolkov83/skills`
+  → `money-and-payments-best-practices` (2★) and `somachak/claude-code-skills-db` →
+  `auditing-unit-consistency` already own the broad framing (float-for-money, currency-with-amount,
+  explicit rounding modes, cents-vs-dollars). Genuinely uncovered slice: largest-remainder/banker's
+  *allocation* with a proven "sum of parts == total" invariant, aggregate-vs-line-item rounding
+  mismatch in invoices, and rounding-mode consistency across pricing/tax/refund/reporting paths.
+  Research the narrowed scope again before writing — as generic "use Decimal" it's a duplicate.
+- [ ] Researched-and-passed this run, do not re-research without a new angle: Unicode/text correctness
+  (`Sir-chawakorn/sanook-cli` → `unicode-text-correctness`, 9★, near-identical seven-step method),
+  read-path pagination auditing (65 hits, several dedicated; also overlaps `backfill-pilot`),
+  idempotency/retry review (duplicate of `job-warden` Q1), replica-lag/read-your-writes
+  (`StevenACoffman/steve-skill-market` → `replication-lag-as-correctness`, direct match), multi-tenant
+  isolation (269 hits, 4+ dedicated auditors), stale feature-flag cleanup (PostHog ships it),
+  backup/restore drills (443 hits), unbounded-query/OOM audit (folded into perf-review skills).
+
 ## Note for the next run (2026-08-19)
 All 18 skills have now had a drift-verification pass (round 1: secret-spill; round 2: migration-guard, backfill-pilot, job-warden, portability-audit; round 3: the remaining 13). Don't re-run the same pass again next time — nothing here is stale enough to justify it. Two real directions remain open:
 1. `clean-exit` — still unchecked, still not novel as scoped (see its entry above). If picked up, it needs a genuinely different angle (an *audit* of existing shutdown code, not a scaffold) or it stays a documented non-starter.

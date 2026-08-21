@@ -89,10 +89,12 @@ awesome-claude-code lists, `obra/superpowers`, `anthropics/skills`, and GitHub-w
   updated (eighteen → nineteen, rejected-candidates list extended). `python tools/validate.py` passes 19/19.
 
 Follow-ups discovered this run:
-- [ ] `examples/blast-guard.md` — the only skill in the pack without a worked example. README's Examples
-  section currently says so explicitly; revert that wording to "every skill in the pack has one" once
-  written. Good scenario: a winback campaign whose audience query returns 41k instead of the expected
-  3k (unbounded `last_login <` filter, no `deleted_at IS NULL`), caught by the dry-run COUNT before send.
+- [x] `examples/blast-guard.md` — added 2026-08-21: the suggested winback-campaign scenario (41,200 vs
+  an expected ~3,000, unbounded `last_login <` filter with no `deleted_at IS NULL`), walked through all
+  four checks in order (audience COUNT + sample, suppression-table join missing, environment binding OK,
+  unbatched/no-checkpoint stop mechanism) ending in a BLOCK verdict — linked from `examples/README.md`
+  and the main README's Examples section, which now reads "every skill in the pack has one" again.
+  `python tools/validate.py` still passes (19/19). All 19 skills now have a worked example.
 - [ ] Money rounding/allocation audit — **partially covered**, viable only if narrowed. `mvolkov83/skills`
   → `money-and-payments-best-practices` (2★) and `somachak/claude-code-skills-db` →
   `auditing-unit-consistency` already own the broad framing (float-for-money, currency-with-amount,

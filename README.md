@@ -133,9 +133,9 @@ currently [git-rescue](examples/git-rescue.md),
 [clock-sweep](examples/clock-sweep.md),
 [codebase-tour](examples/codebase-tour.md),
 [portability-audit](examples/portability-audit.md),
-[devlog](examples/devlog.md), and
-[readme-forge](examples/readme-forge.md) — every skill but the newest,
-`blast-guard`, has one (its example is a follow-up, see `BACKLOG.md`).
+[devlog](examples/devlog.md),
+[readme-forge](examples/readme-forge.md), and
+[blast-guard](examples/blast-guard.md) — every skill in the pack has one.
 
 ## Contributing
 

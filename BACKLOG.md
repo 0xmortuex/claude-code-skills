@@ -13,7 +13,21 @@ prominent existing skills (research first, write second) — see README.
 - [x] README: add a "which skill do I want?" decision table mapping symptoms → skill. Done — one row per skill, symptom-first phrasing pulled from each SKILL.md's own trigger language, linked to its SKILL.md.
 
 ## Future skills (research-verified novel, 2026-07-24 sweep — sketches in the item)
-- [ ] `clean-exit` — graceful-shutdown audit: SIGTERM sequence (readiness-fail → stop accept → drain w/ deadline → flush → close → exit 0), k8s preStop/grace-period interplay, worker checkpointing, verify by SIGTERM-under-load. **Re-checked 2026-08-01: NOT novel as scoped.** A "Graceful Shutdown" skill already exists on a prominent marketplace (crossaitools.com/skills/aj-geddes/useful-ai-prompts/graceful-shutdown), and graceful-shutdown handling is bundled into multiple existing "service scaffold" skills across marketplaces (node-service, microservice-scaffold). Don't ship this as-is — if revisited, it needs a genuinely different angle (e.g. an *audit* of existing shutdown code for the specific missed cases above, clearly differentiated from the scaffold-a-new-service skills that already exist) or it's a near-duplicate per CONTRIBUTING.md's novelty bar.
+- [x] **`clean-exit` — REJECTED again 2026-08-23, audit angle also covered.** Re-checked with the
+  exact "different angle" this item called for: an *audit of existing shutdown code* (not a
+  scaffold-a-new-service skill) catching readiness-not-failed-before-drain, preStop/grace-period
+  budget math, missing drain deadlines, and worker checkpointing before the SIGKILL window.
+  `curiositech/windags-skills` (mirrored as `curiositech/port-daddy`) →
+  `kubernetes-graceful-shutdown/SKILL.md` already ships almost exactly this bug catalog as an
+  Anti-patterns table + Quality gates checklist (readiness-stays-green-during-shutdown, preStop-sleep
+  exceeding grace-period, no drain ceiling) plus a synthetic-load rolling-deploy SIGTERM test —
+  the specific "verify by SIGTERM-under-load" idea this item proposed. `robotijn/ctoc` →
+  `resilience-checker/SKILL.md` independently covers the same SIGTERM-handler/readiness-flip/
+  drain-budget checks as one section of a wider resilience audit. The one thin gap found —
+  worker/queue-consumer checkpointing specifically before the SIGKILL window — is treated as a
+  one-line afterthought everywhere, but it's too narrow to carry a standalone skill on its own.
+  Closed as a documented non-starter; do not re-research without pairing that checkpointing slice
+  with something else genuinely new.
 - [x] `atomic-io` — crash-safe local file state: find truncate-then-write of state files, fix with temp-file → fsync → rename (`os.replace`), single-writer locks, validate-on-read recovery, Windows AV/EPERM retries. Added `skills/atomic-io/SKILL.md`, README table row + decision-table row (2026-07-31). Verified uncovered: searched for an existing Claude Code skill/marketplace entry for atomic writes / crash-safe file state (superpowers, awesome-claude-code lists) and found none — only generic "atomic commit" (git) and one open Claude Code bug report about its own non-atomic `.claude.json` writes, which is the exact failure mode this skill catches. Worked example added 2026-08-02: `examples/atomic-io.md` (OOM-killed worker, truncated `state.json`, four-piece fix + validate-on-read + single-writer boundary), linked from `examples/README.md` and the main README's Examples section. Follow-up: `tombstone` still has no worked example.
 - [x] `tombstone` — evidence-based removal of "unused" surface: classify deletion risk (intra-repo vs externally reachable), gather prod evidence (access logs, pg_stat, tombstone counters), instrument-and-soak covering monthly jobs, then delete reversibly. Added `skills/tombstone/SKILL.md`, README table row + decision-table row (2026-08-01). Verified uncovered: searched for existing Claude Code skills on dead-code/cleanup (mcpmarket, lobehub, claudskills, ClaudeCN) — all found are static-analysis-only (knip, ts-prune, vulture, depcheck, grep-based reference checking within one repo); none gather runtime/production evidence for externally-reachable surfaces (HTTP logs, pg_stat_statements, cadence-aware soak windows for infrequent jobs). Also checked `clean-exit` (the other unchecked item) and found it's *not* novel — a "Graceful Shutdown" skill already exists on a prominent marketplace (crossaitools.com/skills, aj-geddes/useful-ai-prompts) and graceful-shutdown scaffolding is bundled into multiple existing service-scaffold skills — so left `clean-exit` unchecked below with that note rather than shipping a duplicate. Worked example added 2026-08-03: `examples/tombstone.md` (DB column deletion — grep-only false confidence, pg_stat_statements evidence, BI-dependency check, blast-radius-matched delete), linked from `examples/README.md` and the main README's Examples section.
 
@@ -95,13 +109,21 @@ Follow-ups discovered this run:
   unbatched/no-checkpoint stop mechanism) ending in a BLOCK verdict — linked from `examples/README.md`
   and the main README's Examples section, which now reads "every skill in the pack has one" again.
   `python tools/validate.py` still passes (19/19). All 19 skills now have a worked example.
-- [ ] Money rounding/allocation audit — **partially covered**, viable only if narrowed. `mvolkov83/skills`
-  → `money-and-payments-best-practices` (2★) and `somachak/claude-code-skills-db` →
-  `auditing-unit-consistency` already own the broad framing (float-for-money, currency-with-amount,
-  explicit rounding modes, cents-vs-dollars). Genuinely uncovered slice: largest-remainder/banker's
-  *allocation* with a proven "sum of parts == total" invariant, aggregate-vs-line-item rounding
-  mismatch in invoices, and rounding-mode consistency across pricing/tax/refund/reporting paths.
-  Research the narrowed scope again before writing — as generic "use Decimal" it's a duplicate.
+- [x] **Money rounding/allocation audit — REJECTED, not novel even narrowed.** Re-researched
+  2026-08-23 the narrowed slice this item called for (largest-remainder allocation with a
+  "sum of parts == total" invariant, aggregate-vs-line-item invoice rounding mismatch,
+  rounding-mode consistency across pricing/tax/refund/reporting paths). All three sub-slices are
+  already covered, not just the broad "use Decimal" framing: `majiayu000/claude-skill-registry`
+  (574★) → `skills/data/financial-integrity/SKILL.md` has an explicit "Allocation Law" (sum of
+  parts must equal total, watch rounding leftovers) and a named "Penny Allocate Algorithm";
+  `alpacahq/alpaca-skills` (111★, official Alpaca trading-API pack) →
+  `skills/broker-api/money-precision/SKILL.md` covers re-rounding-after-every-step across a
+  split/allocation pipeline; `Sir-chawakorn/sanook-cli` → `skills/money-decimal-arithmetic/SKILL.md`
+  covers all three sub-slices nearly verbatim (largest-remainder pseudocode with the same invariant,
+  explicit round-per-line-vs-round-on-total distinction, one-rounding-mode-across-the-pipeline rule).
+  Same allocation/sum-conservation pattern also independently reinvented in `zakariaf/SplitFair` and
+  `aKhalid2013/HalvyECC`. Verdict: well-trodden ground reinvented 4+ times independently, closed as a
+  documented non-starter — do not re-research this without a genuinely new angle.
 - [ ] Researched-and-passed this run, do not re-research without a new angle: Unicode/text correctness
   (`Sir-chawakorn/sanook-cli` → `unicode-text-correctness`, 9★, near-identical seven-step method),
   read-path pagination auditing (65 hits, several dedicated; also overlaps `backfill-pilot`),
@@ -114,3 +136,41 @@ Follow-ups discovered this run:
 All 18 skills have now had a drift-verification pass (round 1: secret-spill; round 2: migration-guard, backfill-pilot, job-warden, portability-audit; round 3: the remaining 13). Don't re-run the same pass again next time — nothing here is stale enough to justify it. Two real directions remain open:
 1. `clean-exit` — still unchecked, still not novel as scoped (see its entry above). If picked up, it needs a genuinely different angle (an *audit* of existing shutdown code, not a scaffold) or it stays a documented non-starter.
 2. Fresh novelty research for new skill candidates the pack doesn't cover yet — worth a proper sweep of superpowers/awesome-lists/marketplaces rather than assuming the 18 are exhaustive. Two areas that came up while reading this round but weren't researched for novelty (do that before writing either): (a) a "worker startup/readiness audit" distinct from `clean-exit`'s shutdown focus — health-check races, migration-before-serve ordering, connection-pool warmup; (b) a "PII/data-retention audit" for code paths that log, cache, or persist sensitive fields past their legal retention window — different from `secret-spill` (credentials, not user data) and `stale-guard` (correctness, not compliance).
+
+## Novelty sweep — round 2 (2026-08-23): 0 new candidates, both open items closed dead
+Both remaining unchecked items were re-researched to their stated bar and both died (see their
+entries above for citations): `clean-exit`'s audit angle is covered by
+`curiositech/windags-skills` and `robotijn/ctoc`; the narrowed money-allocation/rounding scope is
+covered independently by 4+ repos. With both closed, ran a broad fresh sweep (20+ targeted
+`filename:SKILL.md` searches) across categories the pack hasn't touched: webhook/API delivery
+reliability, N+1 query detection, retry/backoff storm prevention, CORS/cookie/SameSite specifics,
+DB connection-pool exhaustion, API contract/breaking-change detection, dual-write/outbox
+consistency, secret rotation without restart, event/webhook ordering, test-fixture realism vs.
+production shape, distributed lock TTL vs. job duration, timeout/deadline-budget propagation,
+swallowed-exception/empty-catch patterns, deadlock/lock-ordering, soft-delete correctness
+(unique-index + cascade + GDPR purge), CDN/edge cache poisoning (unkeyed headers), abandoned
+multipart uploads, CSV/Excel formula injection, and distributed rate-limiter per-instance counter
+scoping. **Every one is already covered**, several by dedicated, well-written skills with
+near-identical scope to what a fresh write would have produced (e.g.
+`marquesfelip/agents-and-skills` → `distributed-locking` already cites a "customers charged 3x"
+lock-TTL incident almost identical to what this pack's own grounding style would reach for; →
+`soft-delete-strategy` matches the soft-delete idea point for point). The saturation is driven by
+large auto-generated aggregator repos (`majiayu000/claude-skill-registry` and its `-data` mirror,
+thousands of entries) that have systematically enumerated most backend/infra engineering footguns
+by name, plus several smaller but sharply-written dedicated packs
+(`marquesfelip/agents-and-skills`, `Sir-chawakorn/sanook-cli`, `hookdeck/webhook-skills`).
+
+**Conclusion: the pure backend/infra engineering-pain-point space this pack has mined since
+2026-07-24 is now saturated.** Do not re-run another broad sweep over that same territory without
+a new angle — it will re-find the same aggregator coverage. Two honest paths forward for whoever
+picks this up next:
+1. A category this sweep didn't have budget for: **mobile-specific release/rollback footguns**
+   (app-store review lag vs. hotfix urgency, staged-rollout percentage math, forced-upgrade vs.
+   soft-nudge version gating) — unresearched, could be real or could be another saturated corner;
+   check before writing.
+2. Given two saturated sweeps in a row (2026-08-20 and this one) turned up one shippable skill
+   (`blast-guard`) out of ~10+ candidates evaluated, this pack may be close to functionally
+   complete as a curated set. If the next 1-2 runs also turn up nothing, it's reasonable to shift
+   daily-agent effort toward maintenance (drift-auditing external tool-syntax claims as docs age —
+   Postgres/MySQL/git/CI/k8s releases move) rather than forcing a new skill through on a technicality
+   to hit "ship something today."

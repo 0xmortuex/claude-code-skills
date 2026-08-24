@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — nineteen that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, and pre-send review for code that messages a real user audience.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, and app-store-specific mobile release/rollback review.
 
 ## The skills
 
@@ -29,6 +29,7 @@ Every skill added since the original five went through the same filter: research
 | **[atomic-io](skills/atomic-io/SKILL.md)** | Finds truncate-then-write of local state files and fixes them with temp-file → fsync → atomic rename, single-writer locks, and validate-on-read recovery | "config file came back empty after a crash", "make this crash-safe", "atomic write" |
 | **[tombstone](skills/tombstone/SKILL.md)** | Proves an externally-reachable endpoint, DB column/table, or infrequent job is actually unused with production evidence — not just a repo-wide grep — before you delete it | "can I delete this endpoint/column", "is this still used", "nobody calls this anymore, right?" |
 | **[blast-guard](skills/blast-guard/SKILL.md)** | Reviews code that emails, texts, or pushes a real user audience — audience-query sanity check, suppression lists, env/provider binding, a resumable stop mechanism — before the unrecoverable send fires | "email everyone who...", "bulk send", "mailing list blast", "notify all users in this segment" |
+| **[rollout-guard](skills/rollout-guard/SKILL.md)** | Reviews a mobile app release for app-store-specific hazards — staged-rollout halt thresholds, review-lag-aware incident response, forced vs. soft version gating, and the long tail of client versions the backend still has to serve | "should this be a forced update", "staged rollout", "phased release", "app store review is taking forever", "kill switch for the app" |
 
 ## Which skill do I want?
 
@@ -55,6 +56,7 @@ Not sure which one fires for your situation? Match the symptom:
 | A config/checkpoint/cache file came back empty or corrupted after a crash | [atomic-io](skills/atomic-io/SKILL.md) |
 | You want to delete an endpoint/column/job and "static analysis says it's unused" isn't good enough | [tombstone](skills/tombstone/SKILL.md) |
 | You're about to send an email/push/SMS campaign to a real audience and it can't be undone | [blast-guard](skills/blast-guard/SKILL.md) |
+| You're planning a mobile staged rollout, a forced-update gate, or a hotfix that needs app-store review | [rollout-guard](skills/rollout-guard/SKILL.md) |
 
 ## What makes these different
 

@@ -174,3 +174,30 @@ picks this up next:
    daily-agent effort toward maintenance (drift-auditing external tool-syntax claims as docs age —
    Postgres/MySQL/git/CI/k8s releases move) rather than forcing a new skill through on a technicality
    to hit "ship something today."
+
+## `rollout-guard` — SHIPPED (2026-08-24, verified novel)
+- [x] Researched path 1 from the note above (mobile-specific release/rollback footguns). Found
+  general staged-rollout/rollback coverage (`addyosmani/agent-skills` → `shipping-and-launch`:
+  pre-launch checklist, feature-flag lifecycle, staged rollouts, rollback) but scoped to
+  backend/web deploys — no percentage-math specifics, no app-store review-queue reasoning. Found
+  several App Store/Play Store *pre-submission compliance* checkers (`cruisediary/apple-app-review-skills`,
+  `devsemih/appstore-review-skill`, `safaiyeh/app-store-review-skill`, mcpmarket's App Store
+  Deployment/Readiness skills) — all check whether a build will pass review (privacy manifests,
+  entitlements, metadata), a different problem from whether a release/rollback *strategy* is safe
+  once the build is submitted. No skill combining staged-rollout halt-threshold discipline,
+  review-lag-aware incident response (kill switches vs. waiting on review), and forced-vs-soft
+  version-gating criteria was found across the same sources checked in the 2026-08-20/23 sweeps
+  (claudskills, mcpmarket, lobehub, claudemarketplaces, `obra/superpowers`,
+  `majiayu000/claude-skill-registry`). Grounded in verifiable platform mechanics rather than a
+  single incident citation (two candidate secondary sources for a "40% of users stuck on a broken
+  version" anecdote were egress-blocked and couldn't be confirmed as primary, so left out rather
+  than cited unverified): Apple's fixed 7-day 1/2/5/10/20/50/100% phased-release schedule
+  (adjustable only by pausing, not reshaping) vs. Google Play's freely-chosen percentage/pace,
+  Apple's discretionary (non-SLA) expedited-review path, and the structural fact that halting a
+  rollout stops new installs but can't undo the ones already shipped.
+  Added `skills/rollout-guard/SKILL.md`, README skills-table row + decision-table row, intro
+  paragraph updated (nineteen → twenty). `python tools/validate.py` passes 20/20.
+
+Follow-up: `examples/rollout-guard.md` still needed — every other skill in the pack has a worked
+example; add one next (a staged-rollout-halted-but-incident-plan-incomplete scenario, or a
+forced-vs-soft version-gating call, would exercise the skill's actual report format).

@@ -198,6 +198,13 @@ picks this up next:
   Added `skills/rollout-guard/SKILL.md`, README skills-table row + decision-table row, intro
   paragraph updated (nineteen → twenty). `python tools/validate.py` passes 20/20.
 
-Follow-up: `examples/rollout-guard.md` still needed — every other skill in the pack has a worked
-example; add one next (a staged-rollout-halted-but-incident-plan-incomplete scenario, or a
-forced-vs-soft version-gating call, would exercise the skill's actual report format).
+- [x] `examples/rollout-guard.md` — added 2026-08-25: a forced-update decision walking all five
+  checks against a real plan (iOS 14 background-sync bug corrupting local transaction cache,
+  20%-into-phased-rollout, pause v5.1.0 + force v5.1.1 once approved) — halt-threshold is reactive
+  not a standing metric (CAUTION), the pause/fix distinction is right but the plan has no repair
+  step for the already-corrupted 20% (FAIL), no kill switch on the sync path so the only mitigation
+  is the review clock (FAIL), forcing is the correct call for active data corruption but the
+  version-gate's failure-open behavior is unconfirmed (CAUTION), and the force may not reach
+  iOS-14 devices too old to take v5.1.1 (CAUTION) — linked from `examples/README.md` and the main
+  README's Examples section, which now reads "every skill in the pack has one" again for all 20.
+  `python tools/validate.py` passes (20/20). All 20 skills now have a worked example.

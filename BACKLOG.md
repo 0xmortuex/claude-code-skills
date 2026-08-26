@@ -208,3 +208,63 @@ picks this up next:
   iOS-14 devices too old to take v5.1.1 (CAUTION) — linked from `examples/README.md` and the main
   README's Examples section, which now reads "every skill in the pack has one" again for all 20.
   `python tools/validate.py` passes (20/20). All 20 skills now have a worked example.
+
+## Novelty sweep — round 3 (2026-08-26): no ship, 5 candidates researched and logged
+Ran targeted `filename:SKILL.md` searches across five candidate categories the pack hasn't
+covered, following up on the "functionally complete?" question the 2026-08-23 note left open.
+Confirmed `security-sweep`, `blast-guard`, `stale-guard`, and `tombstone` (grepped their bodies)
+don't already touch any of these five. Two died outright, three are genuinely unresolved — none
+were verified enough in one session to write a skill against today, so nothing shipped; logging
+all five so the next run doesn't re-walk the same ground from zero.
+
+- [ ] **GDPR / data-deletion cascade (right-to-erasure) — likely REJECTED, saturated.** Multiple
+  dedicated, actively-maintained packs already cover this in depth:
+  `Sushegaad/Claude-Skills-Governance-Risk-and-Compliance` (GDPR/DSGVO among 10+ regulatory
+  frameworks, claims a benchmarked accuracy delta), `alirezarezvani/claude-skills` →
+  `gdpr-dsgvo-expert/SKILL.md`, and an mcpmarket `gdpr-data-handling` skill that names the exact
+  mechanics a fresh skill would reach for (DSAR handling, Article 17 erasure automation,
+  consent-withdrawal cascades with audit trail, retention-period cleanup jobs). Deep enough,
+  cited enough, and close enough to this pack's own `tombstone` territory (evidence-based removal)
+  that it isn't worth re-verifying further — treat as closed unless someone finds a narrower
+  uncovered slice.
+- [ ] **Terraform / IaC plan review — REJECTED, saturated.** `lgbarn/devops-skills` ships
+  `terraform-plan-review` (parallel-agent plan analysis before apply) and
+  `terraform-drift-detection` as named, dedicated skills; `LukasNiessen/terrashark` and
+  `antonbabenko/terraform-skill` both focus specifically on grounding plan/apply review in
+  HashiCorp best practices to kill hallucinated Terraform. This is a crowded, well-covered
+  category — closed, do not re-research without a materially different angle (e.g. a specific
+  cloud-provider footgun class none of these name).
+- [ ] **LLM-integration prompt-injection review** (reviewing *product* code that feeds
+  untrusted content — user input, fetched web pages, tool output — into an LLM call with
+  tool-calling/agentic access, distinct from `security-sweep`'s OWASP-style SQLi/IDOR/SSRF list
+  and distinct from *skill supply-chain* security auditing). Searches this round mostly surfaced
+  the latter: `aisa-group/promptinject-agent-skills` and the Snyk ToxicSkills research are about
+  malicious SKILL.md files attacking the agent itself, not about auditing a team's own
+  LLM-integrated application code for the untrusted-content-controls-behavior pattern. Grepped
+  `security-sweep/SKILL.md` directly — no mention of prompt injection, tool-call scoping, or
+  untrusted-content boundaries. This looks like a real, current, and distinct gap (agentic
+  features are now common in ordinary product code, not just agent frameworks), but it needs a
+  proper novelty pass before writing — specifically checking `obra/superpowers`,
+  `majiayu000/claude-skill-registry`, and the AI-safety-adjacent marketplaces (which weren't
+  covered by the generic `filename:SKILL.md` search used here) before assuming it's uncovered.
+  **Best candidate for next run — start here.**
+- [ ] **Notification-preference / opt-out correctness across channels** — does an ongoing
+  notification system actually honor a user's per-channel opt-outs (email vs. push vs. SMS),
+  suppression lists, and frequency caps over time, as opposed to `blast-guard`'s scope (a
+  one-off bulk-send review: audience query sanity, suppression-list join, env binding, stop
+  mechanism, at send time). Search this round was inconclusive — returned GitHub's own
+  notification-settings docs rather than any SKILL.md, positive or negative. Needs a sharper
+  search (marketplace + `filename:SKILL.md "preference center"` style queries) before a novelty
+  verdict can be reached either way.
+- [ ] **RBAC / permission-matrix drift audit** (does the code's actual authorization logic match
+  the intended role/permission matrix — stale roles still granting access, a new endpoint missing
+  its permission check, admin-only fields reachable through a non-admin path) — distinct from
+  generic "security review" (which flags one bug at a time, not systematic matrix-vs-code drift).
+  Search this round was inconclusive: found only skill-*audit* tools (scanning SKILL.md files
+  themselves for security issues) and generic IAM/RBAC references inside unrelated infra skills,
+  nothing that clearly claims or clearly disclaims this specific angle. Needs a follow-up search
+  before a novelty verdict can be reached either way.
+
+Pack quality bar held: none of these five were confirmed novel and complete enough to ship in
+one sitting, so none were written — per the daily-agent rules, an unverified skill is worse than
+no skill. `python tools/validate.py` still passes 20/20 (no skill files touched this run).

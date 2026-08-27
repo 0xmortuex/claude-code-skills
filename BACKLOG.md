@@ -268,3 +268,55 @@ all five so the next run doesn't re-walk the same ground from zero.
 Pack quality bar held: none of these five were confirmed novel and complete enough to ship in
 one sitting, so none were written — per the daily-agent rules, an unverified skill is worse than
 no skill. `python tools/validate.py` still passes 20/20 (no skill files touched this run).
+
+## `pref-guard` — SHIPPED (2026-08-27, verified novel); two other round-3 candidates closed dead
+
+Followed up on the three open candidates the 2026-08-26 sweep left unresolved, in the order that
+sweep suggested.
+
+- [x] **LLM-integration prompt-injection review — REJECTED, covered.** This was the sweep's
+  named "best candidate for next run." Fetched and read the actual methodology (not just a
+  marketplace blurb) of `UnitOneAI/SecuritySkills` → `skills/ai-security/prompt-injection/SKILL.md`
+  (part of a 45-skill pack grounded in OWASP/NIST/MITRE, `LLM Top 10 Review` + `Agentic AI Top 10`
+  siblings in the same `ai-security/` directory). It does exactly the thing this candidate
+  proposed: **source-code review** (not black-box prompt testing) that maps every point untrusted
+  content reaches an LLM call (chat input, fetched web pages, RAG documents, tool output), checks
+  whether delimiters/boundaries between data and instructions are enforceable in code rather than
+  asserted in a system-prompt comment, and evaluates instruction-hierarchy and privilege-separation
+  defenses — near-exact match to the "boundary enforcement, not just SQLi/IDOR" angle this
+  candidate was scoped around. Also independently confirmed `alirezarezvani/claude-skills` →
+  `engineering-team/skills/ai-security/SKILL.md` explicitly scopes itself to the model/prompt layer
+  (signature-scans prompts themselves) and GitHub's own `github/awesome-copilot` →
+  `skills/security-review/SKILL.md` does *not* cover this angle — so the search wasn't a single
+  false positive. Closed as covered; do not re-research without a materially different angle (e.g.
+  a slice UnitOneAI's skill doesn't touch).
+- [x] **RBAC/permission-matrix drift audit — REJECTED, substantially covered.** Two matches, read
+  in full rather than trusted from a listing: `Intense-Visions/harness-engineering` →
+  `security-rbac-design/SKILL.md` is design/scaffolding-focused (confirmed: "When to Use" lists
+  designing-a-new-system first, auditing appears last and narrowly) so it doesn't kill the
+  candidate on its own — but `utkusen/sast-skills` → `sast-missingauth` does the actual mechanic
+  this candidate wanted: a three-phase **systematic sweep of the whole codebase** (recon maps every
+  endpoint plus the role/permission system, then batched parallel-subagent verification checks
+  *each* endpoint for both missing authentication and broken function-level authorization). That's
+  the "new endpoint missing its permission check, caught systematically rather than one bug at a
+  time" core of the candidate. The one piece it doesn't do — stale/orphaned roles that still grant
+  access, and drift against a *documented* intended matrix rather than inferring intent from the
+  code itself — is real but too thin to carry a standalone skill alone (same shape as the
+  `clean-exit` rejection: a near-exact match exists, the residual gap is a one-line addendum, not a
+  skill). Closed as covered; the thin residual isn't worth re-researching on its own.
+- [x] **Notification-preference/opt-out correctness across channels — SHIPPED as `pref-guard`.**
+  The 2026-08-26 note flagged this as needing a sharper search. Ran targeted searches this round
+  (`filename:SKILL.md` + generic web search across "preference center", "suppression list",
+  "opt-out audit", "per-channel"/"frequency cap" combinations, `claudskills.com`,
+  `majiayu000/claude-skill-registry`, and the generic marketplaces already checked for
+  `blast-guard`) — found real hits for one-off bulk-send safety (this pack's own `blast-guard`) and
+  for email-deliverability/compliance reference skills (`chunkydotdev/email-skills`), but nothing
+  auditing the **standing correctness property** this candidate named: does an evolving system with
+  many send paths and channels keep actually checking live opt-out/suppression/frequency-cap state,
+  and does provider-side unsubscribe/bounce data really sync back into the app's own suppression
+  record. Verified in-pack this is genuinely distinct from `blast-guard` (single send, audience
+  query + dry run + stop mechanism, reviewed once before firing) rather than an internal duplicate.
+  Added `skills/pref-guard/SKILL.md`, README skills-table row + decision-table row, intro paragraph
+  updated (twenty → twenty-one, rejected-candidates list extended with today's two dead ends).
+  `python tools/validate.py` passes 21/21. Follow-up: `examples/pref-guard.md` still needed (same
+  pattern as `blast-guard`/`rollout-guard` — skill shipped first, worked example added next).

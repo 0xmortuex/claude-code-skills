@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-one that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, and app-store-specific mobile release/rollback review.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, and whether an ongoing notification system actually honors what users opted out of.
 
 ## The skills
 
@@ -30,6 +30,7 @@ Every skill added since the original five went through the same filter: research
 | **[tombstone](skills/tombstone/SKILL.md)** | Proves an externally-reachable endpoint, DB column/table, or infrequent job is actually unused with production evidence — not just a repo-wide grep — before you delete it | "can I delete this endpoint/column", "is this still used", "nobody calls this anymore, right?" |
 | **[blast-guard](skills/blast-guard/SKILL.md)** | Reviews code that emails, texts, or pushes a real user audience — audience-query sanity check, suppression lists, env/provider binding, a resumable stop mechanism — before the unrecoverable send fires | "email everyone who...", "bulk send", "mailing list blast", "notify all users in this segment" |
 | **[rollout-guard](skills/rollout-guard/SKILL.md)** | Reviews a mobile app release for app-store-specific hazards — staged-rollout halt thresholds, review-lag-aware incident response, forced vs. soft version gating, and the long tail of client versions the backend still has to serve | "should this be a forced update", "staged rollout", "phased release", "app store review is taking forever", "kill switch for the app" |
+| **[pref-guard](skills/pref-guard/SKILL.md)** | Audits whether an ongoing notification system honors per-channel opt-outs, category preferences, suppression lists, and frequency caps as new send paths get added — including whether provider-side unsubscribe/bounce state actually syncs back to the app | "I unsubscribed but still got an email", adding a new notification type/channel, "do we actually respect opt-outs", "audit our notification preferences", "frequency cap" |
 
 ## Which skill do I want?
 
@@ -57,6 +58,7 @@ Not sure which one fires for your situation? Match the symptom:
 | You want to delete an endpoint/column/job and "static analysis says it's unused" isn't good enough | [tombstone](skills/tombstone/SKILL.md) |
 | You're about to send an email/push/SMS campaign to a real audience and it can't be undone | [blast-guard](skills/blast-guard/SKILL.md) |
 | You're planning a mobile staged rollout, a forced-update gate, or a hotfix that needs app-store review | [rollout-guard](skills/rollout-guard/SKILL.md) |
+| A user says "I unsubscribed but you keep emailing me" or you're adding a new notification type/channel | [pref-guard](skills/pref-guard/SKILL.md) |
 
 ## What makes these different
 
@@ -138,7 +140,8 @@ currently [git-rescue](examples/git-rescue.md),
 [devlog](examples/devlog.md),
 [readme-forge](examples/readme-forge.md),
 [blast-guard](examples/blast-guard.md), and
-[rollout-guard](examples/rollout-guard.md) — every skill in the pack has one.
+[rollout-guard](examples/rollout-guard.md). `pref-guard` is new and doesn't have
+one yet — see the backlog.
 
 ## Contributing
 

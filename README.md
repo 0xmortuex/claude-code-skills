@@ -139,9 +139,9 @@ currently [git-rescue](examples/git-rescue.md),
 [portability-audit](examples/portability-audit.md),
 [devlog](examples/devlog.md),
 [readme-forge](examples/readme-forge.md),
-[blast-guard](examples/blast-guard.md), and
-[rollout-guard](examples/rollout-guard.md). `pref-guard` is new and doesn't have
-one yet — see the backlog.
+[blast-guard](examples/blast-guard.md),
+[rollout-guard](examples/rollout-guard.md), and
+[pref-guard](examples/pref-guard.md) — every skill in the pack has one.
 
 ## Contributing
 

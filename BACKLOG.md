@@ -318,5 +318,17 @@ sweep suggested.
   query + dry run + stop mechanism, reviewed once before firing) rather than an internal duplicate.
   Added `skills/pref-guard/SKILL.md`, README skills-table row + decision-table row, intro paragraph
   updated (twenty → twenty-one, rejected-candidates list extended with today's two dead ends).
-  `python tools/validate.py` passes 21/21. Follow-up: `examples/pref-guard.md` still needed (same
-  pattern as `blast-guard`/`rollout-guard` — skill shipped first, worked example added next).
+  `python tools/validate.py` passes 21/21.
+
+- [x] `examples/pref-guard.md` — added 2026-08-28: a "user unsubscribed from product-update
+  emails but still got one" ticket walked through all four steps — send-path/dimension
+  enumeration finds two competing preference sources (a new per-category `UserPreference` table
+  vs. a frozen legacy `User.marketing_opt_out` boolean), invariant A catches the actual root
+  cause (the campaign path still reads the legacy field, which the current UI stopped writing
+  eight months ago) plus an independent gap (a push path never joins the suppression list),
+  invariant B flags the fail-open default on the stale field as a BLOCK regardless of rarity, and
+  operational notes (no shared frequency cap, an optimistic-200 preference save that can swallow
+  a write failure) are surfaced as secondary risks rather than folded into the confirmed root
+  cause — linked from `examples/README.md` and the main README's Examples section, which now
+  reads "every skill in the pack has one" again for all 21. `python tools/validate.py` passes
+  (21/21). All 21 skills now have a worked example.

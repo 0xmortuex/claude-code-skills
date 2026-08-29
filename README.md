@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-one that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-two that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, and whether an ongoing notification system actually honors what users opted out of.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, and whether a "delete my account" feature actually reaches every place a user's data got copied to.
 
 ## The skills
 
@@ -31,6 +31,7 @@ Every skill added since the original five went through the same filter: research
 | **[blast-guard](skills/blast-guard/SKILL.md)** | Reviews code that emails, texts, or pushes a real user audience — audience-query sanity check, suppression lists, env/provider binding, a resumable stop mechanism — before the unrecoverable send fires | "email everyone who...", "bulk send", "mailing list blast", "notify all users in this segment" |
 | **[rollout-guard](skills/rollout-guard/SKILL.md)** | Reviews a mobile app release for app-store-specific hazards — staged-rollout halt thresholds, review-lag-aware incident response, forced vs. soft version gating, and the long tail of client versions the backend still has to serve | "should this be a forced update", "staged rollout", "phased release", "app store review is taking forever", "kill switch for the app" |
 | **[pref-guard](skills/pref-guard/SKILL.md)** | Audits whether an ongoing notification system honors per-channel opt-outs, category preferences, suppression lists, and frequency caps as new send paths get added — including whether provider-side unsubscribe/bounce state actually syncs back to the app | "I unsubscribed but still got an email", adding a new notification type/channel, "do we actually respect opt-outs", "audit our notification preferences", "frequency cap" |
+| **[erasure-guard](skills/erasure-guard/SKILL.md)** | Audits whether a "delete my account" feature actually reaches every place a user's data got copied — replicas, caches, search indices, warehouses, third-party processors, backups — not just the primary table an ORM cascade covers | "does deleting a user actually delete everything", "GDPR erasure audit", "right to be forgotten", new data store added but the deletion pipeline might not cover it |
 
 ## Which skill do I want?
 
@@ -59,6 +60,7 @@ Not sure which one fires for your situation? Match the symptom:
 | You're about to send an email/push/SMS campaign to a real audience and it can't be undone | [blast-guard](skills/blast-guard/SKILL.md) |
 | You're planning a mobile staged rollout, a forced-update gate, or a hotfix that needs app-store review | [rollout-guard](skills/rollout-guard/SKILL.md) |
 | A user says "I unsubscribed but you keep emailing me" or you're adding a new notification type/channel | [pref-guard](skills/pref-guard/SKILL.md) |
+| You're adding/reviewing a "delete my account" flow or a new data store might not be wired into it | [erasure-guard](skills/erasure-guard/SKILL.md) |
 
 ## What makes these different
 
@@ -141,7 +143,8 @@ currently [git-rescue](examples/git-rescue.md),
 [readme-forge](examples/readme-forge.md),
 [blast-guard](examples/blast-guard.md),
 [rollout-guard](examples/rollout-guard.md), and
-[pref-guard](examples/pref-guard.md) — every skill in the pack has one.
+[pref-guard](examples/pref-guard.md) — every skill but the newest,
+[erasure-guard](skills/erasure-guard/SKILL.md), has one so far.
 
 ## Contributing
 

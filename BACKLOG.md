@@ -217,53 +217,45 @@ don't already touch any of these five. Two died outright, three are genuinely un
 were verified enough in one session to write a skill against today, so nothing shipped; logging
 all five so the next run doesn't re-walk the same ground from zero.
 
-- [ ] **GDPR / data-deletion cascade (right-to-erasure) — likely REJECTED, saturated.** Multiple
-  dedicated, actively-maintained packs already cover this in depth:
-  `Sushegaad/Claude-Skills-Governance-Risk-and-Compliance` (GDPR/DSGVO among 10+ regulatory
-  frameworks, claims a benchmarked accuracy delta), `alirezarezvani/claude-skills` →
-  `gdpr-dsgvo-expert/SKILL.md`, and an mcpmarket `gdpr-data-handling` skill that names the exact
-  mechanics a fresh skill would reach for (DSAR handling, Article 17 erasure automation,
-  consent-withdrawal cascades with audit trail, retention-period cleanup jobs). Deep enough,
-  cited enough, and close enough to this pack's own `tombstone` territory (evidence-based removal)
-  that it isn't worth re-verifying further — treat as closed unless someone finds a narrower
-  uncovered slice.
-- [ ] **Terraform / IaC plan review — REJECTED, saturated.** `lgbarn/devops-skills` ships
+- [x] **GDPR / data-deletion cascade (right-to-erasure) — narrower slice found and SHIPPED as
+  `erasure-guard` (2026-08-29).** The broad "GDPR compliance skill" framing this item first
+  flagged is still saturated (`Sushegaad/Claude-Skills-Governance-Risk-and-Compliance`,
+  `alirezarezvani/claude-skills` → `gdpr-dsgvo-expert/SKILL.md`, mcpmarket `gdpr-data-handling` —
+  all DSAR/consent/retention-policy workflow scaffolding). But the "narrower uncovered slice"
+  this item's own wording left open turned out to be real: a systems-*completeness* audit of
+  whether an already-decided deletion actually reaches every copy of the data (caches, search
+  indices, warehouse snapshots, third-party processors, backups), as opposed to the legal-workflow
+  layer every existing pack targets. Verified by reading actual content, not just listings:
+  `github/awesome-copilot` → `skills/gdpr-compliant/SKILL.md` (fetched in full) is code-level but
+  its own PR checklist just says "erasure pipeline updated to cover new data store" with no
+  audit method behind it; `alpha-omega-security/scrutineer` → `skills/audit-pii/SKILL.md` (fetched
+  in full, previously cited against the 2026-08-20 PII-audit rejection) explicitly states
+  data-retention is out of its scope ("not a... data-retention... review"). Neither, nor this
+  pack's own `tombstone` (unused-surface removal, not an active feature's completeness), does this.
+  Added `skills/erasure-guard/SKILL.md`, README skills-table row + decision-table row, intro
+  paragraph updated (twenty-one → twenty-two). `python tools/validate.py` passes 22/22. Follow-up:
+  no worked example yet (`examples/erasure-guard.md`) — add one next.
+- [x] **Terraform / IaC plan review — REJECTED, saturated.** `lgbarn/devops-skills` ships
   `terraform-plan-review` (parallel-agent plan analysis before apply) and
   `terraform-drift-detection` as named, dedicated skills; `LukasNiessen/terrashark` and
   `antonbabenko/terraform-skill` both focus specifically on grounding plan/apply review in
   HashiCorp best practices to kill hallucinated Terraform. This is a crowded, well-covered
   category — closed, do not re-research without a materially different angle (e.g. a specific
   cloud-provider footgun class none of these name).
-- [ ] **LLM-integration prompt-injection review** (reviewing *product* code that feeds
-  untrusted content — user input, fetched web pages, tool output — into an LLM call with
-  tool-calling/agentic access, distinct from `security-sweep`'s OWASP-style SQLi/IDOR/SSRF list
-  and distinct from *skill supply-chain* security auditing). Searches this round mostly surfaced
-  the latter: `aisa-group/promptinject-agent-skills` and the Snyk ToxicSkills research are about
-  malicious SKILL.md files attacking the agent itself, not about auditing a team's own
-  LLM-integrated application code for the untrusted-content-controls-behavior pattern. Grepped
-  `security-sweep/SKILL.md` directly — no mention of prompt injection, tool-call scoping, or
-  untrusted-content boundaries. This looks like a real, current, and distinct gap (agentic
-  features are now common in ordinary product code, not just agent frameworks), but it needs a
-  proper novelty pass before writing — specifically checking `obra/superpowers`,
-  `majiayu000/claude-skill-registry`, and the AI-safety-adjacent marketplaces (which weren't
-  covered by the generic `filename:SKILL.md` search used here) before assuming it's uncovered.
-  **Best candidate for next run — start here.**
-- [ ] **Notification-preference / opt-out correctness across channels** — does an ongoing
-  notification system actually honor a user's per-channel opt-outs (email vs. push vs. SMS),
-  suppression lists, and frequency caps over time, as opposed to `blast-guard`'s scope (a
-  one-off bulk-send review: audience query sanity, suppression-list join, env binding, stop
-  mechanism, at send time). Search this round was inconclusive — returned GitHub's own
-  notification-settings docs rather than any SKILL.md, positive or negative. Needs a sharper
-  search (marketplace + `filename:SKILL.md "preference center"` style queries) before a novelty
-  verdict can be reached either way.
-- [ ] **RBAC / permission-matrix drift audit** (does the code's actual authorization logic match
-  the intended role/permission matrix — stale roles still granting access, a new endpoint missing
-  its permission check, admin-only fields reachable through a non-admin path) — distinct from
-  generic "security review" (which flags one bug at a time, not systematic matrix-vs-code drift).
-  Search this round was inconclusive: found only skill-*audit* tools (scanning SKILL.md files
-  themselves for security issues) and generic IAM/RBAC references inside unrelated infra skills,
-  nothing that clearly claims or clearly disclaims this specific angle. Needs a follow-up search
-  before a novelty verdict can be reached either way.
+- [x] **LLM-integration prompt-injection review — REJECTED, covered.** Resolved 2026-08-27 (see
+  the `pref-guard` entry below): `UnitOneAI/SecuritySkills` →
+  `skills/ai-security/prompt-injection/SKILL.md` does exactly this (source-code review mapping
+  every point untrusted content reaches an LLM call, boundary/delimiter enforcement, instruction-
+  hierarchy defenses). Checkbox here was left stale after that entry was written — fixed today,
+  no further action.
+- [x] **Notification-preference / opt-out correctness across channels — SHIPPED as `pref-guard`
+  (2026-08-27).** See that entry below for the full novelty citations. Checkbox here was left
+  stale after `pref-guard` shipped — fixed today, no further action.
+- [x] **RBAC / permission-matrix drift audit — REJECTED, substantially covered.** Resolved
+  2026-08-27 (see the `pref-guard` entry below): `utkusen/sast-skills` → `sast-missingauth` does
+  the systematic endpoint-sweep mechanic this candidate wanted; the residual gap (stale roles vs.
+  a *documented* intended matrix) is too thin to carry a standalone skill. Checkbox here was left
+  stale after that entry was written — fixed today, no further action.
 
 Pack quality bar held: none of these five were confirmed novel and complete enough to ship in
 one sitting, so none were written — per the daily-agent rules, an unverified skill is worse than
@@ -332,3 +324,33 @@ sweep suggested.
   cause — linked from `examples/README.md` and the main README's Examples section, which now
   reads "every skill in the pack has one" again for all 21. `python tools/validate.py` passes
   (21/21). All 21 skills now have a worked example.
+
+## `erasure-guard` — SHIPPED (2026-08-29, verified novel); round-3 sweep bookkeeping fixed
+
+Picked up the "narrower uncovered slice" thread the round-3 sweep's GDPR entry left open (see
+that entry above, now updated in place with citations) rather than re-running a broad sweep from
+zero. Also noticed while reading the backlog that three round-3 candidates (LLM-injection,
+notification-preference, RBAC) had already been resolved in this file's own `pref-guard` section
+on 2026-08-27 but their original checkboxes were never ticked — fixed those to `[x]` in place so
+a future run doesn't mistake stale unchecked bullets for open work.
+
+- [x] Added `skills/erasure-guard/SKILL.md`: audits whether a "delete my account" feature's
+  deletion code path actually reaches every destination a user's data was copied to (replicas,
+  caches, search indices, materialized views, analytics/third-party processors, warehouse
+  snapshots, backups), not just what an ORM's FK cascade covers — and classifies each destination
+  as must-hard-delete / acceptable-to-anonymize / acceptable-"beyond use" rather than treating all
+  three the same. Grounded in two verified facts, not a hypothetical: `github/awesome-copilot`'s
+  own engineering-focused GDPR skill flags "erasure pipeline updated to cover new data store" as a
+  PR-checklist reminder with no audit method behind it (fetched and read in full), and
+  Elasticsearch's documented tombstone/segment-merge behavior (a deleted doc leaves query results
+  immediately but isn't purged from the on-disk segment until a later merge) is a real, citable
+  gap between "no longer returns results" and "no longer exists" that a compliance answer can
+  wrongly conflate. README skills-table row + decision-table row + Examples-section note added,
+  intro paragraph updated (twenty-one → twenty-two). `python tools/validate.py` passes 22/22.
+- [ ] Follow-up: `examples/erasure-guard.md` — the pack's newest skill is the only one without a
+  worked example. Suggested scenario: a "delete my account" endpoint that correctly cascades the
+  primary/FK tables but leaves the user findable in a search index and still receiving emails from
+  an ESP that was never sent a suppression call — walk all four steps (data map, code-path trace,
+  hard-delete/anonymize/beyond-use classification, verify-don't-just-review) to a report that leads
+  with the live search-index and ESP gaps rather than flattening them alongside the (compliant)
+  backup-retention finding.

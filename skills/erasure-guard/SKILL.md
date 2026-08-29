@@ -1,0 +1,45 @@
+---
+name: erasure-guard
+description: Audit whether a "delete my account" / erasure feature actually removes a user's data everywhere it's copied, not just the primary table an ORM cascade covers. Maps every destination data reaches — replicas, caches, search indices, materialized views, analytics pipelines, third-party processors, warehouse snapshots, backups — checks whether deletion calls into each one, and classifies each as must-hard-delete, acceptable-to-anonymize (retained financial/audit records), or acceptable-"beyond use" until cycle-out (backups). Distinct from `tombstone` (unused code, not an active deletion feature), `secret-spill` (credentials, not user data), `stale-guard` (general cache correctness), and GDPR/DSAR compliance packs (consent workflow, not this completeness check). Use when adding/reviewing a deletion endpoint, when a new data store might not be wired into it, or when asked "does deleting a user delete everything", "GDPR erasure audit", "right to be forgotten", or "where does user data still live after deletion".
+---
+
+# erasure-guard
+
+Deleting a user is easy in the one place everyone tests: the primary users table, with `ON DELETE CASCADE` tidying up the foreign keys an ORM knows about. It's the places nobody was thinking about when that endpoint shipped where the data survives — the search index that got its own denormalized copy for query speed, the analytics event that already left for a third-party pipeline before the delete ran, the nightly warehouse ETL that snapshotted the row the day before, the cache entry keyed by user ID that nothing ever explicitly evicts. Each of these was correct the day it was built. The deletion pipeline just wasn't updated when they were added — a gap real enough that GitHub's own engineering-focused GDPR skill lists "erasure pipeline updated to cover new data store" as a PR-checklist reminder, which only exists because teams keep needing reminding. This skill is the systematic check that reminder can't be: it doesn't trust that the checklist was followed, it verifies the pipeline against every store that actually exists today.
+
+## Step 1: map every place this user's identifiable data materializes
+
+Don't start from the deletion code — start from the data. Grep for every table, index, cache namespace, and outbound integration that stores or forwards anything keyed to a user: FK-linked tables (the easy, usually-correct part), read replicas (usually fine, they follow the primary, but confirm replication isn't excluded for any table), search/index stores that denormalize user fields for query speed, materialized views and reporting tables built by a separate ETL job, caches keyed by user ID or containing user fields inside a larger cached object, analytics/event-tracking destinations the app forwards events to (Segment, Amplitude, a Kafka topic with downstream consumers), third-party processors that received a copy (email/marketing ESP, support/CRM tool, payment processor's stored profile beyond what PCI requires them to keep), data-warehouse snapshots or exports, and backups. Treat this as a change over time, not a one-shot list — every new datastore or integration added since the deletion endpoint last touched is a candidate gap, which is exactly the failure mode above.
+
+## Step 2: trace the deletion code path against that map
+
+For each destination from step 1, find where (if anywhere) the deletion flow actually reaches it. The recurring gaps:
+
+- **FK cascade only covers what's modeled as a foreign key.** A denormalized copy in a separate service or a different database entirely isn't in that graph and needs its own explicit delete call — grep for every place the same user ID shows up as a column or cache key outside the primary schema, not just what `schema.rb`/migrations declare.
+- **A single "delete user" function existed once and every new store since was supposed to add itself to it, but didn't.** This is the checklist-reminder gap: confirm by reading the function's actual current body against today's list of stores, not by trusting that a comment or doc claims it's kept in sync.
+- **Async fan-out already happened before delete runs.** If a signup or activity event was forwarded to an analytics pipeline or a CRM at write time, deleting the local row doesn't touch what already left — the deletion path needs its own outbound call (a delete API, a suppression/tombstone event) to each destination that received a forward, not just a stop-forwarding-future-events fix.
+- **Soft-delete flag set, but reads elsewhere don't check it.** If deletion is a `deleted_at` flag rather than a physical row delete, verify every read path — including the ones added after the flag existed — actually filters it out, and that any export/reporting job pulling "all users" doesn't silently include soft-deleted ones because it predates the flag.
+
+## Step 3: classify what "deleted" has to mean for each destination
+
+Not everything needs the same treatment, and treating them all as "must physically delete on request" both overstates what's required and misses what actually matters:
+
+- **Must hard-delete or the request isn't honored**: the primary record and anything an ordinary user or support agent could look up post-deletion (profile pages, search results, CRM lookups, cached API responses).
+- **Acceptable to anonymize/pseudonymize instead of delete**: records under an independent legal retention requirement (financial transactions, audit logs, tax records) — the fix is stripping the identifying fields while keeping the record the retention rule actually requires, not deleting the row and breaking that requirement.
+- **Acceptable to leave in place until natural cycle-out, if put "beyond use"**: backups. Immediate backup purging usually isn't expected or practical; what's expected is that a restored backup can't be used to serve or re-populate that user's data (access-restricted, and the restore process itself excludes or re-deletes already-erased users), and that the backup expires on its normal retention schedule rather than being kept indefinitely specifically because it contains this user.
+- Flag a destination as a finding only against the bucket it actually belongs to — don't flag a backup as a bug for not deleting same-day, and don't accept "it's in a backup" as an excuse for a live cache or search index still serving the data.
+
+## Step 4: verify, don't just review
+
+Reading the code and concluding "this looks like it deletes everything" is exactly the confidence that produces the gaps in step 2. Where the codebase and access allow it, confirm each store no longer returns the user's data after the delete ran — query the search index directly, check the cache key is gone (not just that the write path stopped setting it), confirm a webhook/delete call actually fired to each third-party processor and that its response was checked rather than fired-and-forgotten. One real hedge worth naming honestly rather than treating as a bug: some search engines (Elasticsearch/Lucene-based ones) exclude a deleted document from query results immediately but don't physically purge it from the on-disk segment until a later merge — that's expected engine behavior, not a leak, but it means "no longer returns results" and "no longer exists on disk" are different claims, and a compliance answer that needs the second should say so rather than assuming the first proves it.
+
+## Report
+
+Per destination from step 1: whether the deletion path reaches it, which classification bucket it falls in (hard-delete / anonymize / beyond-use), and whether reach was verified by checking the store directly or only by reading the code. Lead with any destination in the hard-delete bucket that the deletion path doesn't reach at all — that's the actual erasure-request failure, not a nuance. List anonymize/backup-bucket destinations separately so they don't get flattened into the same severity as a live leak.
+
+## Boundaries
+
+- Not a DSAR intake/workflow tool and not legal advice — it doesn't handle the request form, the identity-verification step, or the statutory response clock. It answers one narrower, verifiable question: once a deletion is triggered, does it actually reach everywhere this codebase put a copy of the data. Say that's the boundary rather than certifying broader compliance.
+- Not `tombstone` — that skill proves an already-unused piece of surface is safe to remove; this skill audits an *active*, in-use deletion feature's completeness. Don't reach for this one to decide whether something can be deleted; reach for it to check whether "delete" already works.
+- Can't verify a third-party processor's own internals. It can confirm this codebase issues the deletion/suppression call and checks the response, not that the vendor actually purged their side — say that's outside what code review here can prove.
+- If the data map in step 1 can't be built with confidence (undocumented integrations, a data warehouse nobody on the team fully owns), say so rather than reporting a clean result against a map that's known to be incomplete.

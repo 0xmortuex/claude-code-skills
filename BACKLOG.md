@@ -347,10 +347,13 @@ a future run doesn't mistake stale unchecked bullets for open work.
   gap between "no longer returns results" and "no longer exists" that a compliance answer can
   wrongly conflate. README skills-table row + decision-table row + Examples-section note added,
   intro paragraph updated (twenty-one → twenty-two). `python tools/validate.py` passes 22/22.
-- [ ] Follow-up: `examples/erasure-guard.md` — the pack's newest skill is the only one without a
-  worked example. Suggested scenario: a "delete my account" endpoint that correctly cascades the
-  primary/FK tables but leaves the user findable in a search index and still receiving emails from
-  an ESP that was never sent a suppression call — walk all four steps (data map, code-path trace,
-  hard-delete/anonymize/beyond-use classification, verify-don't-just-review) to a report that leads
-  with the live search-index and ESP gaps rather than flattening them alongside the (compliant)
-  backup-retention finding.
+- [x] `examples/erasure-guard.md` — added 2026-08-30: the suggested "delete my account" scenario
+  (CASCADE + cache correctly reached, but a search index and an ESP marketing contact never wired
+  into the deletion path), walked through all four steps — data map found the two unreached stores
+  by grepping usage rather than trusting the deletion function, step 2 confirmed zero delete calls
+  exist for either, step 3 classified both as must-hard-delete while keeping the backup snapshot
+  and an orders-retention question as separate lower-severity notes rather than flattening
+  everything together, step 4 named the Elasticsearch segment-merge verification caveat — ending in
+  a BLOCK verdict that leads with the two live gaps — linked from `examples/README.md` and the main
+  README's Examples section, which now reads "every skill in the pack has one" again for all 22.
+  `python tools/validate.py` passes (22/22). All 22 skills now have a worked example.

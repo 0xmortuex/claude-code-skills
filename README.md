@@ -142,9 +142,10 @@ currently [git-rescue](examples/git-rescue.md),
 [devlog](examples/devlog.md),
 [readme-forge](examples/readme-forge.md),
 [blast-guard](examples/blast-guard.md),
-[rollout-guard](examples/rollout-guard.md), and
-[pref-guard](examples/pref-guard.md) — every skill but the newest,
-[erasure-guard](skills/erasure-guard/SKILL.md), has one so far.
+[rollout-guard](examples/rollout-guard.md),
+[pref-guard](examples/pref-guard.md), and
+[erasure-guard](examples/erasure-guard.md) — every skill in the pack has
+one so far.
 
 ## Contributing
 

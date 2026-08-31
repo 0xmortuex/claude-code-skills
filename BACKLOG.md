@@ -357,3 +357,47 @@ a future run doesn't mistake stale unchecked bullets for open work.
   a BLOCK verdict that leads with the two live gaps — linked from `examples/README.md` and the main
   README's Examples section, which now reads "every skill in the pack has one" again for all 22.
   `python tools/validate.py` passes (22/22). All 22 skills now have a worked example.
+
+## `import-guard` — SHIPPED (2026-08-31, verified novel)
+
+Backlog was fully checked off (everything above is done; `clean-exit` stays intentionally
+unchecked as a documented non-starter). Per the daily-agent rule for an empty/complete backlog,
+ran fresh novelty research rather than inventing busywork.
+
+- [x] **Session/credential revocation completeness — REJECTED, covered.** Researched as today's
+  primary candidate (does a "log out everywhere"/password-change/compromised-account flow actually
+  invalidate every session, JWT, refresh token, API key, OAuth grant, and device token). Found a
+  near-exact match, read in full rather than trusted from a blurb: `ghostshift-content/ARCHON` →
+  `squads/code-review/agents/siphon/skills/account-takeover-review/SKILL.md` has an explicit "What
+  Survives Security Actions" matrix — for every security action (password change, logout, admin
+  disable, email change, 2FA enable, role downgrade) it traces what's actually invalidated versus
+  what should be, across web session, remember-me cookie, reset/verification tokens, API tokens,
+  OAuth authorizations, and derived/child tokens. Independently corroborated by a second,
+  differently-shaped skill (`tomysh1337/openstarry-code` → `sso-logout-propagation/SKILL.md`, a
+  black-box pentest methodology covering near-identical destinations). Closed as covered; do not
+  re-research without a materially different angle than ARCHON's matrix.
+- [x] **`import-guard` — SHIPPED (verified novel).** Reviews a user-facing bulk import feature
+  (CSV/XLSX/JSON upload) for the failures that look like success: a bad row aborting or corrupting
+  the batch, a response that hides which rows actually failed, no dry-run before a large/risky
+  import, and a re-uploaded file duplicating already-imported rows instead of upserting. Verified
+  uncovered: extensive GitHub `filename:SKILL.md` search (`"bulk import" "partial failure"`,
+  `"CSV import" "row-level"`, `"dry run" "CSV" "import"`, `"bulk upload" "duplicate" "re-run"`)
+  found only implementation/how-to skills for specific integrations (`legioncodeinc/vibe-coding-tools`
+  → csv-xlsx-import-export-stinger, explicitly hands audit responsibility elsewhere;
+  `jeremylongshore/tons-of-skills-marketplace` → hubspot-bulk-migration, an operational runbook for
+  one specific migration) — no reusable audit/review skill for arbitrary bulk-import code. Also
+  confirmed distinct from this pack's own `backfill-pilot` (an engineer's internal ops script
+  against a live table, not a customer-facing upload feature) and `job-warden` (queue/cron
+  idempotency, not file-parsing/reporting correctness). Grounded in verifiable facts, not a
+  hypothetical: Salesforce's Bulk API treats partial success as documented normal behavior (a job
+  can report done while individual records failed — callers must separately fetch the failed-records
+  list, and a `FIELD_CUSTOM_VALIDATION_EXCEPTION` can roll back an entire chunk, not just the
+  offending record) and a real reported bug (`netbox-community/netbox` issue #11850) where a
+  CRLF/LF line-ending mismatch shifted CSV row alignment, silently dropping the first field of every
+  row. Added `skills/import-guard/SKILL.md`, README skills-table row + decision-table row, intro
+  paragraph updated (twenty-two → twenty-three), rejected-candidates list extended with today's
+  session-revocation dead end. `python tools/validate.py` passes 23/23.
+
+Follow-up for the next run: `examples/import-guard.md` doesn't exist yet — add a worked example
+next (README's Examples section already notes it's the one skill without one, rather than silently
+overclaiming "every skill has one").

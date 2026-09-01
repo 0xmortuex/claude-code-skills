@@ -398,6 +398,21 @@ ran fresh novelty research rather than inventing busywork.
   paragraph updated (twenty-two → twenty-three), rejected-candidates list extended with today's
   session-revocation dead end. `python tools/validate.py` passes 23/23.
 
-Follow-up for the next run: `examples/import-guard.md` doesn't exist yet — add a worked example
-next (README's Examples section already notes it's the one skill without one, rather than silently
-overclaiming "every skill has one").
+- [x] `examples/import-guard.md` — added 2026-09-01: a CSV contact-import bug report (re-uploading
+  a file after fixing rows duplicated ~280 already-good contacts) walked through all four steps —
+  per-row commits mean partial success is normal (step 1), the response hardcodes `success: True`
+  and discards the actual per-row exception so a customer gets a bare "23 skipped" count with
+  nothing to act on, plus a silent-corruption case where a shifted-column row writes garbage
+  without ever being counted as failed (step 2), no dry-run/validate-only path exists (step 3),
+  and `Contact.objects.create` with no unique constraint on `email` confirms the reported
+  duplicate-on-reupload bug (step 4) — ending in a BLOCK verdict that names both halves of the
+  trust-breaking bug (misreported success + unsafe re-upload) rather than just the one the ticket
+  happened to surface — linked from `examples/README.md` and the main README's Examples section,
+  which now reads "every skill in the pack has one" again for all 23. `python tools/validate.py`
+  passes (23/23). All 23 skills now have a worked example.
+
+Follow-up for the next run: none outstanding from this item. Per the 2026-08-23/26 notes, the
+pure backend/infra novelty space is likely saturated — the next run should either do a fresh,
+differently-angled novelty sweep (mobile/release space is now covered by `rollout-guard`; consider
+categories further from what's been mined) or continue drift-auditing tool-syntax claims as docs
+age, rather than assuming there's nothing left to check.

@@ -145,9 +145,9 @@ currently [git-rescue](examples/git-rescue.md),
 [readme-forge](examples/readme-forge.md),
 [blast-guard](examples/blast-guard.md),
 [rollout-guard](examples/rollout-guard.md),
-[pref-guard](examples/pref-guard.md), and
-[erasure-guard](examples/erasure-guard.md) — every skill but the newest
-(`import-guard`) has one so far.
+[pref-guard](examples/pref-guard.md),
+[erasure-guard](examples/erasure-guard.md), and
+[import-guard](examples/import-guard.md) — every skill in the pack has one.
 
 ## Contributing
 

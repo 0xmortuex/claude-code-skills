@@ -416,3 +416,37 @@ pure backend/infra novelty space is likely saturated — the next run should eit
 differently-angled novelty sweep (mobile/release space is now covered by `rollout-guard`; consider
 categories further from what's been mined) or continue drift-auditing tool-syntax claims as docs
 age, rather than assuming there's nothing left to check.
+
+## Drift audit — round 4 (2026-09-02): the five post-round-3 skills
+
+The round-3 drift audit (2026-08-19) verified every skill that existed at the time, but five
+skills shipped afterward (`blast-guard` 08-20, `rollout-guard` 08-24, `pref-guard` 08-27,
+`erasure-guard` 08-29, `import-guard` 08-31) and had never had a fact/tool-syntax verification
+pass. Read all five in full, identified every externally-checkable claim, and verified each
+against current primary/authoritative sources:
+
+- `rollout-guard`: Apple's fixed phased-release schedule (1%→2%→5%→10%→20%→50%→100% over 7 days,
+  pausable up to 30 days but not reshapeable/skippable) confirmed against Apple's own App Store
+  Connect Help page. Google Play's staged rollout (developer sets both percentage and pace
+  manually, unlike iOS's fixed schedule) confirmed against Play Console Help. No drift.
+- `pref-guard`: RFC 8058's `List-Unsubscribe`/`List-Unsubscribe-Post` one-click mechanism, and the
+  CAN-SPAM 10-business-day honor window, both confirmed against current sources (also noted, but
+  not a claim this skill makes so no fix needed: Gmail/Yahoo have required RFC 8058 compliance for
+  bulk senders since Feb 2024, which only strengthens the skill's framing). No drift.
+- `import-guard`: Salesforce Bulk API v1's documented behavior — a `FIELD_CUSTOM_VALIDATION_EXCEPTION`
+  can roll back an entire 200-record chunk while other record-level errors allow partial success
+  within the chunk — confirmed against Salesforce's own "Understanding Record Failures and
+  Rollbacks in Salesforce Bulk API V1" help article. No drift.
+- `blast-guard`, `erasure-guard`: re-read in full; neither makes an external tool-syntax or
+  versioned-API claim beyond what round-3-era entries already verified for `erasure-guard`
+  (Elasticsearch segment-merge/tombstone behavior, checked 2026-08-29) — nothing further to verify.
+
+No fixes needed; all 23 skills have now had at least one focused fact-verification pass since
+their most recent content change. `python tools/validate.py` passes (23/23, unchanged — no skill
+files were edited this round).
+
+Follow-up for the next run: no known drift anywhere in the pack right now. Pick between (1) a
+fresh, differently-angled novelty sweep for a new skill (see the "saturated" notes above for
+already-mined territory to avoid), or (2) the next drift-audit pass whenever a skill's cited
+tool/API changes in a way that would actually break its advice — there's no fixed schedule for
+that, so don't re-run this same check again purely for its own sake next time.

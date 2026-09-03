@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-three that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-four that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing, session/credential-revocation completeness — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, whether a "delete my account" feature actually reaches every place a user's data got copied to, and whether a bulk file-import feature handles a partly-bad file and a re-upload honestly.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing, session/credential-revocation completeness, A/B experiment integrity, internationalization/locale correctness, offline-sync conflict resolution — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, whether a "delete my account" feature actually reaches every place a user's data got copied to, whether a bulk file-import feature handles a partly-bad file and a re-upload honestly, and whether an API version being sunset actually gives real callers the notice and behavior a shutdown requires.
 
 ## The skills
 
@@ -33,6 +33,7 @@ Every skill added since the original five went through the same filter: research
 | **[pref-guard](skills/pref-guard/SKILL.md)** | Audits whether an ongoing notification system honors per-channel opt-outs, category preferences, suppression lists, and frequency caps as new send paths get added — including whether provider-side unsubscribe/bounce state actually syncs back to the app | "I unsubscribed but still got an email", adding a new notification type/channel, "do we actually respect opt-outs", "audit our notification preferences", "frequency cap" |
 | **[erasure-guard](skills/erasure-guard/SKILL.md)** | Audits whether a "delete my account" feature actually reaches every place a user's data got copied — replicas, caches, search indices, warehouses, third-party processors, backups — not just the primary table an ORM cascade covers | "does deleting a user actually delete everything", "GDPR erasure audit", "right to be forgotten", new data store added but the deletion pipeline might not cover it |
 | **[import-guard](skills/import-guard/SKILL.md)** | Reviews a user-facing bulk import (CSV/XLSX/JSON upload) for the failures that look like success: a bad row aborting or corrupting the batch, a response that hides which rows actually failed, and a re-uploaded file duplicating rows instead of upserting | "add a CSV import", "bulk upload", "import contacts from a spreadsheet", "what happens if the upload fails halfway", "will re-uploading duplicate everything" |
+| **[sunset-guard](skills/sunset-guard/SKILL.md)** | Reviews whether a deprecated/sunset public API version or endpoint actually gives real callers the notice and behavior a shutdown requires — headers on every serving path, a notice window that matches the promise, removal gated on measured usage, and a clear signal (not a silent failure) for clients still calling after cutover | "deprecating this API version", "sunsetting an endpoint", "is our deprecation notice enough", "can we remove this API version yet", "what happens to clients still calling the old endpoint" |
 
 ## Which skill do I want?
 
@@ -63,6 +64,7 @@ Not sure which one fires for your situation? Match the symptom:
 | A user says "I unsubscribed but you keep emailing me" or you're adding a new notification type/channel | [pref-guard](skills/pref-guard/SKILL.md) |
 | You're adding/reviewing a "delete my account" flow or a new data store might not be wired into it | [erasure-guard](skills/erasure-guard/SKILL.md) |
 | You're building a CSV/spreadsheet bulk import and aren't sure it handles bad rows or re-uploads safely | [import-guard](skills/import-guard/SKILL.md) |
+| You're retiring an API version/endpoint and want to know if callers are actually protected, not just notified | [sunset-guard](skills/sunset-guard/SKILL.md) |
 
 ## What makes these different
 
@@ -147,7 +149,8 @@ currently [git-rescue](examples/git-rescue.md),
 [rollout-guard](examples/rollout-guard.md),
 [pref-guard](examples/pref-guard.md),
 [erasure-guard](examples/erasure-guard.md), and
-[import-guard](examples/import-guard.md) — every skill in the pack has one.
+[import-guard](examples/import-guard.md) — every skill but the newest
+(`sunset-guard`) has one; that's next up.
 
 ## Contributing
 

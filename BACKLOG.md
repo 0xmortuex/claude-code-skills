@@ -450,3 +450,61 @@ fresh, differently-angled novelty sweep for a new skill (see the "saturated" not
 already-mined territory to avoid), or (2) the next drift-audit pass whenever a skill's cited
 tool/API changes in a way that would actually break its advice — there's no fixed schedule for
 that, so don't re-run this same check again purely for its own sake next time.
+
+## `sunset-guard` — SHIPPED (2026-09-03, verified novel); three fresh-angle candidates closed dead
+
+Backlog was fully checked off (the note above; `clean-exit` stays intentionally unchecked). Ran a
+fresh novelty sweep on angles not yet tried by any prior round — statistics-correctness and
+locale/sync-correctness domains, rather than re-mining the saturated backend/infra space — and
+verified findings by reading actual skill content, not just marketplace listings.
+
+- [x] **A/B test / experiment integrity audit — REJECTED, saturated.** Both plausible sub-angles
+  are already shipped and read in full: a post-hoc statistical audit of a completed experiment
+  (SRM, peeking, novelty effects, Simpson's-paradox segment checks — `shaan-ad/pm-os` →
+  `experiment-review/SKILL.md`, `roshanamurthur/experimentation-skills` →
+  `experimentation-platform/SKILL.md`) and a pre-launch implementation-bug catalog (non-deterministic
+  assignment hashing, cross-service assignment drift — `MehdiMhamdi/pm-os` → `experiment/SKILL.md`
+  explicitly gates "confirm exposure logging, metric computation, exclusion logic... before treating
+  the experiment as live"). Closed as covered; do not re-research without a materially narrower angle.
+- [x] **Internationalization/locale correctness audit — REJECTED, saturated.** Fetched
+  `mohitagw15856/pm-claude-skills` → `i18n-readiness-review/SKILL.md` in full: an 8-dimension
+  🟢/🟡/🔴 checklist (string externalization, formatting, pluralization, layout/expansion, encoding,
+  RTL, locale plumbing, assets) producing a prioritized fix list — near-exact match to what a fresh
+  skill would ship. Plus dozens of implementation-side i18n-checker skills. Closed as covered.
+- [x] **Offline-sync / conflict-resolution correctness audit — REJECTED, covered in substance.**
+  Dense build-side coverage naming the exact target bug (`SkillMedev/skills` →
+  `mobile-offline-sync`: "an ad-hoc retry-later queue that double-applies mutations, resurrects
+  deleted rows, and silently destroys one user's edits") plus the audit angle already appearing as
+  one lens inside broader multi-lens review skills (`henzard/AccountingV2` →
+  `weighsoft-deep-review/SKILL.md` names a "Replication/Sync correctness" lens covering convergence,
+  conflict resolution, delete-propagation; `adriaan-wessels/solo-ai-kit` → `overnight-review` has the
+  same bullet). Same shape as the `clean-exit`/RBAC rejections — real content exists, distributed
+  rather than packaged standalone. Closed as covered; do not re-research without a narrower angle.
+- [x] **`sunset-guard` — SHIPPED (verified novel).** Reviews whether an API version/endpoint being
+  deprecated or sunset for real external callers actually enforces the notice it announced: Sunset/
+  Deprecation headers wired into every serving path (not just the primary route), a notice window
+  that matches the promised policy, removal gated on measured caller usage rather than a calendar
+  date alone, and a clear terminal signal (410 + migration link, not a silent 500/timeout or worse a
+  silent behavior change) for clients still calling after cutover. Verified uncovered: searched
+  `filename:SKILL.md` for API deprecation/sunset/version-negotiation audit terms; every hit
+  (`majiayu000/claude-skill-registry` → `api/deprecation-notices`, `api-versioning-deprecation-planner`;
+  `curiositech/windags-skills` → `api-versioning-strategy`; `ralvarezdev/ralvaskills` →
+  `rest-api-architect`) is a how-to/design guide for setting up versioning and headers going
+  forward — fetched `deprecation-notices/SKILL.md` in full and confirmed it documents the 6-step
+  process and header syntax but has no audit checklist for validating an *existing* rollout (notice
+  window honesty, header coverage across aliases, usage-gated removal, still-calling-client
+  behavior). Distinct in-pack from `skew-check` (internal rolling-deploy skew between your own
+  services, not an external versioned contract) and `tombstone` (evidence an *internal, unreachable*
+  surface is dead, not a review of a *reachable* surface's shutdown behavior). Grounded in two
+  independently verified facts: PayPal's TLS 1.0/1.1 retirement (PCI-driven June 30, 2018 cutover,
+  announced well in advance — confirmed via theregister.com's contemporaneous coverage — where
+  merchant integrations that hadn't updated found payments simply stopped processing, the textbook
+  case of "notice given, but no code checking whether *this* caller actually acted on it before
+  cutover") and RFC 8594's `Sunset` header plus the separately drafted `Deprecation` header
+  (confirmed against rfc-editor.org and the current IETF httpapi working-group draft) as the real,
+  named mechanisms a codebase doing this correctly would actually emit. Added
+  `skills/sunset-guard/SKILL.md`, README skills-table row + decision-table row + intro paragraph
+  (twenty-three → twenty-four, rejected-candidates list extended with today's three dead ends).
+  `python tools/validate.py` passes 24/24. Follow-up: no worked example yet
+  (`examples/sunset-guard.md`) — add one next, matching the pattern every other skill in the pack
+  follows (the README's Examples section already notes this as the one gap).

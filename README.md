@@ -148,9 +148,9 @@ currently [git-rescue](examples/git-rescue.md),
 [blast-guard](examples/blast-guard.md),
 [rollout-guard](examples/rollout-guard.md),
 [pref-guard](examples/pref-guard.md),
-[erasure-guard](examples/erasure-guard.md), and
-[import-guard](examples/import-guard.md) — every skill but the newest
-(`sunset-guard`) has one; that's next up.
+[erasure-guard](examples/erasure-guard.md),
+[import-guard](examples/import-guard.md), and
+[sunset-guard](examples/sunset-guard.md) — every skill now has one.
 
 ## Contributing
 

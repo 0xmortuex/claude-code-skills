@@ -505,6 +505,17 @@ verified findings by reading actual skill content, not just marketplace listings
   named mechanisms a codebase doing this correctly would actually emit. Added
   `skills/sunset-guard/SKILL.md`, README skills-table row + decision-table row + intro paragraph
   (twenty-three → twenty-four, rejected-candidates list extended with today's three dead ends).
-  `python tools/validate.py` passes 24/24. Follow-up: no worked example yet
-  (`examples/sunset-guard.md`) — add one next, matching the pattern every other skill in the pack
-  follows (the README's Examples section already notes this as the one gap).
+  `python tools/validate.py` passes 24/24.
+
+- [x] **Worked example for `sunset-guard` (2026-09-04).** Added `examples/sunset-guard.md`: a
+  /v1/payments removal walked through all four of the skill's steps — an undocumented
+  `/v1/payments/bulk` alias carrying no Sunset/Deprecation headers at all while still serving
+  ~18k req/day of real partner traffic (step 1), an enforced notice window of ~6 weeks against a
+  promised 90 days because the headers shipped six weeks late relative to the public announcement
+  (step 2), a removal script gated purely on the calendar with no traffic check, which is what let
+  the still-hot bulk route go unnoticed (step 3), and a post-cutover plan that falls through to a
+  bare 404 instead of a 410 + migration `Link`, plus a webhook retry worker that calls the internal
+  function directly and would bypass removal entirely (step 4) — linked from `examples/README.md`
+  and the main README's Examples section, which now reads "every skill has one." No skill content
+  changed; `python tools/validate.py` still passes 24/24 (examples aren't part of what it checks,
+  but link/frontmatter consistency was checked by hand). Follow-up: none outstanding for this item.

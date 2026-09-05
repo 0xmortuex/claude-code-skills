@@ -519,3 +519,77 @@ verified findings by reading actual skill content, not just marketplace listings
   and the main README's Examples section, which now reads "every skill has one." No skill content
   changed; `python tools/validate.py` still passes 24/24 (examples aren't part of what it checks,
   but link/frontmatter consistency was checked by hand). Follow-up: none outstanding for this item.
+
+## Novelty sweep — round 4 (2026-09-05): 0 shipped, 3 candidates researched and rejected
+
+Backlog was fully checked off (`clean-exit` stays intentionally unchecked as a documented
+non-starter). Rather than re-mining the already-saturated backend/infra/mobile/stats/i18n/sync
+territory the 2026-08-23/26/09-03 sweeps closed out, tried a fresh vein — LLM/AI-application-
+specific correctness, since this pack itself targets Claude Code users who increasingly build
+LLM-integrated features. All three candidates researched today died against real, on-point prior
+art (verified by reading what the matches actually cover, not just a listing title):
+
+- [x] **Payment-webhook handling correctness (Stripe-style: signature verification, idempotency,
+  ordering) — REJECTED, covered.** `hookdeck/webhook-skills` ships dedicated, provider-specific
+  skills (Stripe/Shopify/GitHub included) covering exactly this: raw-body signature verification,
+  storing processed event IDs to dedupe retried deliveries, and handler-sequence/retry-logic
+  guidance. This is also just a narrower instance of "webhook/API delivery reliability," already
+  closed as saturated in the 2026-08-23 sweep — narrowing it to payment providers specifically
+  doesn't clear the bar, since the same idempotency-key/signature-verification mechanics apply
+  regardless of provider. Closed as covered; do not re-research without a payment-specific failure
+  mode neither source touches (none identified today).
+- [x] **LLM streaming-response consumption correctness (partial-JSON tool-call assembly, mid-stream
+  truncation at `max_tokens`, retry-vs-repair on a cut-off parameter) — REJECTED, covered.**
+  Anthropic's own `anthropics/skills` → `claude-api/SKILL.md` already documents the exact failure
+  modes this candidate targeted: buffering tool-call JSON by `event.index` since partial JSON can't
+  be parsed mid-stream, checking `stop_reason` to decide whether to retry with a higher `max_tokens`
+  or repair a truncated parameter, and sizing `max_tokens` against streaming vs. non-streaming
+  timeout budgets. A skill duplicating first-party platform documentation isn't a genuinely useful
+  addition. Closed as covered.
+- [x] **RAG pipeline audit (chunking, embedding staleness/model mismatch, retrieval anti-patterns,
+  production gaps) — REJECTED, covered.** `floflo777/claude-rag-skills` is an existing dedicated
+  pack doing exactly this — audits chunking problems, embedding problems (model mismatch, missing
+  caching, batch issues), retrieval anti-patterns, generation issues, and production gaps in an
+  existing RAG implementation. A second source (an "embedding set health" skill checking
+  normalization, dimensionality, near-duplicates, and corpus/query distribution mismatch) covers
+  the staleness angle specifically. Closed as covered.
+
+Confirms the pattern from the 2026-08-23/26 notes: broad sweeps over any single domain
+(backend/infra, mobile, stats/locale/sync, and now LLM-application correctness) keep re-finding
+saturation. `python tools/validate.py` still passes 24/24 (no skill files touched this run).
+
+Fresh, *unresearched* candidate angles for whoever picks this up next — deliberately narrower than
+today's three dead ends, and picked to sit outside every domain a sweep has already mined:
+
+- [ ] **Feature-flag kill-switch fail-open/fail-closed audit during flag-service outage or timeout.**
+  Distinct from PostHog's stale-flag-cleanup coverage (that's about flags nobody reads anymore, not
+  what happens when the flag *service* itself is unreachable) and from `rollout-guard` (mobile
+  app-store rollout mechanics, not a runtime flag-evaluation SDK). The real question: when the flag
+  provider times out or errors, does the calling code have an explicit, reasoned default (fail-open
+  for a kill switch meant to disable a broken feature is the wrong direction), or does it silently
+  inherit whatever the SDK's undocumented default happens to be? Unresearched — check LaunchDarkly/
+  Unleash/Flagsmith SDK docs for documented fallback-value behavior and search for existing audit
+  skills before writing anything.
+- [ ] **Multi-currency FX conversion correctness** (rate-lock timing — quote-time vs. settlement-time
+  rate — per-currency minor-unit/decimal-place handling since JPY/KRW have 0 decimals where USD/EUR
+  have 2, and display-currency vs. settlement-currency mismatches in refund/reporting paths).
+  Explicitly distinct from the 2026-08-23 money-rounding rejection, which was about largest-remainder
+  allocation and sum-of-parts invariants within a single currency — this is about conversion timing
+  and cross-currency precision, a different failure family. Unresearched — verify novelty before
+  writing.
+- [ ] **OAuth/SSO token-refresh race and failure-mode correctness** (concurrent requests triggering
+  duplicate refresh calls / a thundering herd against the identity provider, a failed refresh
+  silently falling back to a stale or null token instead of forcing re-auth, refresh-token rotation
+  invalidating a token that a second in-flight request still needed). Explicitly distinct from the
+  2026-08-31 session/credential-revocation rejection (`ARCHON`'s "what survives security actions"
+  matrix) — that's about whether logout/password-change *invalidates* tokens; this is about the
+  refresh flow's own concurrency and failure handling, a different bug class. Unresearched — verify
+  novelty before writing.
+
+## Note for the next run (2026-09-05)
+No known drift and no shippable skill found today. Pick between (1) researching one of the three
+fresh candidates just logged above (feature-flag fail-open/closed, FX conversion, OAuth refresh
+races) — narrower and unmined compared to what's already saturated, or (2) another drift-audit pass
+if a skill's cited tool/API has actually changed since its last verification. Don't re-run the
+backend/infra/mobile/stats/i18n/sync/LLM-application sweeps again from zero; they're confirmed
+saturated across four separate rounds now.

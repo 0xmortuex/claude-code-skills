@@ -593,3 +593,101 @@ races) — narrower and unmined compared to what's already saturated, or (2) ano
 if a skill's cited tool/API has actually changed since its last verification. Don't re-run the
 backend/infra/mobile/stats/i18n/sync/LLM-application sweeps again from zero; they're confirmed
 saturated across four separate rounds now.
+
+## Novelty sweep — round 5 (2026-09-06): all three round-4 leads researched and rejected
+
+Picked up the three fresh, narrower candidates the 2026-09-05 note left open. All three died
+against real, on-point prior art — verified by reading the actual matched skill content, not just
+a listing title or a bare keyword hit.
+
+- [x] **Feature-flag fail-open/fail-closed audit during provider outage/timeout — REJECTED,
+  covered.** `curiositech/windags-skills` → `feature-flag-rollout-strategist/SKILL.md` (also
+  mirrored as `curiositech/port-daddy`) states almost verbatim what this candidate wanted: "The
+  single most-overlooked pattern. The flag SDK MUST handle: Provider unreachable (network down)"
+  with a Default-behavior table. Independently, `Sir-chawakorn/sanook-cli` →
+  `feature-flags-rollout/SKILL.md` names the exact failure mode as a bullet: "**Fail-open release
+  flag.** Provider down → fallback is the *new, unfinished* path. Release fallback must be **off**
+  (old path); only ops defaults bias to \"on\"" — the precise "kill switch should fail toward safe,
+  not toward on" reasoning this candidate was built around. Closed as covered; do not re-research
+  without a materially different angle than these two.
+- [x] **OAuth/SSO token-refresh race and failure-mode correctness — REJECTED, covered.** The
+  concurrency half (thundering-herd refresh calls) is a named, documented pattern —
+  `jeremylongshore/tons-of-skills-marketplace` → `hubspot-auth/SKILL.md` (and sibling
+  `guidewire-install-auth/SKILL.md`, `podium-auth/SKILL.md` in the same pack): "Token-cache pattern
+  (neutralizes expiry storms) ... Reactive refresh on `401` is wrong ... creates a thundering herd
+  when all concurrent requests notice expiry at the same millisecond. Cache the token in-process
+  and refresh proactively at 80% of TTL, behind a single-flight gate so concurrent callers
+  serialize on one refresh," plus a documented `429` symptom from skipping the single-flight gate.
+  The rotation-invalidates-a-concurrent-request half is also named: `podium-auth/SKILL.md` §2
+  "Refresh-token rotation persistence (neutralizes silent rotation drift)" covers the crash-after-
+  refresh-before-persist case. Closed as covered — real, specific mechanics exist across a small
+  multi-skill pack, the same shape as the earlier RBAC/clean-exit rejections; do not re-research
+  without a failure mode neither source touches.
+- [x] **Multi-currency FX conversion correctness (rate-lock timing, minor-unit/decimal handling,
+  display-vs-settlement mismatch) — REJECTED, covered across all three sub-angles.** (a) Minor-unit/
+  decimal-place handling (JPY/KRW/VND zero-decimal vs USD/EUR two-decimal) is extremely
+  well-trodden: `rudderlabs/rudder-transformer` → `destination-payload-conventions/SKILL.md` cites
+  the exact bug ("39 of the 179 ISO-4217 currencies" aren't 2-decimal, so `× 100` misreports revenue
+  100× high or 10× low) plus independent hits in Stripe/Paddle/Meta-ads integration skills and a
+  DDD money-value-object skill. (b) Rate-lock timing (quote-time vs. settlement-time rate) is
+  covered by `0disoft/mustflow` → `payment-integrity-review/SKILL.md`: "Freeze the cart, order,
+  invoice, subscription period, product, price, discount, shipping, tax behavior, tax rate,
+  **exchange rate**, and entitlement snapshot used for the payment. Do not recalculate paid orders,
+  refunds, chargebacks, receipts, or tax documents from current product tables" — the exact
+  quote-vs-settlement freeze this candidate was scoped around. (c) Display-vs-settlement-currency
+  mismatch in refund/reporting paths falls out of the same freeze-the-snapshot principle. Closed as
+  covered; do not re-research without a sub-angle none of these three touch.
+
+Two bonus checks run today after the three planned candidates died (to avoid ending the sweep
+empty-handed without at least trying adjacent ground):
+- [x] **GDPR data-export/portability completeness audit (the "erasure-guard for exports" idea) —
+  REJECTED, covered.** `luokai0/ai-agent-skills-by-luo-kai` → `gdpr-data-export-tool/SKILL.md`
+  explicitly enumerates "every database, search index, object store, log store, analytics store,
+  and SaaS holding subject data" for a DSAR export pipeline — the same systems-completeness angle
+  `erasure-guard` uses for deletion, already shipped for exports by a different author. Closed as
+  covered.
+- [x] **Coupon/discount-code double-redemption race — REJECTED, covered as a named example inside
+  broader skills.** `conjure-3301/skills` → `race-conditions/SKILL.md` has a table row ("Coupon
+  redemption | 1 use per code | Code applied N times | Revenue loss per redeemed value");
+  `utkusen/sast-skills` → `sast-businesslogic` and a `TheSereyn/TheSereyn.Templates` OWASP
+  secure-code-review skill both name "coupon used after expiry" / "duplicate coupon" as canonical
+  TOCTOU business-logic findings. Same shape as the RBAC/clean-exit rejections — real coverage
+  exists as one example inside general race-condition/business-logic audit skills, too thin to
+  carry a standalone skill. Closed as covered.
+
+`python tools/validate.py` still passes 24/24 (no skill files touched this run — five candidates
+researched, zero shippable).
+
+Fresh, *unresearched* candidate angles for whoever picks this up next — deliberately outside the
+domains six rounds of sweeps have now mined (backend/infra, mobile, stats/i18n/sync,
+LLM-application, feature-flags, OAuth-refresh, FX, GDPR-export, coupon-races):
+
+- [ ] **Cookie-consent/tracking-gate enforcement audit.** Does the code actually block trackers,
+  pixels, and third-party scripts from firing until real consent is recorded — as opposed to a
+  consent banner that's cosmetic while GA/ad-pixel calls fire on page load regardless of the user's
+  choice? Distinct from `pref-guard` (notification opt-outs, not tracking/cookies) and from
+  `secret-spill`/`security-sweep` (not about credentials or exploits). Unresearched — check for
+  existing "consent management platform (CMP) audit" or "cookie compliance" skills before writing.
+- [ ] **Data-residency/region-routing enforcement audit.** Does a request actually get processed
+  and stored in the region its data-residency promise requires (EU user data staying in
+  eu-west-1), or can a retry/failover/cache path silently route it cross-region? Distinct from
+  `erasure-guard` (deletion completeness, not storage-location correctness) and from `tombstone`
+  (dead-code evidence, not routing). Unresearched — verify novelty before writing; this may overlap
+  general multi-region/failover audit content already found saturated in the 2026-08-23 sweep, so
+  check that overlap specifically first.
+- [ ] **Idempotency-key TTL vs. operation-duration mismatch.** A narrower slice than the
+  already-rejected generic "idempotency/retry review" (closed 2026-08-23 as a `job-warden`
+  duplicate): specifically, an idempotency key/record that expires (Redis TTL, dedupe-table
+  cleanup job) before a slow downstream operation it's guarding actually finishes, so a legitimate
+  retry after the TTL lapses is treated as a fresh request and double-executes. Unresearched —
+  confirm this specific TTL-vs-duration race isn't already inside `job-warden` Q1 or the
+  `credit-ledger-integrity-review`-style skills turned up today before writing anything.
+
+## Note for the next run (2026-09-06)
+Five more candidates died this round (feature-flags, OAuth-refresh, FX, GDPR-export, coupon-race),
+all against real on-point prior art — see citations above. The pure engineering-correctness-audit
+space this pack mines keeps producing well-covered ground on the first serious search; that's a
+signal to either (a) try one of the three fresh, narrower leads just logged (cookie-consent
+enforcement, data-residency routing, idempotency-TTL-vs-duration), or (b) accept the pack is close
+to functionally complete and shift to drift-auditing as tool/API docs age. Don't re-run any of the
+now nine confirmed-saturated domains from zero.

@@ -691,3 +691,36 @@ signal to either (a) try one of the three fresh, narrower leads just logged (coo
 enforcement, data-residency routing, idempotency-TTL-vs-duration), or (b) accept the pack is close
 to functionally complete and shift to drift-auditing as tool/API docs age. Don't re-run any of the
 now nine confirmed-saturated domains from zero.
+
+## `consent-guard` — SHIPPED (2026-09-07, verified novel)
+
+- [x] **Cookie-consent/tracking-gate enforcement audit — SHIPPED as `consent-guard`.** Picked up
+  the first of the three 2026-09-06 leads. Verified uncovered by reading actual matched content,
+  not just listings: `openclaw/skills` → `metehan777/gdpr-cookie-consent/SKILL.md` is an
+  implementation/scaffold skill (wires up a third-party banner-builder tool) rather than a
+  code-review audit of an *existing* integration; `github/awesome-copilot` →
+  `skills/gdpr-compliant/SKILL.md` (fetched in full — the same file already cited against the
+  2026-08-20 PII-audit rejection) lists "enable analytics/tracking without explicit consent" as one
+  anti-pattern-table bullet inside a broad GDPR checklist with, confirmed by direct inspection, "no
+  audit methodology for verifying that GA, Meta Pixel, GTM, or third-party scripts actually respect
+  consent state before execution" — no script-injection-order check, no SDK-bootstrap-vs-later-call
+  distinction, no fail-open/fail-closed check. Adlume's "Consent Mode Impact Review" Claude skill
+  works from GTM/GA4 exports and screenshots a marketer supplies — a different modality entirely
+  from source-code review. Standalone CLI tools exist for browser-side detection
+  (`diShine-digital-agency/cookie-audit`, `Slashgear/gdpr-cookie-scanner`) but aren't Claude skills
+  and don't do source-level review (script-tag placement relative to Consent Mode defaults, SDK
+  bootstrap vs. app-level call gating, SPA re-init, server-side CAPI bypass). Multiple further
+  targeted searches (consent-gate code review, third-party-script audit, dark-pattern detection)
+  turned up implementation tools and CMP products, not a competing audit skill. Distinct in-pack
+  from `pref-guard` (notification opt-outs/suppression lists, not cookies/trackers) and
+  `security-sweep`/`secret-spill` (not about exploits or credentials). Grounded in a real, common
+  failure mode rather than a hypothetical: Google's own Consent Mode documentation requires
+  `gtag('consent','default',...)` to run *before* `gtm.js` loads, or GTM briefly initializes tags
+  under an implicit "granted" state — the exact ordering bug this skill's Step 2 checks for. Added
+  `skills/consent-guard/SKILL.md`, README skills-table row + decision-table row + intro paragraph
+  (twenty-four → twenty-five). `python tools/validate.py` passes 25/25.
+
+Follow-up for the next run: `examples/consent-guard.md` doesn't exist yet — add a worked example
+next (a GTM/Meta-pixel-fires-before-consent-click scenario would exercise all four steps). The two
+other 2026-09-06 leads (data-residency/region-routing enforcement, idempotency-TTL-vs-duration
+mismatch) are still unresearched and open after that.

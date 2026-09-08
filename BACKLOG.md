@@ -720,7 +720,22 @@ now nine confirmed-saturated domains from zero.
   `skills/consent-guard/SKILL.md`, README skills-table row + decision-table row + intro paragraph
   (twenty-four → twenty-five). `python tools/validate.py` passes 25/25.
 
-Follow-up for the next run: `examples/consent-guard.md` doesn't exist yet — add a worked example
-next (a GTM/Meta-pixel-fires-before-consent-click scenario would exercise all four steps). The two
-other 2026-09-06 leads (data-residency/region-routing enforcement, idempotency-TTL-vs-duration
-mismatch) are still unresearched and open after that.
+- [x] `examples/consent-guard.md` — added 2026-09-08: a "does our cookie banner actually block
+  trackers" legal/engineering request walked through all four steps on a GTM + Meta Pixel + Hotjar
+  setup — step 1 finds the Hotjar session-replay snippet marketing added outside the analytics
+  team's review (missed by a grep for "pixel"/"gtag"), step 2 (invariant A) catches the
+  `gtag('consent','default',...)` call declared *after* the `gtm.js` `<script>` tag (violates
+  Google's documented ordering requirement), the Meta Pixel `fbq('init', ...)` bootstrap firing
+  fully ungated in a mount effect while only the app's own later `trackEvent()` calls are gated, and
+  the Hotjar snippet having no consent gating at all, step 3 (invariant B) catches `hasConsent()`
+  defaulting to `true` on a missing/unparseable consent record (fail-open in the highest-traffic
+  window — first load, before the visitor has answered) plus a missing consent-expiry check, and
+  step 4's report leads with the three ungated/misordered trackers before the narrower expiry gap —
+  ending in a BLOCK verdict — linked from `examples/README.md` and the main README's Examples
+  section, which now reads "every skill in the pack has one" again for all 25. `python
+  tools/validate.py` passes (25/25, unchanged — no skill files edited this run).
+
+Follow-up for the next run: none outstanding from this item. The two other 2026-09-06 leads
+(data-residency/region-routing enforcement, idempotency-TTL-vs-duration mismatch) are still
+unresearched and open — a fresh novelty sweep candidate for whoever picks this up next, alongside
+the option of another drift-audit pass if a skill's cited tool/API has changed.

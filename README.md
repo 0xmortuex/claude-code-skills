@@ -151,9 +151,9 @@ currently [git-rescue](examples/git-rescue.md),
 [rollout-guard](examples/rollout-guard.md),
 [pref-guard](examples/pref-guard.md),
 [erasure-guard](examples/erasure-guard.md),
-[import-guard](examples/import-guard.md), and
-[sunset-guard](examples/sunset-guard.md) — every skill but the newest
-(`consent-guard`) has one; a worked example for it is a good follow-up.
+[import-guard](examples/import-guard.md),
+[sunset-guard](examples/sunset-guard.md), and
+[consent-guard](examples/consent-guard.md) — every skill in the pack has one.
 
 ## Contributing
 

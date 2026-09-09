@@ -81,10 +81,14 @@ description: A pushy, trigger-rich description...
    rather than inventing plausible-sounding details.
 5. From the repo root, run `python tools/validate.py` — it checks frontmatter
    shape, naming, description length, the matching H1, and that your skill
-   is linked from `README.md`'s table with a resolving link. It must print
-   `OK` and exit 0 before you open a PR.
+   is linked from `README.md`'s table with a resolving link. It also checks
+   that every skill has a worked example at `examples/<name>.md`, linked
+   from both `examples/README.md` and `README.md`'s Examples section. It
+   must print `OK` and exit 0 before you open a PR.
 6. Add a row to the skills table in `README.md` (skill, what it does,
-   triggers on) — the validator will fail the build if you forget.
+   triggers on) and a worked example at `examples/<name>.md`, linked from
+   `examples/README.md` and `README.md`'s Examples section — the validator
+   will fail the build if you forget either.
 
 ## Opening the PR
 

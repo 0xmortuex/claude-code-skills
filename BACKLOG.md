@@ -739,3 +739,39 @@ Follow-up for the next run: none outstanding from this item. The two other 2026-
 (data-residency/region-routing enforcement, idempotency-TTL-vs-duration mismatch) are still
 unresearched and open — a fresh novelty sweep candidate for whoever picks this up next, alongside
 the option of another drift-audit pass if a skill's cited tool/API has changed.
+
+## Tooling: `examples/` consistency now enforced by `tools/validate.py` (2026-09-09)
+
+- [x] **Validator gap closed.** Every entry above that added a worked example ends with the same
+  manual line — "linked from `examples/README.md` and the main README's Examples section... `python
+  tools/validate.py` passes" — but the validator never actually checked any of that; it was
+  eyeballed by hand each time, 25 skills running. Extended `tools/validate.py` with
+  `validate_examples()`: for every skill, confirm `examples/<name>.md` exists, is linked from
+  `examples/README.md`, and is linked from `README.md`'s Examples section, in both directions
+  (a stray unlinked example file or a dangling link to a deleted one both fail the build now, not
+  just a missing file). Updated `CONTRIBUTING.md`'s two mentions of what the validator checks to
+  match. Verified the checks actually catch breakage, not just pass on the happy path: temporarily
+  removed `examples/tombstone.md` (caught: missing file + dangling links in both README files) and
+  added an untracked `examples/stray-test.md` (caught: unlinked in both places) — both restored/
+  removed after confirming, no leftover diff. `python tools/validate.py` passes clean (`OK: 25
+  skills valid and consistent with README.`) on the real tree. No skill content changed this run.
+  Follow-up: none outstanding — this was the one remaining manually-checked invariant in the
+  examples convention.
+
+  Housekeeping note: found HEAD detached one commit ahead of `main`/`origin/main` at session start
+  (a finished, already-message-complete `consent-guard` example commit from the previous run, dated
+  2026-09-08) — fast-forwarded `main` to it; turned out `origin/main` already had it too (an earlier
+  `git fetch` in this session returned a stale ref), so nothing was actually at risk, but worth
+  a fast-forward-and-recheck rather than assuming detached HEAD means lost work.
+
+  Honesty note on the two still-open 2026-09-06 leads (data-residency/region-routing enforcement,
+  idempotency-TTL-vs-duration mismatch): this run's environment had no GitHub code-search access
+  (`mcp__github` tools are scoped to this one repo, and using them to search across GitHub would
+  violate that scope) — only generic web search, which cannot reliably replicate the
+  `filename:SKILL.md` code-search novelty verification every prior sweep in this file relied on. A
+  shallow pass today found no obvious existing skill for either (see web search attempts this run,
+  not logged in detail since they weren't conclusive either way), but "generic search found nothing"
+  is not the same bar as the exhaustive-and-cited verification this pack requires before shipping a
+  new skill — so nothing was shipped rather than risk an insufficiently-verified skill. Whoever picks
+  these up next should confirm they have real GitHub code-search access before trusting a
+  "not found" result enough to write a skill against it.

@@ -10,11 +10,20 @@ Checks, per skill under ``skills/<name>/SKILL.md``:
   ceiling for skill descriptions);
 * the body has a top-level ``# <name>`` heading matching the skill.
 
-And two cross-file checks against ``README.md``:
+Cross-file checks against ``README.md``:
 
 * every skill directory is linked from the README, and
 * every ``skills/<name>/SKILL.md`` link in the README resolves to a real
   skill directory.
+
+And against the pack's convention that every skill has a worked example in
+``examples/<name>.md``, linked from both ``examples/README.md`` and the main
+``README.md``'s Examples section:
+
+* every skill has an ``examples/<name>.md`` file,
+* every such file is linked from ``examples/README.md``, and
+* every such file is linked from ``README.md``'s Examples section
+  (dangling links back to a nonexistent skill are flagged in both places).
 
 No third-party dependencies -- the frontmatter is simple ``key: value``
 lines, parsed directly. Exit status is 0 when everything passes and 1
@@ -29,11 +38,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "skills"
 README = ROOT / "README.md"
+EXAMPLES_DIR = ROOT / "examples"
+EXAMPLES_README = EXAMPLES_DIR / "README.md"
 
 NAME_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 DESCRIPTION_MIN = 40
 DESCRIPTION_MAX = 1024
 README_LINK = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md")
+README_EXAMPLE_LINK = re.compile(r"\(examples/([a-z0-9-]+)\.md\)")
+EXAMPLES_README_LINK = re.compile(r"\(([a-z0-9-]+)\.md\)")
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str] | None:
@@ -102,6 +115,36 @@ def validate_readme(skill_names: set[str], problems: list[str]) -> None:
             f"README.md links 'skills/{dangling}/SKILL.md' but no such skill exists")
 
 
+def validate_examples(skill_names: set[str], problems: list[str]) -> None:
+    for name in sorted(skill_names):
+        if not (EXAMPLES_DIR / f"{name}.md").is_file():
+            problems.append(f"{name}: missing examples/{name}.md")
+
+    existing = {
+        p.stem for p in EXAMPLES_DIR.glob("*.md") if p.stem != "README"
+    } if EXAMPLES_DIR.is_dir() else set()
+
+    if not EXAMPLES_README.is_file():
+        problems.append("examples/README.md is missing")
+    else:
+        linked = set(EXAMPLES_README_LINK.findall(
+            EXAMPLES_README.read_text(encoding="utf-8")))
+        for missing in sorted(existing - linked):
+            problems.append(f"examples/README.md does not link '{missing}.md'")
+        for dangling in sorted(linked - existing):
+            problems.append(
+                f"examples/README.md links '{dangling}.md' but no such file exists")
+
+    if README.is_file():
+        linked = set(README_EXAMPLE_LINK.findall(README.read_text(encoding="utf-8")))
+        for missing in sorted(existing - linked):
+            problems.append(
+                f"README.md Examples section does not link 'examples/{missing}.md'")
+        for dangling in sorted(linked - existing):
+            problems.append(
+                f"README.md links 'examples/{dangling}.md' but no such file exists")
+
+
 def main() -> int:
     if not SKILLS_DIR.is_dir():
         print(f"error: no skills directory at {SKILLS_DIR}", file=sys.stderr)
@@ -114,7 +157,9 @@ def main() -> int:
     problems: list[str] = []
     for skill_dir in skill_dirs:
         validate_skill(skill_dir, problems)
-    validate_readme({p.name for p in skill_dirs}, problems)
+    skill_names = {p.name for p in skill_dirs}
+    validate_readme(skill_names, problems)
+    validate_examples(skill_names, problems)
 
     if problems:
         for problem in problems:

@@ -662,26 +662,15 @@ Fresh, *unresearched* candidate angles for whoever picks this up next — delibe
 domains six rounds of sweeps have now mined (backend/infra, mobile, stats/i18n/sync,
 LLM-application, feature-flags, OAuth-refresh, FX, GDPR-export, coupon-races):
 
-- [ ] **Cookie-consent/tracking-gate enforcement audit.** Does the code actually block trackers,
-  pixels, and third-party scripts from firing until real consent is recorded — as opposed to a
-  consent banner that's cosmetic while GA/ad-pixel calls fire on page load regardless of the user's
-  choice? Distinct from `pref-guard` (notification opt-outs, not tracking/cookies) and from
-  `secret-spill`/`security-sweep` (not about credentials or exploits). Unresearched — check for
-  existing "consent management platform (CMP) audit" or "cookie compliance" skills before writing.
-- [ ] **Data-residency/region-routing enforcement audit.** Does a request actually get processed
-  and stored in the region its data-residency promise requires (EU user data staying in
-  eu-west-1), or can a retry/failover/cache path silently route it cross-region? Distinct from
-  `erasure-guard` (deletion completeness, not storage-location correctness) and from `tombstone`
-  (dead-code evidence, not routing). Unresearched — verify novelty before writing; this may overlap
-  general multi-region/failover audit content already found saturated in the 2026-08-23 sweep, so
-  check that overlap specifically first.
-- [ ] **Idempotency-key TTL vs. operation-duration mismatch.** A narrower slice than the
-  already-rejected generic "idempotency/retry review" (closed 2026-08-23 as a `job-warden`
-  duplicate): specifically, an idempotency key/record that expires (Redis TTL, dedupe-table
-  cleanup job) before a slow downstream operation it's guarding actually finishes, so a legitimate
-  retry after the TTL lapses is treated as a fresh request and double-executes. Unresearched —
-  confirm this specific TTL-vs-duration race isn't already inside `job-warden` Q1 or the
-  `credit-ledger-integrity-review`-style skills turned up today before writing anything.
+- [x] **Cookie-consent/tracking-gate enforcement audit — SHIPPED as `consent-guard`
+  (2026-09-07).** Checkbox here was left stale after that entry was written further down this file
+  — fixed today (2026-09-10), no further action. See the `consent-guard` section below for citations.
+- [ ] **Data-residency/region-routing enforcement audit.** Still open — see the 2026-09-10 research
+  round below for a deeper (but not code-search-verified) pass: LIKELY NOVEL on generic search, not
+  yet cleared to ship. Do not re-research from zero; pick up where that entry leaves off.
+- [x] **Idempotency-key TTL vs. operation-duration mismatch — REJECTED, covered.** See the
+  2026-09-10 research round below for the citation. Closed; do not re-research without a sub-angle
+  the matched skill doesn't touch.
 
 ## Note for the next run (2026-09-06)
 Five more candidates died this round (feature-flags, OAuth-refresh, FX, GDPR-export, coupon-race),
@@ -775,3 +764,66 @@ the option of another drift-audit pass if a skill's cited tool/API has changed.
   new skill — so nothing was shipped rather than risk an insufficiently-verified skill. Whoever picks
   these up next should confirm they have real GitHub code-search access before trusting a
   "not found" result enough to write a skill against it.
+
+## Novelty research — round 6 (2026-09-10): idempotency-TTL closed covered; data-residency still not cleared
+
+Same environment constraint as 2026-09-09 (no GitHub code-search — `mcp__github` tools stay scoped
+to this one repo per this session's access rules; only generic WebSearch/WebFetch available). Rather
+than repeat the same shallow pass and defer again, went deeper this round: fetched and read the
+actual content (not just listings) of several major packs — `obra/superpowers`, `anthropics/skills`,
+`addyosmani/agent-skills` (~77k★), `AlexZio00/sovereign-skills` (a 20-skill governance/audit pack
+whose name suggested a plausible match), and `Sushegaad/Claude-Skills-Governance-Risk-and-Compliance`
+(the broad GRC pack already cited elsewhere in this file) — before reaching a verdict on each of the
+two open 2026-09-06 leads.
+
+- [x] **Idempotency-key TTL vs. operation-duration mismatch — REJECTED, covered.**
+  `addyosmani/agent-skills` → `skills/api-and-interface-design/SKILL.md` (fetched in full) covers
+  this exact narrow slice, not just generic idempotency advice: its Idempotency section states
+  "Keys must outlive every path that can re-deliver the same intent, including a dead-letter queue
+  replayed a week later... A 24-hour key TTL behind a 7-day DLQ is a duplicate waiting to happen,"
+  lists "A key retention window shorter than the longest path that can re-deliver the request" as a
+  named red flag, and separately covers the in-flight-duplicate case ("The first request is still
+  running when the second arrives... Never let the second caller through because the first 'seems
+  stuck'") with a concrete Reject/Wait/Return-pending decision table. Both halves of the candidate
+  (TTL expires before redelivery window closes; TTL/dedupe record doesn't survive as long as the
+  guarded operation takes) are covered almost line-for-line by a single prominent, actively
+  maintained pack. Closed as covered — a fresh write here would duplicate this skill, not extend
+  `job-warden`. Do not re-research without a sub-angle `api-and-interface-design` doesn't touch.
+- [ ] **Data-residency/region-routing enforcement audit — researched deeper, still not cleared to
+  ship.** Verdict from this round: *likely* novel on the sources actually reachable, but not
+  verified to the pack's own stated bar, so still not shipped. What was checked and came back empty
+  (read in full, not just titles): `obra/superpowers`'s full skill list; `anthropics/skills`'s
+  category listing; `AlexZio00/sovereign-skills` (20 governance/audit skills — explicitly confirmed
+  none address residency, region routing, geo-fencing, cross-region replication, or failover);
+  `Sushegaad/Claude-Skills-Governance-Risk-and-Compliance` (its UAE/Saudi GRC skills *name* the legal
+  requirement — e.g. "government-data in-Kingdom residency" — but supply no code-level audit method:
+  no mention of caches, replicas, failover, CDN, or logging pipelines); `addyosmani/agent-skills`'s
+  `security-and-hardening/SKILL.md` (one operating-rule sentence — "Data-residency and rules differ
+  by user location; make the policy a configurable boundary, not an assumption" — a compliance
+  principle, not an audit methodology for the specific leak vectors: cross-region cache, DR failover,
+  CDN edge, cross-region read-replica fallback, multi-region queue consumers, single-region logging/
+  analytics pipeline). GitHub's own code search (`github.com/search?type=code`) returned nothing to
+  an unauthenticated fetch, the same wall the 2026-09-09 run hit — so a `filename:SKILL.md`-style
+  sweep, which is what actually killed most other candidates in this file's history, could not be run.
+  **Verdict: still open, not ship-ready.** This is meaningfully more verification than the
+  2026-09-09 "shallow pass," but the pack's own bar (exhaustive search including code search) isn't
+  met by web search alone, and every prior near-miss in this file (`clean-exit`, RBAC, the
+  money-rounding candidates) turned out to be covered once someone actually ran a code search — so
+  treat this as *provisionally* promising, not verified. If grounding facts help whoever picks this
+  up next: Zoom's April 2020 China-routing incident (Citizen Lab, "Move Fast and Roll Your Own
+  Crypto," 2020-04-03; corroborated by contemporaneous press) is a real, well-documented case of a
+  capacity-driven failover silently routing non-China call traffic and encryption keys through
+  Beijing servers — the exact "DR/failover path lacking residency awareness" scenario this candidate
+  targets. A second candidate fact — that AWS S3 Cross-Region Replication's own documentation flags
+  the replication path itself as a residency caveat — came back only as a search-summary paraphrase
+  this round (egress to `docs.aws.amazon.com` didn't resolve) and must be re-verified against the
+  primary AWS doc directly before citing it in a shipped skill.
+
+Two things any future run on this repo should internalize from three consecutive rounds hitting the
+same wall (2026-09-06, 09-09, 09-10): (1) this environment's GitHub access is deliberately scoped to
+this one repo and that scoping is a hard rule, not a bug to work around — don't attempt to broaden it
+yourself; (2) if a future session *does* have real GitHub code-search (a different environment
+config, or a human running the sweep manually), a `filename:SKILL.md` search for
+`"data residency" OR "data sovereignty"` plus `"region" "failover"` is the single highest-value next
+step to either clear or kill this candidate — everything reachable by web search alone has now been
+checked twice. `python tools/validate.py` still passes 25/25 (no skill files touched this run).

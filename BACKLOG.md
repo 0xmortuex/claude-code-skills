@@ -561,30 +561,19 @@ saturation. `python tools/validate.py` still passes 24/24 (no skill files touche
 Fresh, *unresearched* candidate angles for whoever picks this up next — deliberately narrower than
 today's three dead ends, and picked to sit outside every domain a sweep has already mined:
 
-- [ ] **Feature-flag kill-switch fail-open/fail-closed audit during flag-service outage or timeout.**
-  Distinct from PostHog's stale-flag-cleanup coverage (that's about flags nobody reads anymore, not
-  what happens when the flag *service* itself is unreachable) and from `rollout-guard` (mobile
-  app-store rollout mechanics, not a runtime flag-evaluation SDK). The real question: when the flag
-  provider times out or errors, does the calling code have an explicit, reasoned default (fail-open
-  for a kill switch meant to disable a broken feature is the wrong direction), or does it silently
-  inherit whatever the SDK's undocumented default happens to be? Unresearched — check LaunchDarkly/
-  Unleash/Flagsmith SDK docs for documented fallback-value behavior and search for existing audit
-  skills before writing anything.
-- [ ] **Multi-currency FX conversion correctness** (rate-lock timing — quote-time vs. settlement-time
-  rate — per-currency minor-unit/decimal-place handling since JPY/KRW have 0 decimals where USD/EUR
-  have 2, and display-currency vs. settlement-currency mismatches in refund/reporting paths).
-  Explicitly distinct from the 2026-08-23 money-rounding rejection, which was about largest-remainder
-  allocation and sum-of-parts invariants within a single currency — this is about conversion timing
-  and cross-currency precision, a different failure family. Unresearched — verify novelty before
-  writing.
-- [ ] **OAuth/SSO token-refresh race and failure-mode correctness** (concurrent requests triggering
-  duplicate refresh calls / a thundering herd against the identity provider, a failed refresh
-  silently falling back to a stale or null token instead of forcing re-auth, refresh-token rotation
-  invalidating a token that a second in-flight request still needed). Explicitly distinct from the
-  2026-08-31 session/credential-revocation rejection (`ARCHON`'s "what survives security actions"
-  matrix) — that's about whether logout/password-change *invalidates* tokens; this is about the
-  refresh flow's own concurrency and failure handling, a different bug class. Unresearched — verify
-  novelty before writing.
+- [x] **Feature-flag kill-switch fail-open/fail-closed audit during flag-service outage or timeout —
+  REJECTED, covered.** Resolved in the round-5 sweep below (2026-09-06): `curiositech/windags-skills`
+  and `Sir-chawakorn/sanook-cli` both name this exact fail-open-vs-fail-closed default-behavior check.
+  Checkbox here was left stale after that entry was written — fixed today (2026-09-11), no further
+  action.
+- [x] **Multi-currency FX conversion correctness — REJECTED, covered.** Resolved in the round-5 sweep
+  below (2026-09-06) across all three sub-angles (minor-unit handling, rate-lock timing,
+  display-vs-settlement mismatch) — see that entry for citations. Checkbox here was left stale after
+  that entry was written — fixed today (2026-09-11), no further action.
+- [x] **OAuth/SSO token-refresh race and failure-mode correctness — REJECTED, covered.** Resolved in
+  the round-5 sweep below (2026-09-06): `jeremylongshore/tons-of-skills-marketplace`'s auth-pack
+  skills name both the thundering-herd single-flight fix and the rotation-persistence race. Checkbox
+  here was left stale after that entry was written — fixed today (2026-09-11), no further action.
 
 ## Note for the next run (2026-09-05)
 No known drift and no shippable skill found today. Pick between (1) researching one of the three
@@ -827,3 +816,34 @@ config, or a human running the sweep manually), a `filename:SKILL.md` search for
 `"data residency" OR "data sovereignty"` plus `"region" "failover"` is the single highest-value next
 step to either clear or kill this candidate — everything reachable by web search alone has now been
 checked twice. `python tools/validate.py` still passes 25/25 (no skill files touched this run).
+
+## Novelty research — round 7 (2026-09-11): data-residency access wall confirmed structural, not transient
+
+Picked up the one open thread (data-residency/region-routing enforcement audit) rather than
+re-mining closed territory. Also fixed three stale checkboxes above (feature-flag fail-open,
+FX conversion, OAuth-refresh) that the round-5 sweep (2026-09-06) had already resolved but never
+marked `[x]` in their original bullets — same bookkeeping slip the `erasure-guard` entry fixed for
+round-3 items.
+
+On data-residency itself: tried a genuinely different angle than the two prior rounds (Google-dork
+style `site:github.com "SKILL.md" "data residency"` web searches instead of GitHub's own search UI,
+plus direct fetches of `docs.aws.amazon.com`, `github.com/.../blob/...`, and `api.github.com/repos/...`
+to re-check whether the egress block noted 2026-09-09/09-10 was specific to the AWS docs domain or
+broader). Result: it's broader — `docs.aws.amazon.com` returns an explicit `EGRESS_BLOCKED` proxy
+error, while plain `github.com` blob URLs and `api.github.com` contents endpoints both return
+404/403 to WebFetch even for a real, search-confirmed-to-exist file. One web search did surface a
+real candidate worth noting for whoever has code-search next: `openclaw/skills` →
+`skills/1kalin/afrexai-ai-governance/SKILL.md` has a "Data residency & sovereignty" section per a
+search-result snippet, but it could not be fetched in full to judge whether it's a checklist question
+("where is data processed? stored? can you choose region?") or an actual audit method — same
+undecidable state as the GRC packs already rejected in the 2026-08-20 PII-audit and 2026-09-10
+rounds, which is the way to bet given every other GRC-pack hit in this file's history turned out to
+be checklist-only.
+
+**Conclusion: this isn't a search-technique problem, it's a structural environment limit.** Three
+consecutive rounds (09-09, 09-10, 09-11) using three different fetch strategies all hit the same
+wall. Do not spend further budget on this candidate via WebFetch/WebSearch — it will not clear the
+pack's own exhaustive-search bar from this environment. Leave it open (not rejected — it may still
+be genuinely novel) but parked until a session with real GitHub code search picks it up; the
+`filename:SKILL.md` query already logged above is still the right first move for that session.
+`python tools/validate.py` still passes 25/25 (no skill files touched this run).

@@ -847,3 +847,59 @@ pack's own exhaustive-search bar from this environment. Leave it open (not rejec
 be genuinely novel) but parked until a session with real GitHub code search picks it up; the
 `filename:SKILL.md` query already logged above is still the right first move for that session.
 `python tools/validate.py` still passes 25/25 (no skill files touched this run).
+
+## Novelty sweep — round 8 (2026-09-12): 2 candidates rejected as saturated, 1 parked (same access wall)
+
+Backlog was fully checked off except `clean-exit` (documented non-starter) and data-residency
+(parked, see round 6/7 above — this session has the same one-repo-scoped GitHub access as 09-09
+through 09-11, no code search). Rather than re-touch either, picked three fresh candidates outside
+the eleven domains already mined (backend/infra, mobile, stats/i18n/sync, LLM-application,
+feature-flags, OAuth-refresh, FX, GDPR-export, coupon-races, cookie-consent, data-residency,
+idempotency-TTL) and researched each via WebSearch, reading actual matched content rather than
+titles alone:
+
+- [x] **Accessibility (WCAG) source-code review audit — REJECTED, saturated.** Multiple dedicated,
+  actively-maintained packs do exactly this as a code-review methodology (not just a scaffold or a
+  browser-extension checklist): `rampstackco/claude-skills` → `skills/accessibility-audit/SKILL.md`
+  ("comprehensive WCAG accessibility audit covering perceivable, operable, understandable, and
+  robust principles"), `airowe/claude-a11y-skill` (axe-core runtime + jsx-a11y static modes for
+  React/Next.js CI), and `joedevon/a11y-skills` (18 specialist reference files — ARIA, forms,
+  keyboard nav, contrast, tables, modals, live regions, alt text, data viz, email templates — ported
+  from `Community-Access/accessibility-agents`, enforcing WCAG 2.2 AA across HTML/JSX/Vue/Svelte/
+  Astro/CSS/Tailwind). This is denser, more specific coverage than this pack would produce fresh.
+  Closed as covered; do not re-research without a WCAG sub-angle none of these three touch.
+- [x] **License compliance / SBOM audit for dependencies — REJECTED, saturated.** A dedicated
+  `license-compliance` skill (via lobehub's marketplace listing) "automates open source license
+  discovery, compatibility analysis, and obligations tracking... scans source files and package
+  manifests, generates SBOMs/SPDX outputs, identifies copyleft and permissive licenses, and flags
+  incompatible license combinations" — the exact scope this candidate proposed. Independently,
+  `rampstackco/claude-skills` → `dependency-management/SKILL.md` names "No license audit. Project
+  ships with a GPL dependency in a commercial product" as one of its own flagged anti-patterns,
+  confirming the gap is already on other packs' radar too. Closed as covered.
+- [ ] **Audit-log / audit-trail completeness review (does every sensitive/mutating action actually
+  get logged, not just the ones a developer remembered) — inconclusive, parked on the same access
+  wall as data-residency.** Unlike the two rejections above, WebSearch did not surface a dedicated
+  Claude skill doing this as a source-code review method (map every state-mutating endpoint/admin
+  action, check whether a logging call sits on that path, flag ones that don't). What it did surface
+  is adjacent but distinct: generic security-review packs (`getsentry/skills` →
+  `security-review/SKILL.md`, `cloudflare/security-audit-skill`) that touch logging only as one
+  bullet among many (e.g. checking logs *don't* leak sensitive data — the opposite direction from
+  this candidate, and already this pack's `secret-spill`/`security-sweep` territory), plus generic
+  compliance-writeup content (audit-trail-design best-practice blog posts, not review methodology).
+  No confirmed match, but also not the exhaustive `filename:SKILL.md`-style code search this pack's
+  own bar requires before shipping — the same structural gap blocking data-residency (this session's
+  GitHub access is scoped to this one repo only, no code search). **Do not ship without that search.**
+  Left open for a session with real GitHub code search; the right first query is
+  `filename:SKILL.md "audit log" ("completeness" OR "every mutation" OR "admin action")`.
+
+`python tools/validate.py` still passes 25/25 (no skill files touched this run — three candidates
+researched, zero shippable, one parked).
+
+## Note for the next run (2026-09-12)
+Two candidates are now parked on the identical structural wall: data-residency/region-routing
+(round 6/7) and audit-log/audit-trail completeness (this round). Both need real GitHub code search
+to clear or kill — do not keep re-attempting them with WebSearch alone, it won't move either past
+"inconclusive." If this environment ever has broader GitHub access, running both queries logged
+above is the single highest-value next step. Otherwise, either continue novelty sweeps in
+still-unmined domains, or do a drift-audit pass if a skill's cited tool/API has changed since its
+last verification (none known to have changed as of this date).

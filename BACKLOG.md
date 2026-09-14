@@ -903,3 +903,72 @@ to clear or kill — do not keep re-attempting them with WebSearch alone, it won
 above is the single highest-value next step. Otherwise, either continue novelty sweeps in
 still-unmined domains, or do a drift-audit pass if a skill's cited tool/API has changed since its
 last verification (none known to have changed as of this date).
+
+## Novelty research — round 9 (2026-09-14): subscription-proration candidate found, parked on the same access wall
+
+Confirmed this session has the identical constraint noted in rounds 6-9 (2026-09-09 through
+2026-09-12): `mcp__github` tools are scoped to this one repo only, no cross-repo code search, and
+several documentation/marketplace domains (`docs.stripe.com`, `www.chargebee.com`,
+`dodopayments.com`, `flexprice.io`, `lobehub.com`, `skills.lc`, `www.remoteopenclaw.com`) returned
+`EGRESS_BLOCKED` or 404 to WebFetch this round. Rather than re-touch the two already-parked
+candidates (no new access materialized), tried a fresh domain: **subscription plan-change/proration
+billing correctness** — does an existing codebase's upgrade/downgrade/cancel path actually compute
+proration correctly (unused-time credit, overlap-period double-charging, cancellation-policy timing
+matching what's documented, no corruption on rapid consecutive changes) — distinct from this pack's
+already-closed money candidates (`money-rounding` = largest-remainder/decimal-precision allocation;
+`FX conversion` = rate-lock/snapshot-freeze timing) and from `financial-integrity`-style accounting-
+invariant skills, none of which touch subscription-lifecycle plan-change math specifically.
+
+- [ ] **Subscription plan-change/proration billing correctness audit — inconclusive, parked on the
+  access wall, not rejected.** What was checked and read in full (not just titles): `affaan-m/
+  everything-claude-code` → `skills/customer-billing-ops/SKILL.md` is customer-support operational
+  triage (classify/refund/cancel), not a code-review audit — its only proration mention is a
+  guardrail telling a support operator to "verify the contract shape before taking action," no
+  method for checking the underlying calculation; `Claude-Code-Community-Ireland/claude-code-
+  resources` → `skills/general/billing-automation/skill.md` is an explicit build-a-billing-system
+  scaffold ("Define plans, pricing, billing intervals, and proration rules... Implement invoicing,
+  payments, retries, and dunning workflows"), not a review method, and contains no detection
+  instructions for double-charging, missing credit, or cancel-and-recreate history loss;
+  `majiayu000/claude-skill-registry` → `skills/data/financial-integrity/SKILL.md` (already cited
+  elsewhere in this file against the money-rounding rejection) covers decimal-precision storage,
+  property-based invariant testing, immutable append-only ledgers, and multi-currency snapshotting —
+  confirmed, on a full re-fetch, to contain nothing about subscription proration, upgrade/downgrade
+  overlap, or plan-change race conditions. Two candidates surfaced by search looked more promising
+  by title (`eronred/aso-skills` → `subscription-lifecycle/SKILL.md`, described in a search snippet
+  as covering "trial → paid → renewal → cancellation recovery → win-back"; `stateset/icommerce-
+  skills` → `skills/commerce/subscriptions/SKILL.md`) but neither could be fetched — both the
+  marketplace mirror pages and guessed raw GitHub paths 404'd or were egress-blocked — so they are
+  genuinely unresolved, not cleared. Grounding facts verified directly (both fetched successfully,
+  primary sources, not paraphrased from a blocked blog): `killbill/killbill` issue #698 (Kill Bill,
+  an open-source subscription billing platform) — the documented `END_OF_TERM` cancellation policy
+  is supposed to cancel "in such a way that we do not generate credit for the account (no
+  proration)," but the account-level CANCELLATION state actually cancels all subscriptions
+  immediately and generates prorated credit anyway, i.e. the code silently ignores its own
+  documented no-proration timing rule; and `anthropics/claude-code` issue #51168 — a Pro Annual
+  subscriber's redemption of a promotional credit voucher triggered a silent plan downgrade (Pro
+  Annual → Max monthly) plus a cascade of autonomously-generated, unauthorized duplicate invoices for
+  gift-subscription products, i.e. a plan-change/credit-application interaction corrupting billing
+  state with no user action. **Verdict: promising and likely narrower-than-`financial-integrity`, but
+  not verified to this pack's own bar** (the exhaustive code search that killed most other candidates
+  in this file's history, and that the two already-parked items are explicitly waiting on) — two
+  plausible near-misses couldn't be fetched to confirm or rule out. Do not ship without either (a) a
+  session with real cross-repo GitHub code search resolving the `aso-skills`/`icommerce-skills`
+  question, or (b) confirming those two domains are permanently unreachable and re-verifying via a
+  different route. The right first query for a code-search-capable session:
+  `filename:SKILL.md "proration" ("upgrade" OR "downgrade" OR "plan change")`.
+
+`python tools/validate.py` still passes 25/25 (no skill files touched this run — one candidate
+researched, parked, zero shippable).
+
+## Note for the next run (2026-09-14)
+Three candidates are now parked on the same structural access wall: data-residency/region-routing
+(round 6/7), audit-log/audit-trail completeness (round 8), and subscription plan-change/proration
+correctness (this round, with two specific unresolved near-misses — `eronred/aso-skills` →
+`subscription-lifecycle` and `stateset/icommerce-skills` → `skills/commerce/subscriptions` — flagged
+for a code-search-capable session to check first, before re-researching from zero). Don't re-attempt
+any of the three with WebSearch alone; it has been tried repeatedly and reliably stalls at
+"inconclusive," and several documentation/marketplace domains are consistently egress-blocked in
+this environment regardless of query. If a future session has broader GitHub access, resolving these
+three (queries logged in each entry above) is the single highest-value next step. Otherwise, continue
+novelty sweeps in still-unmined domains, or do a drift-audit pass if a skill's cited tool/API has
+changed since its last verification (none known to have changed as of this date).

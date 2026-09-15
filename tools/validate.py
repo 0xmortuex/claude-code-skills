@@ -12,9 +12,14 @@ Checks, per skill under ``skills/<name>/SKILL.md``:
 
 Cross-file checks against ``README.md``:
 
-* every skill directory is linked from the README, and
-* every ``skills/<name>/SKILL.md`` link in the README resolves to a real
-  skill directory.
+* every skill directory is linked from the "## The skills" table, and
+  every ``skills/<name>/SKILL.md`` link in that table resolves to a real
+  skill directory; and
+* the same, separately, for the "## Which skill do I want?" decision
+  table -- a skill can be linked from the skills table but missing its own
+  decision-table row (or vice versa), and the two were previously checked
+  as one pooled set of links, which let either table drift out of sync
+  with the skill list unnoticed.
 
 And against the pack's convention that every skill has a worked example in
 ``examples/<name>.md``, linked from both ``examples/README.md`` and the main
@@ -47,6 +52,20 @@ DESCRIPTION_MAX = 1024
 README_LINK = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md")
 README_EXAMPLE_LINK = re.compile(r"\(examples/([a-z0-9-]+)\.md\)")
 EXAMPLES_README_LINK = re.compile(r"\(([a-z0-9-]+)\.md\)")
+
+SKILLS_TABLE_HEADING = "## The skills"
+DECISION_TABLE_HEADING = "## Which skill do I want?"
+
+
+def extract_section(text: str, heading: str) -> str | None:
+    """Return the body between ``heading`` and the next top-level ``##``
+    heading (or end of file), or None if ``heading`` isn't found."""
+    start = text.find(heading)
+    if start == -1:
+        return None
+    start += len(heading)
+    next_heading = text.find("\n## ", start)
+    return text[start:] if next_heading == -1 else text[start:next_heading]
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str] | None:
@@ -103,16 +122,29 @@ def validate_skill(skill_dir: Path, problems: list[str]) -> None:
         problems.append(f"{name}: body has no '# {name}' top-level heading")
 
 
+def validate_readme_section(
+    text: str, heading: str, skill_names: set[str], problems: list[str],
+) -> None:
+    section = extract_section(text, heading)
+    if section is None:
+        problems.append(f"README.md is missing the '{heading}' section")
+        return
+    linked = set(README_LINK.findall(section))
+    for missing in sorted(skill_names - linked):
+        problems.append(f"README.md '{heading}' section does not link skill '{missing}'")
+    for dangling in sorted(linked - skill_names):
+        problems.append(
+            f"README.md '{heading}' section links 'skills/{dangling}/SKILL.md' "
+            "but no such skill exists")
+
+
 def validate_readme(skill_names: set[str], problems: list[str]) -> None:
     if not README.is_file():
         problems.append("README.md is missing")
         return
-    linked = set(README_LINK.findall(README.read_text(encoding="utf-8")))
-    for missing in sorted(skill_names - linked):
-        problems.append(f"README.md does not link skill '{missing}'")
-    for dangling in sorted(linked - skill_names):
-        problems.append(
-            f"README.md links 'skills/{dangling}/SKILL.md' but no such skill exists")
+    text = README.read_text(encoding="utf-8")
+    validate_readme_section(text, SKILLS_TABLE_HEADING, skill_names, problems)
+    validate_readme_section(text, DECISION_TABLE_HEADING, skill_names, problems)
 
 
 def validate_examples(skill_names: set[str], problems: list[str]) -> None:

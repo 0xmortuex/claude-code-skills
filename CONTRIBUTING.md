@@ -81,14 +81,19 @@ description: A pushy, trigger-rich description...
    rather than inventing plausible-sounding details.
 5. From the repo root, run `python tools/validate.py` — it checks frontmatter
    shape, naming, description length, the matching H1, and that your skill
-   is linked from `README.md`'s table with a resolving link. It also checks
-   that every skill has a worked example at `examples/<name>.md`, linked
-   from both `examples/README.md` and `README.md`'s Examples section. It
-   must print `OK` and exit 0 before you open a PR.
+   is linked from both `README.md`'s "## The skills" table and its
+   "## Which skill do I want?" decision table, each checked separately with
+   a resolving link (a skill listed in one but missing from the other fails
+   the build). It also checks that every skill has a worked example at
+   `examples/<name>.md`, linked from both `examples/README.md` and
+   `README.md`'s Examples section. It must print `OK` and exit 0 before you
+   open a PR.
 6. Add a row to the skills table in `README.md` (skill, what it does,
-   triggers on) and a worked example at `examples/<name>.md`, linked from
-   `examples/README.md` and `README.md`'s Examples section — the validator
-   will fail the build if you forget either.
+   triggers on), a row to the "Which skill do I want?" decision table
+   (the symptom that should make someone reach for it), and a worked
+   example at `examples/<name>.md`, linked from `examples/README.md` and
+   `README.md`'s Examples section — the validator will fail the build if
+   you forget any of the three.
 
 ## Opening the PR
 

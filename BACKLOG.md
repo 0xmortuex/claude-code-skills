@@ -972,3 +972,40 @@ this environment regardless of query. If a future session has broader GitHub acc
 three (queries logged in each entry above) is the single highest-value next step. Otherwise, continue
 novelty sweeps in still-unmined domains, or do a drift-audit pass if a skill's cited tool/API has
 changed since its last verification (none known to have changed as of this date).
+
+## Tooling: decision-table/skills-table drift now enforced by `tools/validate.py` (2026-09-15)
+
+This session has the same one-repo-scoped GitHub access as rounds 6-9 (2026-09-09 through
+2026-09-14) — confirmed again from this session's own repository-scope notice — so the three parked
+candidates (data-residency, audit-log completeness, subscription-proration) stayed untouched rather
+than re-attempting them with WebSearch alone, which the notes above already establish just stalls.
+Instead, picked up a real gap found while reading the validator rather than inventing new research:
+
+- [x] **Validator gap closed.** Every "SHIPPED" entry in this file that added a new skill says it
+  added both a "README skills-table row" and a "decision-table row," and `CONTRIBUTING.md` step 6
+  told contributors to add a skills-table row and a worked example — but never mentioned the
+  decision table at all, and `tools/validate.py`'s old `validate_readme()` checked
+  `skills/<name>/SKILL.md` links against the *whole* README as one pooled set. That meant a skill
+  linked from the main table but missing its own row in the "## Which skill do I want?" table (or
+  vice versa) would pass validation silently — the exact "eyeballed by hand, never actually
+  checked" gap the 2026-09-09 entry closed for `examples/`, just one table over. Verified this
+  wasn't yet a real drift (both tables currently have exactly 25 matching rows), but is a real risk
+  given this file's own history of stale/unticked checkboxes from manual bookkeeping slips (the
+  `erasure-guard` entry on 2026-08-29 and round 7 on 2026-09-11 both had to go back and fix
+  checkboxes an earlier run left unticked after the work was actually done). Fixed by splitting
+  `validate_readme()` into a section-scoped
+  `validate_readme_section()` run once against "## The skills" and once against "## Which skill do
+  I want?", each independently required to link every skill with no dangling links. Updated
+  `CONTRIBUTING.md` step 5/6 to name the decision-table row as a required addition alongside the
+  skills-table row and the worked example. Verified the new check actually catches breakage, not
+  just the happy path: temporarily deleted the `consent-guard` decision-table row (caught: "does not
+  link skill 'consent-guard'") and separately added a row pointing at a fake
+  `skills/nonexistent-skill/SKILL.md` (caught: "links ... but no such skill exists") — both reverted
+  after confirming, `git diff` clean on `README.md`. `python tools/validate.py` passes
+  (`OK: 25 skills valid and consistent with README.`). No skill content changed this run.
+
+Follow-up for the next run: none outstanding from this item. The three parked novelty candidates
+(data-residency, audit-log completeness, subscription-proration — see the 2026-09-14 note above for
+citations and the exact follow-up queries) are still the highest-value work if a future session ever
+has real cross-repo GitHub code search; otherwise, continue drift-auditing or try a fresh novelty
+angle outside the domains this file's fourteen prior sweep rounds have already mined.

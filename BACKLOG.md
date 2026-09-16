@@ -1009,3 +1009,44 @@ Follow-up for the next run: none outstanding from this item. The three parked no
 citations and the exact follow-up queries) are still the highest-value work if a future session ever
 has real cross-repo GitHub code search; otherwise, continue drift-auditing or try a fresh novelty
 angle outside the domains this file's fourteen prior sweep rounds have already mined.
+
+## Drift audit — round 5 (2026-09-16): the two post-round-4 skills
+
+`sunset-guard` (shipped 2026-09-03) and `consent-guard` (shipped 2026-09-07) both shipped after
+round 4 (2026-09-02, which covered the five skills before them) and had never had a dedicated
+fact/tool-syntax verification pass. This session's GitHub access is still the same one-repo scope
+as rounds 6-9 in the novelty-sweep threads above, so the three parked candidates stayed untouched;
+this drift-audit direction doesn't need cross-repo search, only WebSearch against primary sources.
+
+Read both skills in full, identified every externally-checkable claim, verified each:
+
+- [x] **`sunset-guard` — found and fixed real drift.** The skill described the `Deprecation`
+  response header as "(separately drafted)" — accurate when the skill was written, but the IETF
+  draft was published as **RFC 9745** (Standards Track) in March 2025, over a year before this
+  session. Confirmed directly against the RFC Editor (`rfc-editor.org/rfc/rfc9745.html`): it's
+  registered "permanent" in the HTTP Field Name Registry and also defines a `deprecation` link
+  relation, paired with the `sunset` link relation RFC 8594 already defines — both directly relevant
+  to step 4's "`Link` header pointing at the migration path" check, which the skill didn't name by
+  relation type. Fixed the sentence in `skills/sunset-guard/SKILL.md` to cite RFC 9745 by number and
+  Standards-Track status, and added the link-relation detail connecting the two RFCs to step 4.
+  Also re-verified the PayPal TLS 1.0/1.1 retirement claim (July 2018 deadline, merchant payment
+  processing broke for non-upgraded integrations, confirmed against contemporaneous reporting) — no
+  drift there, only the header-status line needed a fix. `examples/sunset-guard.md` only uses the
+  header names, not their standards status, so it needed no change.
+- [x] **`consent-guard` — re-verified, no drift.** The Google Consent Mode ordering claim (`gtag('consent',
+  'default', ...)` must execute before `gtm.js`/`gtag.js` loads, or Consent Mode logs a "late
+  consent" warning and briefly runs with implicit "granted" defaults) confirmed against Google's
+  current Tag Platform documentation (`developers.google.com/tag-platform/security/guides/consent`).
+  No other claim in the skill is version-pinned or externally checkable (GTM-as-loader-for-tags,
+  SDK auto-bootstrap behavior, fail-open/fail-closed framing are general code-review reasoning, not
+  claims about a specific spec or API version) — nothing else to check.
+
+`python tools/validate.py` passes (`OK: 25 skills valid and consistent with README.`). One skill
+file changed (`skills/sunset-guard/SKILL.md`); `consent-guard` needed no edit.
+
+Follow-up for the next run: all 25 skills have now had at least one focused fact-verification pass
+since their most recent content change. The three parked novelty candidates (data-residency,
+audit-log completeness, subscription-proration) are still the highest-value work if cross-repo
+GitHub code search ever becomes available in this environment; otherwise, continue novelty sweeps
+in still-unmined domains, or re-check RFC 8594/9745, PayPal's TLS policy, or Google's Consent Mode
+docs only if one of those sources changes again.

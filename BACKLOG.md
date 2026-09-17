@@ -1050,3 +1050,63 @@ audit-log completeness, subscription-proration) are still the highest-value work
 GitHub code search ever becomes available in this environment; otherwise, continue novelty sweeps
 in still-unmined domains, or re-check RFC 8594/9745, PayPal's TLS policy, or Google's Consent Mode
 docs only if one of those sources changes again.
+
+## Novelty research — round 10 (2026-09-17): access wall reconfirmed; one parked reference narrowed; one fresh lead logged
+
+Checked for drift first (none expected one day after round 5, and none found — no skill's cited
+tool/API changed since 2026-09-16). Rather than re-run a from-scratch sweep of already-saturated
+territory, tried to make progress on the three parked candidates and one fresh angle:
+
+- Reconfirmed the structural GitHub-access wall from rounds 6-9 is still present today, via a
+  different probe than prior rounds used: GitHub's own code-search UI (`github.com/search?type=code`)
+  returns a "sign in to search code" prompt to WebFetch (not results), and `skills.lc` — one of the
+  marketplace mirrors round 7 cited as a workaround path — returned an explicit `EGRESS_BLOCKED`
+  error this session, matching the pattern of blocked marketplace/doc domains logged in the
+  2026-09-09/14 rounds. `raw.githubusercontent.com` fetches do work for an exactly-correct, known-good
+  path (verified against `anthropics/skills/main/README.md`), so the block is specific to code search
+  and certain marketplace mirrors, not a general network failure — consistent with, and now reconfirmed
+  a fourth time against, the conclusion rounds 6-9 already reached.
+- Attempted to resolve the one specific loose end round 7 (2026-09-11) left open for the parked
+  data-residency candidate: `openclaw/skills` → `skills/1kalin/afrexai-ai-governance/SKILL.md`, which
+  round 7 could not fetch in full to judge. Still could not fetch the actual file this round either
+  (raw.githubusercontent.com 404s on both `main` and `master` branch guesses; the skills.lc mirror a
+  search snippet's description was sourced from is egress-blocked). The search-snippet description
+  available (title + summary only, not the full file) describes it as an "AI Governance Report
+  template" with sections for AI Portfolio Summary, Risk Dashboard, Value Delivered, Key Decisions
+  Needed, and Next Quarter Priorities — a portfolio-level status-report format, not a data-residency/
+  region-routing audit method. That matches round 7's own suspicion ("same undecidable state as the
+  GRC packs already rejected... every other GRC-pack hit in this file's history turned out to be
+  checklist-only"), but a search-snippet description is still weaker evidence than the full-file read
+  this pack's bar requires, so this stays **narrowed, not closed** — treat this specific reference as
+  very likely not a match, but don't cite it as a confirmed rejection without an actual fetch.
+- Tried one genuinely fresh angle before falling back to bookkeeping: **bulk data export / report-
+  generation completeness** — the outbound mirror of `import-guard`'s inbound CSV-import audit. Does a
+  codebase's export/report feature silently truncate on a row-count cap or a request timeout, or
+  report an incomplete file as a completed one, the way `import-guard` catches a bulk import
+  misreporting partial failure as success. WebSearch found no dedicated Claude skill doing this as a
+  review method — only implementation how-tos (a dev.to streaming-CSV tutorial) and real, independent
+  evidence the underlying bug class is genuine: `EL-Bied-Ali/OnlyLive-Events` PR #19 fixes a CSV export
+  that silently capped/dropped rows past 20,000 instead of streaming the full result, and a
+  StackContacts help article documents users hitting an undocumented "500-row wall" on export. Not
+  exhaustively verified — same code-search wall as the other three candidates — so not shipped. Logged
+  as the most promising fresh lead for a code-search-capable session: `filename:SKILL.md "export"
+  ("truncat" OR "row count" OR "silent")`, and confirm it's distinct from `import-guard` (inbound
+  upload) and the already-closed "read-path pagination auditing" territory (live query pagination, not
+  a one-shot export/report artifact) before shipping.
+
+`python tools/validate.py` still passes 25/25 (no skill files touched this run — research only,
+nothing cleared the pack's novelty bar to ship).
+
+## Note for the next run (2026-09-17)
+Four candidates are now logged against the same structural access wall: data-residency/region-routing
+(rounds 6/7, one reference narrowed but not closed this round), audit-log/audit-trail completeness
+(round 8), subscription plan-change/proration (round 9), and bulk export/report-generation
+completeness (this round, fresh). All four need real cross-repo GitHub code search to clear or kill —
+this environment's access is confirmed, for a fourth consecutive round, to lack it (code-search UI
+requires auth, several marketplace mirrors are egress-blocked, `raw.githubusercontent.com` only works
+for exactly-known-correct paths guessed or found via a working search result). Don't keep
+re-attempting any of the four with WebSearch/WebFetch alone — it reliably stalls at "inconclusive," as
+it has every round since 2026-09-09. If a future session has broader GitHub access, the four queries
+logged across this file (one per candidate, in each candidate's own entry) are the single highest-value
+next step. Otherwise, continue novelty sweeps in still-unmined domains, or do a drift-audit pass only
+once a skill's cited tool/API has actually changed.

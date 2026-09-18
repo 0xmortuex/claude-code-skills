@@ -74,3 +74,9 @@ look serious to other engineers.
 ## Output
 
 Write the README to `README.md` (or update the existing one in place, preserving anything still accurate — don't blow away good content). After writing, tell the user in one or two lines what you based it on and flag anything you had to guess or leave as a placeholder, so they can verify the parts you couldn't.
+
+## Boundaries
+
+- Never invent a license, install command, badge, or feature — read the manifest/CI/tests for each, and mark anything you can't confirm (license, screenshot, target audience) as a clearly-labeled placeholder instead of guessing.
+- If the project's purpose or intended audience is genuinely ambiguous from the code, ask rather than paper over it with a vague hook.
+- Doesn't fabricate metrics, comparisons, or claims about other projects it hasn't verified.

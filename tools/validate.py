@@ -8,7 +8,10 @@ Checks, per skill under ``skills/<name>/SKILL.md``:
 * ``description`` is present and within Claude's practical length band
   (a floor that rejects stub descriptions, and the 1024-char platform
   ceiling for skill descriptions);
-* the body has a top-level ``# <name>`` heading matching the skill.
+* the body has a top-level ``# <name>`` heading matching the skill; and
+* the body ends with a ``## Boundaries`` section, per the house style in
+  ``CONTRIBUTING.md`` (three skills -- changelog, codebase-tour,
+  readme-forge -- were found missing one and fixed alongside this check).
 
 Cross-file checks against ``README.md``:
 
@@ -120,6 +123,9 @@ def validate_skill(skill_dir: Path, problems: list[str]) -> None:
 
     if not re.search(rf"^#\s+{re.escape(name)}\s*$", body, re.MULTILINE):
         problems.append(f"{name}: body has no '# {name}' top-level heading")
+
+    if not re.search(r"^##\s+Boundaries\s*$", body, re.MULTILINE):
+        problems.append(f"{name}: body has no '## Boundaries' section")
 
 
 def validate_readme_section(

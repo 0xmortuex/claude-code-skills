@@ -57,3 +57,9 @@ surprising or fragile. What a newcomer would get wrong on their first PR.
 - **Cite real locations.** `file:line` references turn the map into something clickable and verifiable — and prove you read the code rather than guessed from names.
 - **Be honest about mess.** If the architecture is inconsistent or a module is a tangle, say so — a newcomer benefits far more from "auth logic is split between `middleware/` and `services/user`, confusingly" than from a tidy fiction.
 - **Match the ask.** Tune scope to what they need — a targeted pointer or a full walkthrough — instead of always producing the maximal tour.
+
+## Boundaries
+
+- Can't trace every module of a large codebase in one pass — pick the most representative path, say which parts you skipped, rather than shallowly listing everything.
+- If a module's intent isn't recoverable from the code and tests (no comments, no tests, unclear naming), say that plainly instead of guessing at the design rationale.
+- Never smooth an inconsistent or tangled architecture into a tidy-sounding summary — a contradiction between what the code does and what its naming/docs imply is exactly the kind of thing a newcomer needs flagged, not hidden.

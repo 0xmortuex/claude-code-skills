@@ -1110,3 +1110,39 @@ it has every round since 2026-09-09. If a future session has broader GitHub acce
 logged across this file (one per candidate, in each candidate's own entry) are the single highest-value
 next step. Otherwise, continue novelty sweeps in still-unmined domains, or do a drift-audit pass only
 once a skill's cited tool/API has actually changed.
+
+## House-style drift found and fixed: missing `## Boundaries` sections (2026-09-18)
+
+Same one-repo-scoped GitHub access as rounds 6-10 (confirmed again from this session's own
+repository-scope notice), so the four parked novelty candidates (data-residency, audit-log
+completeness, subscription-proration, export/report-generation completeness) stayed untouched
+rather than re-attempting them with WebSearch alone. Instead of another novelty sweep, re-read
+`CONTRIBUTING.md`'s house-style rules against the actual skill bodies and found a real, mechanical
+gap: `CONTRIBUTING.md` mandates every `SKILL.md` end with a `## Boundaries` section (mirroring the
+`examples/` and decision-table conventions that earlier rounds turned into validator checks), but
+`tools/validate.py` never actually checked for it.
+
+- [x] **Fixed three skills silently missing the mandated section.** A grep for `^## Boundaries`
+  across all 25 `skills/*/SKILL.md` found three with none: `changelog`, `codebase-tour`, and
+  `readme-forge`. Added a skill-specific Boundaries section to each, following the pattern in
+  `git-rescue`'s (honest hard limits + explicit "say so instead of guessing" + "never do X" rules,
+  not generic caveats): `changelog` (ambiguous commit impact, no-tag/no-range handling, never
+  inventing a version/date/BREAKING marker), `codebase-tour` (can't trace every module in one pass,
+  say what was skipped, never smooth over a genuinely messy architecture), `readme-forge` (never
+  invent a license/command/badge/feature, ask rather than guess on ambiguous purpose/audience,
+  don't fabricate metrics or comparisons).
+- [x] **Closed the validator gap so this can't silently drift again.** Added a check to
+  `validate_skill()` in `tools/validate.py`: every skill body must contain a `## Boundaries`
+  heading, alongside the existing `# <name>` H1 check. Verified it actually catches breakage (not
+  just the happy path): temporarily stripped the `## Boundaries` section from
+  `skills/changelog/SKILL.md` and confirmed the validator failed with exit 1 and the exact
+  `changelog: body has no '## Boundaries' section` message, then restored the file and confirmed
+  `git diff` was clean before committing. `python tools/validate.py` passes
+  (`OK: 25 skills valid and consistent with README.`) with all three skills fixed and the new check
+  in place.
+
+Follow-up for the next run: none outstanding from this item — all 25 skills now have a Boundaries
+section and the validator enforces it going forward. The four parked novelty candidates (see the
+2026-09-17 note above) are still the highest-value work if cross-repo GitHub code search ever
+becomes available in this environment; otherwise, continue novelty sweeps in still-unmined domains,
+or a drift-audit pass once a skill's cited tool/API has actually changed.

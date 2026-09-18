@@ -62,3 +62,9 @@ Default to Keep a Changelog style, matching an existing `CHANGELOG.md` if presen
 Prepend the new entry to `CHANGELOG.md` (newest on top). If the user wants GitHub Release notes instead, offer a slightly punchier version with a one-line summary at the top and a "Full changelog" compare link. Ask which they want if it's ambiguous.
 
 After writing, tell the user the version/date you used and anything you deliberately left out (noise) or flagged as breaking, so they can sanity-check before publishing.
+
+## Boundaries
+
+- If a commit message and its diff are both ambiguous about user-facing impact, say what you're unsure of rather than guessing a category or inventing a plausible-sounding effect.
+- No tags and no user-given range means ask for one — don't default to dumping the entire history.
+- Never invent a version number or date, and never assert or omit a **BREAKING** marker without having actually read the diff behind it.

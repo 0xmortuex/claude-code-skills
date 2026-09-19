@@ -80,7 +80,8 @@ description: A pushy, trigger-rich description...
    grounded-not-guessing bar means it should read actual files/commands/output
    rather than inventing plausible-sounding details.
 5. From the repo root, run `python tools/validate.py` — it checks frontmatter
-   shape, naming, description length, the matching H1, and that your skill
+   shape, naming, description length, the matching H1, and that the body
+   ends with a `## Boundaries` section. It also checks that your skill
    is linked from both `README.md`'s "## The skills" table and its
    "## Which skill do I want?" decision table, each checked separately with
    a resolving link (a skill listed in one but missing from the other fails

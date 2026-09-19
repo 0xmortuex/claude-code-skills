@@ -1146,3 +1146,30 @@ section and the validator enforces it going forward. The four parked novelty can
 2026-09-17 note above) are still the highest-value work if cross-repo GitHub code search ever
 becomes available in this environment; otherwise, continue novelty sweeps in still-unmined domains,
 or a drift-audit pass once a skill's cited tool/API has actually changed.
+
+## Docs drift: `CONTRIBUTING.md` step 5 fixed to match validator (2026-09-19)
+
+Same one-repo-scoped GitHub access as rounds 6-10 (confirmed again from this session's own
+repository-scope notice), so the four parked novelty candidates (data-residency, audit-log
+completeness, subscription-proration, export/report-generation completeness) stayed untouched.
+Instead of another WebSearch-only novelty attempt against that wall, re-read the contributor-facing
+docs against the validator's actual current behavior (the same kind of pass that found the missing
+`## Boundaries` sections on 2026-09-18) and found a smaller instance of the same class of gap:
+
+- [x] **`CONTRIBUTING.md` step 5 was stale.** The 2026-09-18 entry added a `## Boundaries` check to
+  `tools/validate.py` and updated its own docstring, but never updated `CONTRIBUTING.md`'s step 5 —
+  the paragraph that tells a contributor what `python tools/validate.py` actually checks before they
+  open a PR. It still only listed "frontmatter shape, naming, description length, the matching H1,"
+  omitting the Boundaries-section check, so a contributor reading only `CONTRIBUTING.md` (not the
+  validator's docstring) would be misled about one of the checks that can fail their build. Fixed the
+  sentence in `CONTRIBUTING.md` to name the `## Boundaries` check alongside the others. No skill
+  content or validator behavior changed — this is a docs-only correction. `python tools/validate.py`
+  still passes (`OK: 25 skills valid and consistent with README.`).
+
+Follow-up for the next run: none outstanding from this item. The four parked novelty candidates
+(data-residency, audit-log completeness, subscription-proration, export/report-generation
+completeness) are still the highest-value work if cross-repo GitHub code search ever becomes
+available in this environment; otherwise, continue novelty sweeps in still-unmined domains, or
+another docs-vs-behavior consistency pass (this run only checked step 5 against the Boundaries
+change specifically — worth a broader read of `CONTRIBUTING.md` and `README.md` against
+`tools/validate.py`'s current behavior end to end next time) if nothing fresher turns up.

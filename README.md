@@ -105,7 +105,7 @@ cp -r claude-code-skills/skills/* ~/.claude/skills/
 
 Either way, start (or restart) Claude Code and the skills are live. Claude invokes them automatically when your request matches — or call one by name, e.g. `/ship-it`. Run `/skills` to confirm they loaded.
 
-> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all seventeen at once is fine, but if you only want the security review, just take `security-sweep`.
+> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all twenty-five at once is fine, but if you only want the security review, just take `security-sweep`.
 
 ## Using them
 

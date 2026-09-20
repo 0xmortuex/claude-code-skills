@@ -1173,3 +1173,29 @@ available in this environment; otherwise, continue novelty sweeps in still-unmin
 another docs-vs-behavior consistency pass (this run only checked step 5 against the Boundaries
 change specifically — worth a broader read of `CONTRIBUTING.md` and `README.md` against
 `tools/validate.py`'s current behavior end to end next time) if nothing fresher turns up.
+
+## Docs drift: stale skill count in README's install tip (2026-09-20)
+
+Same one-repo-scoped GitHub access as rounds 6-10 (confirmed again from this session's own
+repository-scope notice), so the four parked novelty candidates (data-residency, audit-log
+completeness, subscription-proration, export/report-generation completeness) stayed untouched.
+Picked up the 2026-09-19 note's own suggestion — a broader read of `README.md` against the pack's
+actual current state — rather than re-attempting the parked candidates with WebSearch alone.
+
+- [x] **Fixed a stale skill count.** `README.md`'s intro paragraph correctly says "twenty-five that
+  earn their place," but the Install section's tip below it still read "copying all **seventeen**
+  at once is fine" — left over from when the pack had 17 skills, never updated through eight
+  ship rounds since. Grepped the whole file for number words (seventeen/eighteen/nineteen/twenty)
+  to confirm this was the only stale count; the intro paragraph was already correct and no other
+  line makes a skill-count claim. Fixed to "twenty-five" in `README.md`. No skill content or
+  validator behavior changed — `tools/validate.py` doesn't check prose skill-count mentions (only
+  the table/decision-table/examples link sets), so this was a manual-read catch, not something the
+  validator would have caught. `python tools/validate.py` still passes
+  (`OK: 25 skills valid and consistent with README.`).
+
+Follow-up for the next run: none outstanding from this item. The four parked novelty candidates
+(data-residency, audit-log completeness, subscription-proration, export/report-generation
+completeness) are still the highest-value work if cross-repo GitHub code search ever becomes
+available in this environment; otherwise, continue novelty sweeps in still-unmined domains, or
+another full read-through of `README.md`/`CONTRIBUTING.md` prose (not just validator-checked
+links) for anything else that's drifted as the skill count grew.

@@ -1199,3 +1199,79 @@ completeness) are still the highest-value work if cross-repo GitHub code search 
 available in this environment; otherwise, continue novelty sweeps in still-unmined domains, or
 another full read-through of `README.md`/`CONTRIBUTING.md` prose (not just validator-checked
 links) for anything else that's drifted as the skill count grew.
+
+## Novelty research — round 11 (2026-09-21): a fifth candidate found and merged into the parked
+## export-completeness thread; agent-loop review rejected as covered
+
+Same one-repo-scoped GitHub access as rounds 6-10 (confirmed again from this session's own
+repository-scope notice), so the four already-parked candidates (data-residency, audit-log
+completeness, subscription-proration, export/report-generation completeness) stayed untouched
+rather than re-attempted with WebSearch alone. Researched three fresh leads instead:
+
+- [ ] **CSV/Excel numeric-type corruption on export — real, well-grounded, but still parked on the
+  access wall (not shipped).** Distinct failure mode from the round-10 export/report-generation-
+  completeness lead (that one is about *silent truncation* — a row-count cap or timeout producing an
+  incomplete file reported as complete; this one is about *silent value corruption* — a complete,
+  correctly-sized CSV whose business-identifier columns get mangled the moment it's opened in Excel
+  or re-parsed downstream). The two pair naturally as sibling checks in the same "does our export
+  path actually produce a faithful copy of the data" audit, the outbound mirror of `import-guard`'s
+  inbound one. Grounded in independently-verified, real sources (not a hypothetical): a live GitHub
+  issue (`FreshCode-Org/freshdata#239`, "load_review_decisions loses CSV decisions: ids like '007'
+  stop matching, blank cells crash") showing the exact silent-mismatch failure mode; Excel's
+  documented behavior of auto-type-inferring on open, stripping leading zeros and flipping any
+  numeric string over 11 digits to scientific notation (confirmed across three independent sources —
+  a data-integrity blog, an IBM Cognos support PDF, and an Adobe community thread all describing the
+  identical ZIP-code/account-number/GTIN corruption); and the documented fix pattern (quote
+  business-identifier fields per RFC 4180, or force column type to text/string before any
+  spreadsheet tool touches the file — never rely on reformatting after the fact). Searched five
+  different phrasings (`"CSV export" review leading zero/scientific notation/type inference`,
+  `majiayu000/claude-skill-registry` by name, `rampstackco`/`financial-integrity`/`data-integrity` by
+  name, phone/account/zip-specific terms) and found zero dedicated review/audit skills — only
+  implementation-side "how to build a good XLSX file" skills (`anthropics/skills` → `skills/xlsx/
+  SKILL.md`, which covers formula-error-free delivery and currency formatting, not reviewing existing
+  export code for this hazard) and CSV-summarizer/extraction tools, neither of which does a
+  code-review audit of an *existing* export path. **Verdict: same as the round-10 lead it pairs
+  with — promising and more thoroughly unmatched across searches than the four already-parked
+  candidates (zero adjacent hits at all here, versus partial/ambiguous hits for those four), but
+  still short of this pack's own exhaustive-search bar without real GitHub code search.** Do not
+  ship without either (a) a code-search-capable session confirming no match for
+  `filename:SKILL.md "CSV" ("leading zero" OR "scientific notation" OR "type inference")`, or (b) a
+  documented decision to lower the bar given the unusually clean (zero-hit) web-search result. If
+  shipped, scope it as one skill covering both sub-angles (truncation-completeness from round 10 +
+  type-corruption from this round) rather than two skills, since they share the same trigger moment
+  (reviewing an export/report-generation code path) and the same audit shape.
+- [x] **LLM agent-loop runaway-cost / stopping-criteria review — REJECTED, covered.**
+  `maxmilian/loop-engineering` ("a skill for designing & reviewing autonomous/semi-autonomous agent
+  loops (Claude Code, Codex, Copilot, Gemini)") explicitly ships a review mode checking budget/cost
+  exit conditions, no-progress detection, and an escalation path, backed by an 11-case eval set
+  spanning design/review/diagnose modes across four loop patterns. Independently,
+  `affaan-m/ECC` → `skills/autonomous-loops/SKILL.md` names the same checklist directly ("infinite
+  loops should always have a max-runs, max-cost, max-duration, or completion signal"). Anthropic's
+  own "Loop engineering: Getting started with loops" post covers the identical ground for this exact
+  platform. Closed as covered — shipping this would duplicate an existing skill about this pack's own
+  product surface. Do not re-research without a sub-angle none of these three touch.
+- Noticed but not researched as a standalone candidate: **bulk-admin-delete without preview/undo.**
+  Confirmed the underlying bug is real (a live GitHub issue, "Bulk delete offers no undo — the
+  confirm dialog is the only guard against a 50-product misclick"), but this sits inside
+  `blast-guard`'s existing territory (pre-send review for an irreversible action against many
+  records — audience-query sanity check, resumable stop mechanism — just for delete instead of
+  send) rather than a clean new gap. Reads more like a possible future extension of `blast-guard`'s
+  scope than a fresh skill; not researched further this round since it isn't the "verified uncovered
+  by an existing skill" case the novelty bar wants.
+
+`python tools/validate.py` still passes 25/25 (no skill files touched this run — three candidates
+researched, one merged into the existing parked thread with a stronger novelty signal than the
+other four, one rejected as covered, one flagged as in-pack-territory rather than researched).
+
+## Note for the next run (2026-09-21)
+Five candidates are now logged against the GitHub-code-search access wall: data-residency/
+region-routing (rounds 6/7), audit-log/audit-trail completeness (round 8), subscription
+plan-change/proration (round 9), and export/report-generation completeness — now two sub-angles,
+row-count truncation (round 10) and numeric-type corruption on open (this round). Of the five, the
+export-completeness thread has the cleanest web-search signal (zero adjacent hits across nine
+searches total between the two rounds, versus partial hits for the other four) — it's the best
+candidate to ship first if a future session gets real cross-repo GitHub code search, or the best
+candidate to reconsider shipping anyway if a future session decides a clean zero-hit web search is
+convincing enough on its own. Otherwise, continue novelty sweeps in still-unmined domains (this
+round closed out LLM-agent-loop-review, joining the fifteen-plus other domains already mined), or a
+drift-audit pass once a skill's cited tool/API has actually changed.

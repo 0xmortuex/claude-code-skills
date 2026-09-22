@@ -1208,7 +1208,10 @@ repository-scope notice), so the four already-parked candidates (data-residency,
 completeness, subscription-proration, export/report-generation completeness) stayed untouched
 rather than re-attempted with WebSearch alone. Researched three fresh leads instead:
 
-- [ ] **CSV/Excel numeric-type corruption on export — real, well-grounded, but still parked on the
+- [x] **CSV/Excel numeric-type corruption on export — SHIPPED 2026-09-22 as `export-guard`, merged
+  with the round-10 truncation lead. See the dated entry at the end of this file for the shipped
+  skill, the verified citations, and why this round's "access wall" is now resolved.** Original
+  round-11 writeup, kept for its research trail:
   access wall (not shipped).** Distinct failure mode from the round-10 export/report-generation-
   completeness lead (that one is about *silent truncation* — a row-count cap or timeout producing an
   incomplete file reported as complete; this one is about *silent value corruption* — a complete,
@@ -1275,3 +1278,57 @@ candidate to reconsider shipping anyway if a future session decides a clean zero
 convincing enough on its own. Otherwise, continue novelty sweeps in still-unmined domains (this
 round closed out LLM-agent-loop-review, joining the fifteen-plus other domains already mined), or a
 drift-audit pass once a skill's cited tool/API has actually changed.
+
+## `export-guard` — SHIPPED (2026-09-22); the GitHub-code-search access wall is resolved
+
+This session had `mcp__github__search_code` (GitHub's native code search across ALL public
+repositories, not just this pack's own repo) plus `search_issues`/`search_pull_requests`, none of
+which any prior round (6 through 11, 2026-09-09 through 2026-09-21) had available — those rounds
+were WebSearch/WebFetch-only and repeatedly hit an explicit access wall (auth-gated code-search UI,
+egress-blocked marketplace mirrors). That wall is now resolved for future rounds too: `search_code`
+searches all of GitHub regardless of this session's single-repo write scope, so the four other
+parked candidates (data-residency/region-routing, audit-log/audit-trail completeness, subscription
+plan-change/proration) no longer need to wait for a differently-configured session — a future run
+can and should re-attempt them with these same tools before assuming they're still blocked.
+
+- [x] **Picked up the export/report-generation completeness thread** (rounds 10 and 11 above,
+  cleanest signal of the five parked candidates) and actually cleared the novelty bar this time:
+  `search_code` for `filename:SKILL.md "CSV" "leading zero"` (469 hits), `"scientific notation"
+  export` (264 hits), and combinations with "audit"/"completeness"/"bulk export"/"review" turned up
+  zero dedicated review/audit skills for an *existing* export code path — every hit was either an
+  implementation how-to for building a good export (this pack's own analogue would be the
+  `anthropics/skills` → `xlsx` skill, which covers writing files well, not reviewing existing export
+  code) or a generic PR-review skill mentioning "export" as one line item among many, never the
+  specific completeness/fidelity audit this candidate proposed. Confirmed distinct from this pack's
+  own `import-guard` (inbound upload, not outbound generation).
+- [x] **Verified both grounding citations directly** rather than trusting the prior rounds' WebSearch
+  findings secondhand: `search_issues` on `FreshCode-Org/freshdata` found and fetched the full body of
+  issue #239 verbatim as round 11 described it (`load_review_decisions` reads a CSV review-queue with
+  default pandas type inference, so id `"007"` comes back as the integer `7` and its decision is
+  silently dropped — `n_applied=0`, no error) — closed 2026-09-15, reproduces on two Python/pandas
+  versions. `search_pull_requests` on `EL-Bied-Ali/OnlyLive-Events` found and fetched PR #19 in full:
+  `getOrdersForExport` did `findMany({ take: 20_000 })`, "silently dropping older orders once the
+  table grew past that," used as "financial/reporting source data" — fixed by replacing it with a
+  keyset-paginated, unbounded streaming generator. Both real, both closed/merged, both matching the
+  earlier rounds' citations exactly — the research this skill is grounded in checks out.
+- [x] **Added `skills/export-guard/SKILL.md`**, scoped per round 11's own recommendation as one skill
+  covering both sub-angles (silent truncation + silent type corruption) rather than two, since they
+  share the same trigger moment and audit shape: step 1 finds the completeness boundary (row cap,
+  pagination, timeout, in-memory buffer), step 2 checks whether hitting it is reported honestly, step
+  3 checks whether identifier columns (IDs, ZIP/phone/account numbers) survive being opened, step 4
+  checks whether any existing test actually exercises either boundary rather than just round-tripping
+  through the same tool that wrote the file. README skills-table row + decision-table row + intro
+  paragraph updated (twenty-five → twenty-six, rejected-candidates sentence extended).
+  `examples/export-guard.md` added in the same run (an "export feels short" + "order numbers look
+  garbled" ticket walking all four steps against a `findMany({ take: 20000 })` handler with unquoted
+  `orderNumber`/`customerPhone` columns, ending BLOCK on both confirmed root causes) — linked from
+  `examples/README.md` and the main README's Examples section. `python tools/validate.py` passes
+  (`OK: 26 skills valid and consistent with README.`).
+
+Follow-up for the next run: the four still-parked candidates (data-residency/region-routing,
+audit-log/audit-trail completeness, subscription plan-change/proration — see their own entries above
+for citations and exact follow-up queries) are now the highest-value work, and the access-wall excuse
+that parked them no longer holds — this session's `mcp__github__search_code` /
+`search_issues`/`search_pull_requests` tools search across all public GitHub repositories regardless
+of this session's own single-repo write scope, so a future run should re-attempt them with these same
+tools before doing anything else, rather than re-running a from-scratch WebSearch-only sweep.

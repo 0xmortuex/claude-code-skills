@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-five that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-six that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing, session/credential-revocation completeness, A/B experiment integrity, internationalization/locale correctness, offline-sync conflict resolution — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, whether a "delete my account" feature actually reaches every place a user's data got copied to, whether a bulk file-import feature handles a partly-bad file and a re-upload honestly, whether an API version being sunset actually gives real callers the notice and behavior a shutdown requires, and whether tracking scripts/pixels actually stop firing until real consent is recorded, rather than a cookie banner that's cosmetic.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing, session/credential-revocation completeness, A/B experiment integrity, internationalization/locale correctness, offline-sync conflict resolution — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, whether a "delete my account" feature actually reaches every place a user's data got copied to, whether a bulk file-import feature handles a partly-bad file and a re-upload honestly, whether an API version being sunset actually gives real callers the notice and behavior a shutdown requires, whether tracking scripts/pixels actually stop firing until real consent is recorded rather than a cookie banner that's cosmetic, and whether a bulk data export or report actually contains every row it claims to and survives being opened without silently corrupting identifier columns.
 
 ## The skills
 
@@ -35,6 +35,7 @@ Every skill added since the original five went through the same filter: research
 | **[import-guard](skills/import-guard/SKILL.md)** | Reviews a user-facing bulk import (CSV/XLSX/JSON upload) for the failures that look like success: a bad row aborting or corrupting the batch, a response that hides which rows actually failed, and a re-uploaded file duplicating rows instead of upserting | "add a CSV import", "bulk upload", "import contacts from a spreadsheet", "what happens if the upload fails halfway", "will re-uploading duplicate everything" |
 | **[sunset-guard](skills/sunset-guard/SKILL.md)** | Reviews whether a deprecated/sunset public API version or endpoint actually gives real callers the notice and behavior a shutdown requires — headers on every serving path, a notice window that matches the promise, removal gated on measured usage, and a clear signal (not a silent failure) for clients still calling after cutover | "deprecating this API version", "sunsetting an endpoint", "is our deprecation notice enough", "can we remove this API version yet", "what happens to clients still calling the old endpoint" |
 | **[consent-guard](skills/consent-guard/SKILL.md)** | Audits whether tracking scripts/pixels actually stop firing until real consent is recorded — script-injection ordering vs. Consent Mode defaults, gating the SDK's own automatic beacons (not just your later calls into it), SPA re-init, server-side/CAPI bypass, and fail-open vs. fail-closed on a missing consent lookup | "does our cookie banner actually block trackers", "GTM tags fire before the user clicks accept", "add Google Consent Mode", "audit our tracking scripts for consent" |
+| **[export-guard](skills/export-guard/SKILL.md)** | Reviews a bulk data export/report feature for silent failures that look like success — a row-count cap or timeout that truncates the file without saying so, and identifier columns (IDs, ZIP codes, phone numbers) that silently corrupt the moment a spreadsheet or re-import auto-infers their type | "does this export cap out silently", "will Excel mangle our IDs", "is this export actually complete", "can admins trust this report" |
 
 ## Which skill do I want?
 
@@ -67,6 +68,7 @@ Not sure which one fires for your situation? Match the symptom:
 | You're building a CSV/spreadsheet bulk import and aren't sure it handles bad rows or re-uploads safely | [import-guard](skills/import-guard/SKILL.md) |
 | You're retiring an API version/endpoint and want to know if callers are actually protected, not just notified | [sunset-guard](skills/sunset-guard/SKILL.md) |
 | You have a cookie/consent banner and aren't sure the tracking scripts actually wait for it | [consent-guard](skills/consent-guard/SKILL.md) |
+| You're building a bulk export/report and aren't sure it's actually complete or that IDs survive Excel | [export-guard](skills/export-guard/SKILL.md) |
 
 ## What makes these different
 
@@ -105,7 +107,7 @@ cp -r claude-code-skills/skills/* ~/.claude/skills/
 
 Either way, start (or restart) Claude Code and the skills are live. Claude invokes them automatically when your request matches — or call one by name, e.g. `/ship-it`. Run `/skills` to confirm they loaded.
 
-> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all twenty-five at once is fine, but if you only want the security review, just take `security-sweep`.
+> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all twenty-six at once is fine, but if you only want the security review, just take `security-sweep`.
 
 ## Using them
 
@@ -152,8 +154,9 @@ currently [git-rescue](examples/git-rescue.md),
 [pref-guard](examples/pref-guard.md),
 [erasure-guard](examples/erasure-guard.md),
 [import-guard](examples/import-guard.md),
-[sunset-guard](examples/sunset-guard.md), and
-[consent-guard](examples/consent-guard.md) — every skill in the pack has one.
+[sunset-guard](examples/sunset-guard.md),
+[consent-guard](examples/consent-guard.md), and
+[export-guard](examples/export-guard.md) — every skill in the pack has one.
 
 ## Contributing
 

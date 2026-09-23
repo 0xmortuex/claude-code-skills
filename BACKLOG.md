@@ -876,9 +876,11 @@ titles alone:
   `rampstackco/claude-skills` → `dependency-management/SKILL.md` names "No license audit. Project
   ships with a GPL dependency in a commercial product" as one of its own flagged anti-patterns,
   confirming the gap is already on other packs' radar too. Closed as covered.
-- [ ] **Audit-log / audit-trail completeness review (does every sensitive/mutating action actually
-  get logged, not just the ones a developer remembered) — inconclusive, parked on the same access
-  wall as data-residency.** Unlike the two rejections above, WebSearch did not surface a dedicated
+- [x] **Audit-log / audit-trail completeness review — SHIPPED 2026-09-23 as `trail-guard`. See the
+  dated entry at the end of this file for the code-search verification that cleared the access wall,
+  the grounding citation, and the shipped skill.** Original write-up, kept for its research trail
+  (below): inconclusive, parked on the same access wall as data-residency at the time it was written.
+  Unlike the two rejections above, WebSearch did not surface a dedicated
   Claude skill doing this as a source-code review method (map every state-mutating endpoint/admin
   action, check whether a logging call sits on that path, flag ones that don't). What it did surface
   is adjacent but distinct: generic security-review packs (`getsentry/skills` →
@@ -1332,3 +1334,62 @@ that parked them no longer holds — this session's `mcp__github__search_code` /
 `search_issues`/`search_pull_requests` tools search across all public GitHub repositories regardless
 of this session's own single-repo write scope, so a future run should re-attempt them with these same
 tools before doing anything else, rather than re-running a from-scratch WebSearch-only sweep.
+
+## `trail-guard` — SHIPPED (2026-09-23); picked up the audit-log/audit-trail completeness thread
+
+Confirmed this session also has `mcp__github__search_code`/`search_issues`/`search_pull_requests`
+(the same access-wall resolution the export-guard entry above found), and used it to re-attempt the
+audit-log/audit-trail completeness candidate the 2026-09-12 round parked — the cleanest of the three
+remaining parked leads to verify since it already had a specific first query logged
+(`filename:SKILL.md "audit log" ("completeness" OR "every mutation" OR "admin action")`).
+
+- [x] **Ran that query and six variants** (`"data residency" `, `"audit log" completeness`, `"residency"
+  "cross-region" OR "failover" OR "read replica"`, `"audit log" "every mutating" OR "every admin
+  action" OR "every sensitive action"` — zero hits — `"logging" "coverage" endpoint audit mutation`,
+  `audit-log-review OR log-coverage OR logging-audit`) across `filename:SKILL.md`. Result, read in
+  full rather than by title: dozens of hits, every one of them either (a) a broad compliance/security
+  checklist with "audit log completeness" as one bullet among many (`afovea/product-team-skills` →
+  `security-specialist/SKILL.md`, `davidborka/mandalore` → `.factory/skills/security-review/SKILL.md`,
+  `NeilAutriz/sinag`, `leobessa/claude-plugins-ai-fluency`), (b) a repo-specific internal skill
+  documenting one project's own audit table (`speakeasy-api/gram` →
+  `.agents/skills/gram-audit-logging/SKILL.md`, not a reusable review method), or (c) an observability
+  audit that asks "are mutations logged?" as one of several unrelated logging/metrics/tracing
+  questions (`tomzx/agents` → `skills/audit-observability/SKILL.md`). None enumerate mutating surfaces
+  from the routing/RPC layer itself, check denial/exception exit paths specifically, or flag
+  opt-in-per-handler coverage as the root cause rather than listing individual gaps — the specific
+  review methodology this candidate proposed. Also confirmed no in-pack overlap: `security-sweep` is
+  explicitly diff-scoped ("You're evaluating *this change*, not auditing the whole codebase"), and
+  `secret-spill`'s only "audit log" mention is checking a cloud provider's audit log for abuse of an
+  already-leaked credential — the opposite direction. **Verdict: cleared the novelty bar** — this is
+  the same "real bug pattern reinvented ad hoc as a checklist bullet, never shipped as its own audit
+  skill" shape that cleared `export-guard` and `blast-guard`.
+- [x] **Found and verified a strong grounding citation via `search_pull_requests`**: `ROCm/spur` PR
+  #870, "feat(spurctld): audit every mutating RPC at the middleware level" (merged; fetched the full
+  PR body, not just the title). Real, specific, and exactly on point: "Spur recorded 3 of ~38
+  user-initiated mutating actions in the `txn` log... Auditing was opt-in per handler, so anything
+  added next started unaudited," plus an independent second finding in the same PR — "the old code
+  returned before its audit call, so those denials went unrecorded despite the docs claiming
+  otherwise" — the denial/early-return exit-path gap. Both facts used directly in the shipped skill's
+  opening paragraph and Step 2/3, not paraphrased from a search summary. (A parallel check of the FTC
+  v. Uber "God View" 2017 settlement — floated as a possible second citation — confirmed the incident
+  and the FTC's access-control allegations but did not confirm the specific "no logging of employee
+  access" mechanic, so it was left out rather than overclaimed.)
+- [x] **Added `skills/trail-guard/SKILL.md`**: step 1 enumerates mutating surfaces from the routing/
+  RPC/schema layer itself (not from grepping existing log calls, which by construction can't find
+  what nobody instrumented); step 2 checks early-return/exception/transaction-ordering exit-path gaps
+  on each one; step 3 asks whether coverage is structural (middleware + a completeness test, per the
+  spur fix) or opt-in, and treats "opt-in" as the primary finding rather than an itemized list of
+  currently-missing handlers; step 4 checks bulk/admin/system-generated mutations independently since
+  they're usually a separate code path from the single-record handler that has the logging. README
+  skills-table row + decision-table row + intro paragraph updated (twenty-six → twenty-seven,
+  rejected-candidates sentence extended). `examples/trail-guard.md` added in the same run (a "who
+  canceled and refunded this subscription" escalation walking all four steps against an admin router
+  where `cancel` has an audit call and `refund`/`bulk-cancel` don't, ending BLOCK on the opt-in root
+  cause plus both concrete gaps) — linked from `examples/README.md` and the main README's Examples
+  section. `python tools/validate.py` passes (`OK: 27 skills valid and consistent with README.`).
+
+Follow-up for the next run: two candidates remain parked (data-residency/region-routing,
+subscription plan-change/proration — see their own entries above for citations and exact follow-up
+queries), and the access-wall excuse blocking them is resolved the same way it was for this one — a
+future run should re-attempt them with `search_code`/`search_issues`/`search_pull_requests` before
+doing anything else.

@@ -31,6 +31,7 @@ you can see what "good" looks like before you try a skill on your own repo.
 - [sunset-guard.md](sunset-guard.md)
 - [consent-guard.md](consent-guard.md)
 - [export-guard.md](export-guard.md)
+- [trail-guard.md](trail-guard.md)
 
 Want to add one for another skill? Keep it short (a realistic trigger message,
 then the key beats of the response — not a full essay) and make sure it

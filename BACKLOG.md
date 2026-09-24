@@ -921,7 +921,10 @@ already-closed money candidates (`money-rounding` = largest-remainder/decimal-pr
 `FX conversion` = rate-lock/snapshot-freeze timing) and from `financial-integrity`-style accounting-
 invariant skills, none of which touch subscription-lifecycle plan-change math specifically.
 
-- [ ] **Subscription plan-change/proration billing correctness audit — inconclusive, parked on the
+- [x] **Subscription plan-change/proration billing correctness audit — SHIPPED 2026-09-24 as
+  `proration-guard`. See the dated entry at the end of this file for the deeper code-search
+  verification that resolved both near-misses below and cleared the novelty bar.** Original
+  round-9 write-up, kept for its research trail — inconclusive, parked on the
   access wall, not rejected.** What was checked and read in full (not just titles): `affaan-m/
   everything-claude-code` → `skills/customer-billing-ops/SKILL.md` is customer-support operational
   triage (classify/refund/cancel), not a code-review audit — its only proration mention is a
@@ -1393,3 +1396,77 @@ subscription plan-change/proration — see their own entries above for citations
 queries), and the access-wall excuse blocking them is resolved the same way it was for this one — a
 future run should re-attempt them with `search_code`/`search_issues`/`search_pull_requests` before
 doing anything else.
+
+## `proration-guard` — SHIPPED (2026-09-24); picked up the subscription plan-change/proration thread
+
+Had `mcp__github__search_code`/`search_issues`/`search_pull_requests` available (same access-wall
+resolution `export-guard` and `trail-guard` found), and used it to re-attempt the subscription
+plan-change/proration candidate round 9 (2026-09-14) parked with two specific unresolved
+near-misses (`eronred/aso-skills` → `subscription-lifecycle`, `stateset/icommerce-skills` →
+`skills/commerce/subscriptions`).
+
+- [x] **Resolved both round-9 near-misses and searched substantially deeper.** `eronred/aso-skills`
+  no longer resolves at all (`search_code repo:eronred/aso-skills subscription` — 0 hits; the repo
+  or path round 9 cited from a search snippet appears gone or never existed as described) — no
+  longer a live unresolved reference. `stateset/icommerce-skills` → `skills/commerce-subscriptions/
+  SKILL.md` (fetched) is confirmed support-ops (read subscription status, billing interval, "any
+  proration... or cancellation effective date" as a field to surface to a support agent), not a
+  review method — matches round 9's own suspicion. Beyond those two, ran eight further
+  `filename:SKILL.md` searches (`"proration" upgrade downgrade`, `"proration" review audit bug`,
+  `"double charge" proration subscription`, `"data residency"`-shaped variants for the sibling
+  candidate) and fetched five of the most promising-looking hits in full via raw.githubusercontent.com
+  (`appeeky/stripe-skills` → `stripe-integration-review/SKILL.md`, `marquesfelip/agents-and-skills` →
+  `billing-integration-safety/SKILL.md`, plus three narrower checklist hits). Every one names
+  "proration" as a keyword or a single checklist line (`stripe-integration-review`: "`proration_behavior`
+  set intentionally on updates" — confirmed by direct fetch to flag *whether a setting exists*, not
+  whether the resulting credit/charge is correct; `billing-integration-safety`: proration listed in
+  its trigger-phrase keyword list, but the skill's actual body is about webhook idempotency and state
+  sync, with proration appearing only as a low-severity example finding — confirmed by direct fetch,
+  same "thin bullet in a broader skill" shape that cleared `trail-guard` and `export-guard`, not the
+  "near-exact match" shape that killed RBAC and `clean-exit`). No hit — implementation/scaffold skill,
+  checklist bullet, or otherwise — does the actual review method: enumerate every plan-change surface,
+  check computed proration against the plan's *own documented* policy, check whether a credit/coupon/
+  voucher redemption can reach into plan state, check idempotency of a repeated/racing plan-change
+  request. **Verdict: cleared the novelty bar**, with meaningfully deeper verification than round 9
+  had access to (two specific unresolved references actually closed out, five full-file fetches this
+  round vs. search-snippet-only reasoning before).
+- [x] **Re-verified round 9's two grounding citations directly** rather than relying on them
+  secondhand: Kill Bill (`killbill/killbill`) issue #698 — the documented `END_OF_TERM` cancellation
+  policy promises "no proration," but account-level `CANCELLATION` cancels immediately and issues
+  prorated credit anyway — and `anthropics/claude-code` issue #51168 — a promotional credit voucher
+  redemption triggering a silent Pro Annual → Max monthly downgrade plus duplicate gift-subscription
+  invoices. Both used directly in the shipped skill's opening paragraph and Steps 2/3, not
+  paraphrased.
+- [x] **Added `skills/proration-guard/SKILL.md`**: step 1 maps every plan-mutating surface (not just
+  the named upgrade/downgrade buttons — admin overrides, scheduled changes, voucher redemption,
+  webhook-driven writes); step 2 checks proration math against the plan's *documented* policy and
+  period-boundary correctness, the Kill Bill shape; step 3 traces whether a credit/coupon/voucher path
+  can write plan state or spawn an extra invoice, the claude-code#51168 shape; step 4 checks
+  idempotency/races on repeated or stacked plan-change requests. README skills-table row +
+  decision-table row + intro paragraph updated (twenty-seven → twenty-eight, rejected-candidates
+  sentence extended); also fixed a second, independently-found stale skill count in the Install
+  section's tip (still read "twenty-six," one release behind the intro paragraph's already-correct
+  "twenty-seven" before this run — same class of drift the 2026-09-20 entry fixed once before).
+  `examples/proration-guard.md` added in the same run (a double-bug support ticket — a gift voucher
+  silently downgrading a Pro Annual account plus a "no-proration" cancellation policy that prorates
+  twice — walking all four steps to both confirmed root causes plus an independent, lower-severity
+  scheduling-race gap found along the way) — linked from `examples/README.md` and the main README's
+  Examples section. `python tools/validate.py` passes (`OK: 28 skills valid and consistent with
+  README.`).
+
+Follow-up for the next run: one candidate remains parked — data-residency/region-routing enforcement
+(rounds 6/7). Re-checked this round too (not the day's pick, but researched in parallel): `search_code`
+for `filename:SKILL.md "data residency" region failover` and `"data residency" audit review codebase`
+found dense design/scaffold coverage (`majiayu000/claude-skill-registry` → `multi-region-deployment`,
+several `multi-region-design` variants) plus one real code-level audit candidate —
+`mastepanoski/claude-skills` → `skills/gdpr-audit/SKILL.md`, fetched in full — which does audit an
+existing codebase (SDK/HTTP endpoints, AWS/GCP region strings) for *initial* cross-border transfers,
+but confirmed by direct fetch to explicitly not cover runtime/infrastructure-layer residency leaks:
+multi-region failover fallback chains, CDN edge-node residency, cross-region read-replica routing,
+cache eviction across zones, queue-consumer region selection, or analytics-pipeline region pinning.
+That gap is real and still not clearly claimed by any fetched skill — genuinely promising, but not
+exhaustively re-swept this round (budget went to closing out proration instead). The right next move
+for whoever picks this up: search `filename:SKILL.md "cross-region" "read replica"` and
+`"data residency" "cache" OR "CDN" OR "queue"` specifically for the runtime/infra-leak angle
+`gdpr-audit` itself says it doesn't cover, rather than re-running the same design-skill-heavy queries
+already tried across rounds 6, 7, 10, and this one.

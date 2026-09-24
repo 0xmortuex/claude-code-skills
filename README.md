@@ -2,9 +2,9 @@
 
 **A small pack of Claude Code skills for the unglamorous work that actually ships software** — finalizing a change, writing a README people read, catching the security bug before it lands, cutting release notes, and getting oriented in a strange codebase.
 
-Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-seven that earn their place.
+Every skill here is written the way the [official skill guidance](https://docs.anthropic.com/en/docs/claude-code/skills) recommends: a pushy trigger description so Claude reaches for it at the right moment, and a body that explains the *why* so Claude does the task well instead of following steps by rote. No fluff, no 40-skill kitchen sink — twenty-eight that earn their place.
 
-Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing, session/credential-revocation completeness, A/B experiment integrity, internationalization/locale correctness, offline-sync conflict resolution — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, whether a "delete my account" feature actually reaches every place a user's data got copied to, whether a bulk file-import feature handles a partly-bad file and a re-upload honestly, whether an API version being sunset actually gives real callers the notice and behavior a shutdown requires, whether tracking scripts/pixels actually stop firing until real consent is recorded rather than a cookie banner that's cosmetic, and whether a bulk data export or report actually contains every row it claims to and survives being opened without silently corrupting identifier columns, and whether every state-mutating action actually writes an audit-log entry rather than only the ones a developer remembered to instrument.
+Every skill added since the original five went through the same filter: research the existing ecosystem first (official packs, superpowers, the awesome-lists, the marketplaces) and keep only problems **no prominent skill already solves**. Candidates that turned out to be covered elsewhere — commit splitting, flaky-test fixing, session handoffs, concurrency audits, license compliance, graceful-shutdown/startup-readiness audits, PII/data-retention scanning, application-side LLM prompt-injection review, RBAC/permission-matrix drift auditing, session/credential-revocation completeness, A/B experiment integrity, internationalization/locale correctness, offline-sync conflict resolution — were dropped, not duplicated. What survived: lost-git-work recovery, pre-deploy migration review, environment-delta debugging, Windows/POSIX audits, production backfills, an evidence-grounded dev diary, mixed-version deploy safety, datetime correctness, leaked-credential response, background-job correctness, cache-correctness review, crash-safe local file I/O, evidence-based removal of externally-reachable "dead" code, pre-send review for code that messages a real user audience, app-store-specific mobile release/rollback review, whether an ongoing notification system actually honors what users opted out of, whether a "delete my account" feature actually reaches every place a user's data got copied to, whether a bulk file-import feature handles a partly-bad file and a re-upload honestly, whether an API version being sunset actually gives real callers the notice and behavior a shutdown requires, whether tracking scripts/pixels actually stop firing until real consent is recorded rather than a cookie banner that's cosmetic, whether a bulk data export or report actually contains every row it claims to and survives being opened without silently corrupting identifier columns, whether every state-mutating action actually writes an audit-log entry rather than only the ones a developer remembered to instrument, and whether a subscription plan-change actually matches its own documented proration/cancellation policy instead of a credit redemption or a race quietly corrupting it.
 
 ## The skills
 
@@ -37,6 +37,7 @@ Every skill added since the original five went through the same filter: research
 | **[consent-guard](skills/consent-guard/SKILL.md)** | Audits whether tracking scripts/pixels actually stop firing until real consent is recorded — script-injection ordering vs. Consent Mode defaults, gating the SDK's own automatic beacons (not just your later calls into it), SPA re-init, server-side/CAPI bypass, and fail-open vs. fail-closed on a missing consent lookup | "does our cookie banner actually block trackers", "GTM tags fire before the user clicks accept", "add Google Consent Mode", "audit our tracking scripts for consent" |
 | **[export-guard](skills/export-guard/SKILL.md)** | Reviews a bulk data export/report feature for silent failures that look like success — a row-count cap or timeout that truncates the file without saying so, and identifier columns (IDs, ZIP codes, phone numbers) that silently corrupt the moment a spreadsheet or re-import auto-infers their type | "does this export cap out silently", "will Excel mangle our IDs", "is this export actually complete", "can admins trust this report" |
 | **[trail-guard](skills/trail-guard/SKILL.md)** | Audits whether every state-mutating action actually writes an audit-log entry — enumerates mutating routes/RPCs from the routing layer itself (not existing log calls), checks denial/exception exit paths, and flags opt-in-per-handler coverage as the root cause instead of listing each gap in isolation | "do we actually log every admin action", "can we tell who did this from the audit log", "audit log completeness review", adding a new admin/bulk-action endpoint |
+| **[proration-guard](skills/proration-guard/SKILL.md)** | Reviews a subscription plan-change code path (upgrade/downgrade/cancel/reactivate) for billing-correctness bugs — proration that contradicts the plan's own documented policy, a credit/coupon/voucher redemption that silently triggers a plan change or a duplicate invoice, and a second plan-change request racing or stacking with one still pending | "does our proration math add up", "why did this customer get double-charged on upgrade", "what happens if they downgrade twice before it takes effect", "does canceling actually stop billing them" |
 
 ## Which skill do I want?
 
@@ -71,6 +72,7 @@ Not sure which one fires for your situation? Match the symptom:
 | You have a cookie/consent banner and aren't sure the tracking scripts actually wait for it | [consent-guard](skills/consent-guard/SKILL.md) |
 | You're building a bulk export/report and aren't sure it's actually complete or that IDs survive Excel | [export-guard](skills/export-guard/SKILL.md) |
 | You can't answer "who did this" from the audit log, or you're adding a new admin/bulk-action endpoint | [trail-guard](skills/trail-guard/SKILL.md) |
+| A customer was double-charged or under-credited on a plan change, or you're adding an upgrade/downgrade/cancel handler | [proration-guard](skills/proration-guard/SKILL.md) |
 
 ## What makes these different
 
@@ -109,7 +111,7 @@ cp -r claude-code-skills/skills/* ~/.claude/skills/
 
 Either way, start (or restart) Claude Code and the skills are live. Claude invokes them automatically when your request matches — or call one by name, e.g. `/ship-it`. Run `/skills` to confirm they loaded.
 
-> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all twenty-six at once is fine, but if you only want the security review, just take `security-sweep`.
+> **Tip:** start with one or two. Skills work best when each one clearly owns its trigger; copying all twenty-eight at once is fine, but if you only want the security review, just take `security-sweep`.
 
 ## Using them
 
@@ -158,8 +160,9 @@ currently [git-rescue](examples/git-rescue.md),
 [import-guard](examples/import-guard.md),
 [sunset-guard](examples/sunset-guard.md),
 [consent-guard](examples/consent-guard.md),
-[export-guard](examples/export-guard.md), and
-[trail-guard](examples/trail-guard.md) — every skill in the pack has one.
+[export-guard](examples/export-guard.md),
+[trail-guard](examples/trail-guard.md), and
+[proration-guard](examples/proration-guard.md) — every skill in the pack has one.
 
 ## Contributing
 

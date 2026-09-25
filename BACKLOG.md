@@ -1470,3 +1470,51 @@ for whoever picks this up: search `filename:SKILL.md "cross-region" "read replic
 `"data residency" "cache" OR "CDN" OR "queue"` specifically for the runtime/infra-leak angle
 `gdpr-audit` itself says it doesn't cover, rather than re-running the same design-skill-heavy queries
 already tried across rounds 6, 7, 10, and this one.
+
+## Novelty research — round 12 (2026-09-25): no code-search access this session, nothing shipped
+
+This session's `mcp__github` access is scoped to this one repo only (`0xmortuex/claude-code-skills`)
+— unlike whichever environment shipped `export-guard`/`trail-guard`/`proration-guard`, there was no
+`search_code`/`search_issues`/`search_pull_requests` available across GitHub at large, and using
+those tools without a `repo:` qualifier would search outside this session's granted scope. Confirmed
+generic alternatives don't substitute: `grep.app` is blocked by this session's egress proxy, and
+GitHub's own web `code search` (`github.com/search?type=code`) refuses results to an unauthenticated
+fetch ("Sign in to search code on GitHub"). This is the same honest constraint logged 2026-09-09 and
+2026-09-10 (round 6) — not a "searched and found nothing" verdict, a "couldn't run the required
+search" one. **Did not ship the data-residency/region-routing candidate on WebSearch alone** — same
+reasoning as rounds 6/9: generic search cannot replicate the `filename:SKILL.md` exact-match
+verification this pack requires before shipping, so a skill written against a "no hits" from
+WebSearch would be under-verified. Whoever next has real code-search access should run round 11's
+two queries (still the right next move for data-residency) before anything else.
+
+Spent the remaining budget doing what's possible without code search: sanity-checking fresh candidate
+angles against WebSearch, to save the next session with real search access a cold start.
+
+- **Webhook delivery-correctness review (signature verification, retry/backoff, replay-dedup,
+  at-least-once ordering) — REJECTED, covered.** `hookdeck/webhook-skills` is a whole prominent pack
+  built exactly for this: per-provider signature verification (Stripe/Shopify/GitHub/etc.), a
+  `webhook-handler-patterns` skill covering "verify first, parse second, handle idempotently third,"
+  replay-attack rejection via timestamp windows, and dead-letter-queue/backoff guidance. Confirmed by
+  reading the repo's own description and linked skill list, not just a title match. Closed — do not
+  re-research without a sub-angle that pack doesn't touch.
+- **Distributed lock / leader-election correctness audit (split-brain on crash, lock held past lease,
+  no fencing token letting a stale holder still write) — UNRESEARCHED CANDIDATE, no competing hit on
+  WebSearch.** Real, specific failure mode (Martin Kleppmann's fencing-token argument against
+  Redis/Redlock-style locks is the canonical citation) and distinct from `job-warden` (job-level
+  idempotency/overlap, not lock-implementation correctness) and the already-rejected
+  replica-lag/multi-tenant-isolation ground. Not code-search-verified — needs
+  `filename:SKILL.md "fencing token"` and `filename:SKILL.md "distributed lock" audit` before writing
+  anything.
+- **Search-index/primary-database sync-correctness audit (Elasticsearch/Algolia/OpenSearch index
+  silently drifts from the source of truth — a write succeeds but the index update fails or races,
+  a delete doesn't propagate) — UNRESEARCHED CANDIDATE, no competing hit on WebSearch.** The hits
+  found (`elastic/agent-skills`'s `elasticsearch-audit`, various Elasticsearch-operations skills) are
+  cluster-admin/security-audit-log tooling, not an audit of *application write-path* sync correctness.
+  Adjacent to `stale-guard` (cache correctness) and `erasure-guard` (deletion completeness across
+  stores) but neither covers ordinary write-path index drift outside a delete flow — worth checking
+  those two skills' own scope statements don't already implicitly cover it before writing a third.
+  Needs `filename:SKILL.md "search index" sync consistency audit` and
+  `filename:SKILL.md elasticsearch OR algolia stale index` with real code-search access.
+
+`python tools/validate.py` still passes (`OK: 28 skills valid and consistent with README.`) — no
+skill files touched this round, backlog-only.

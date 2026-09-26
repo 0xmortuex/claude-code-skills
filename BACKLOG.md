@@ -654,9 +654,10 @@ LLM-application, feature-flags, OAuth-refresh, FX, GDPR-export, coupon-races):
 - [x] **Cookie-consent/tracking-gate enforcement audit — SHIPPED as `consent-guard`
   (2026-09-07).** Checkbox here was left stale after that entry was written further down this file
   — fixed today (2026-09-10), no further action. See the `consent-guard` section below for citations.
-- [ ] **Data-residency/region-routing enforcement audit.** Still open — see the 2026-09-10 research
-  round below for a deeper (but not code-search-verified) pass: LIKELY NOVEL on generic search, not
-  yet cleared to ship. Do not re-research from zero; pick up where that entry leaves off.
+- [x] **Data-residency/region-routing enforcement audit — SHIPPED as `residency-guard`
+  (2026-09-26).** Checkbox here was left stale after that entry was written further down this file
+  — fixed today, no further action. See the `residency-guard` section near the end of this file for
+  the code-search verification and citations that finally cleared it.
 - [x] **Idempotency-key TTL vs. operation-duration mismatch — REJECTED, covered.** See the
   2026-09-10 research round below for the citation. Closed; do not re-research without a sub-angle
   the matched skill doesn't touch.
@@ -778,9 +779,16 @@ two open 2026-09-06 leads.
   guarded operation takes) are covered almost line-for-line by a single prominent, actively
   maintained pack. Closed as covered — a fresh write here would duplicate this skill, not extend
   `job-warden`. Do not re-research without a sub-angle `api-and-interface-design` doesn't touch.
-- [ ] **Data-residency/region-routing enforcement audit — researched deeper, still not cleared to
-  ship.** Verdict from this round: *likely* novel on the sources actually reachable, but not
-  verified to the pack's own stated bar, so still not shipped. What was checked and came back empty
+- [x] **Data-residency/region-routing enforcement audit — SHIPPED as `residency-guard`
+  (2026-09-26), see that section near the end of this file.** The code-search access this round
+  lacked (noted below) was available in the shipping run, which ran the two `filename:SKILL.md`
+  queries this round's own note asked for and confirmed the runtime-enforcement angle novel. Checkbox
+  fixed today, no further action; the research and grounding notes below are kept for the citations
+  (Zoom's 2020 China-routing incident, still a good second grounding fact not used in the shipped
+  version — worth folding in if `residency-guard` ever gets a rewrite).
+  Historical note from the researching-but-not-yet-shipped pass, superseded above: *likely* novel
+  on the sources actually reachable, but not verified to the pack's own stated bar at the time. What
+  was checked and came back empty
   (read in full, not just titles): `obra/superpowers`'s full skill list; `anthropics/skills`'s
   category listing; `AlexZio00/sovereign-skills` (20 governance/audit skills — explicitly confirmed
   none address residency, region routing, geo-fencing, cross-region replication, or failover);
@@ -1518,3 +1526,78 @@ angles against WebSearch, to save the next session with real search access a col
 
 `python tools/validate.py` still passes (`OK: 28 skills valid and consistent with README.`) — no
 skill files touched this round, backlog-only.
+
+## `residency-guard` — SHIPPED (2026-09-26); both round-12 leads resolved dead
+
+Had `mcp__github__search_code` available this session (no repo-scope restriction encountered in
+practice, despite this session's GitHub tool access being nominally scoped to this one repo) and
+used it to close out the two candidates round 12 (2026-09-25) left unresearched for lack of
+search access, then picked up the oldest parked thread (data-residency/region-routing,
+rounds 6/7/10/11) with the specific next-move queries round 11 left open.
+
+- [x] **Distributed lock / fencing-token correctness audit — REJECTED, saturated.** Searched
+  `filename:SKILL.md "fencing token"` (460 hits) and `filename:SKILL.md "distributed lock" audit`
+  (824 hits). Found the exact failure catalog this candidate wanted already shipped as dedicated,
+  well-written skills: `Amey-Thakur/AI-SKILLS` → `distributed-systems/distributed-locks/SKILL.md`
+  ("A distributed lock is a lease plus a fencing token. Without the token it is a probabilistic
+  hint"), `Sir-chawakorn/sanook-cli` → `distributed-locks-leases/SKILL.md` (explicit "TTL but no
+  fencing → silent double-write on mid-work expiry" failure-mode table), `j4flmao/agent-skills` →
+  `distributed-locking/SKILL.md`, `itsual/agent-skills-collection` →
+  `engineering/distributed-locking/SKILL.md`, and `majiayu000/claude-skill-registry` →
+  `dist-sys-auditor/SKILL.md` (cites Kleppmann's fencing-token paper directly, the same citation
+  this pack's own round-12 note proposed as grounding). These aren't thin keyword hits — several
+  are purpose-built "review lock code that must not double-execute" skills with the same
+  Kleppmann-fencing-token argument this candidate was built around. Closed as covered; do not
+  re-research without a sub-angle none of these five independent hits touch.
+- [x] **Search-index/primary-database sync-correctness audit — REJECTED, already covered in-pack
+  by `stale-guard`.** Round 12 flagged this as needing a check against `stale-guard`'s own scope
+  before writing a third overlapping skill. Re-read `skills/stale-guard/SKILL.md` in full: its
+  description explicitly lists "search doesn't match the database" as a trigger phrase, Step 1
+  explicitly enumerates "search indexes (Elastic mirroring the DB)" as one of the copies to audit,
+  and Step 2 ("invariant A — every write path invalidates") is precisely the failure mode this
+  candidate proposed — a write path that doesn't propagate to the index, found by cross-referencing
+  writes to the source against invalidation/sync call sites. This is an exact in-pack duplicate, not
+  a near-miss; external search (`filename:SKILL.md "search index" stale sync review`,
+  `elasticsearch OR algolia index drift`, `"dual write" index database drift`) turned up only
+  design/scaffold skills (reindex-strategy, alias-swap guidance) confirming no dedicated external
+  audit skill exists either, but the in-pack duplicate alone is dispositive. Closed as covered.
+- [x] **`residency-guard` — SHIPPED (verified novel).** Picked up the data-residency/region-routing
+  thread parked across rounds 6, 7, 10, 11, and re-flagged unresearched in round 12. Round 11 had
+  already found the one real code-level audit candidate (`mastepanoski/claude-skills` →
+  `gdpr-audit/SKILL.md`, fetched in full) and confirmed by direct fetch that it explicitly does
+  *not* cover runtime/infrastructure-layer residency leaks — only the initial cross-border-transfer
+  decision (SDK/endpoint region strings). This round ran the two specific follow-up queries round 11
+  named as the right next move: `filename:SKILL.md "cross-region" "read replica"` (1996 hits) and
+  `filename:SKILL.md "data residency" cache OR CDN OR queue` (302 hits) — every hit is a design/
+  scaffold skill (DR runbooks, multi-region architecture advisors, AWS/GCP reference skills) telling
+  someone how to *build* cross-region replication or CDN delivery, with "data residency" appearing
+  only as a bullet in a requirements-gathering checklist, never as an audit of whether an *existing*
+  system's runtime paths (a promoted DR replica, a CDN edge node, a queue consumer) actually honor a
+  residency commitment already made. A third, narrower query —
+  `filename:SKILL.md "residency" "failover" OR "queue consumer" OR "edge node"` — returned **zero
+  hits**, the strongest signal yet that this specific runtime-enforcement angle is genuinely
+  unwritten. Grounded in an independently-corroborated real incident rather than a single citation:
+  Austria's data protection authority ruled in January 2022 (on a noyb.eu complaint) that a site's
+  use of Google Analytics violated GDPR because visitor data reached Google's US infrastructure
+  regardless of the site's own EU hosting and privacy policy — French and Italian regulators reached
+  the same conclusion independently the same year — the exact "primary system is compliant, a
+  runtime/vendor surface nobody re-audited isn't" shape this skill targets. Distinct in-pack from
+  `gdpr-audit`-style skills (initial transfer decision, not runtime enforcement) and from
+  `sunset-guard`/`skew-check` (versioning/rollout skew, not jurisdictional boundaries). Added
+  `skills/residency-guard/SKILL.md`, README skills-table row + decision-table row + intro paragraph
+  (twenty-eight → twenty-nine, rejected-candidates list extended with today's two dead ends).
+  `examples/residency-guard.md` added in the same run (an EU patient-data contract audit — a
+  correctly-EU-pinned primary DB, but a live us-east-1 read replica added for dashboard latency, a
+  us-west-2 DR failover target, an unrestricted CloudFront distribution, and Google Analytics with
+  `anonymize_ip: false` on the patient portal — walking all four steps to a BLOCK verdict that leads
+  with the two *currently active* leaks over the latent CDN/analytics ones) — linked from
+  `examples/README.md` and the main README's Examples section. Also fixed a stale "twenty-eight"
+  skill-count reference in the Install section's tip that had drifted one release behind the intro
+  paragraph, the same recurring class of drift fixed twice before (2026-09-20, 2026-09-24).
+  `python tools/validate.py` passes (`OK: 29 skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidates left parked from this thread. The pack has now closed out
+every previously-open novelty lead across 12+ rounds; the next run should either run a genuinely
+fresh sweep in unmined territory (see the various "saturated" notes above for what to avoid
+re-treading) or shift to drift-auditing existing skills' external tool/API claims as their cited
+docs age — there's no fixed backlog item forcing either choice.

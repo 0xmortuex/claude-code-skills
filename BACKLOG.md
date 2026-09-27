@@ -1601,3 +1601,65 @@ every previously-open novelty lead across 12+ rounds; the next run should either
 fresh sweep in unmined territory (see the various "saturated" notes above for what to avoid
 re-treading) or shift to drift-auditing existing skills' external tool/API claims as their cited
 docs age — there's no fixed backlog item forcing either choice.
+
+## `push-guard` — SHIPPED (2026-09-27, verified novel); one round wasted re-treading closed ground
+
+Had `mcp__github__search_code` available with no repo-scope restriction encountered in practice
+(same as the `residency-guard` session). First tried four candidate angles from fresh-eyes
+brainstorming — sample-ratio-mismatch/bucketing-implementation audit, LLM API cost/token-budget
+runaway review, offline-first/local-first sync conflict-resolution review, i18n/pluralization
+correctness audit — and got real-looking hits for all four (PostHog's own `signals-scout-experiments`
+skill for SRM/rebucketing; `kubegrind/sre-agent-forge` → `llm-cost-optimizer` and three siblings for
+LLM cost; `jrmoulckers` → `edge-sync/SKILL.md`'s LWW/merge/client-wins failure-mode table for
+offline-sync; `rh-uxd/ai-helpers` → `pf-i18n-audit` and three siblings for i18n) before realizing,
+on a `grep -n -i` pass over this file, that **all four were already explicitly researched and closed**
+by the 2026-09-03 and 2026-09-05 rounds (`sunset-guard`'s entry: "A/B test / experiment integrity",
+"Internationalization/locale correctness", "Offline-sync / conflict-resolution" all REJECTED; round 4:
+"LLM streaming-response consumption" and "RAG pipeline audit" REJECTED, plus a later round's
+"LLM agent-loop runaway-cost / stopping-criteria review REJECTED" at line 1259). This session's
+searches only reconfirmed those closures with fresher citations — genuinely zero new information —
+and are **not** logged as new backlog entries, since doing so would be exactly the "re-run the same
+sweep from zero" busywork the 2026-09-05 note explicitly warns against. Flagging this here as a
+process note rather than silently discarding it: **before spending search budget on a "fresh" angle,
+`grep -n -i "REJECTED\|already mined" BACKLOG.md` first** — this file's own domain list (backend/infra,
+mobile, stats/i18n/sync, LLM-application, feature-flags, OAuth-refresh, FX, GDPR, RBAC, terraform,
+webhooks, distributed-locks, a11y, license/SBOM, and the ~20-item list in the 2026-08-23 round-2 entry)
+is the fastest way to avoid this, faster than re-deriving saturation one WebSearch at a time.
+
+- [x] **Push-notification device-token lifecycle audit — SHIPPED as `push-guard` (verified novel).**
+  Pivoted to a fifth angle after the above dead end and verified it properly before writing anything.
+  `filename:SKILL.md "push token" OR "device token" logout unregister audit review` — **zero hits**.
+  Broader follow-ups (`"push notification" token stale invalid`, `"device token" cleanup OR lifecycle
+  OR logout review`, `"push notification" audit review token management`) surfaced only thin mentions
+  inside broad mobile/security scaffolding skills (`sickn33/agentic-awesome-skills` →
+  `mobile-security-coder`: "token management" as a two-word bullet, no method) — the same
+  "real bug pattern reinvented ad hoc as a checklist bullet, never shipped as its own audit skill"
+  shape that cleared `export-guard`, `blast-guard`, and `trail-guard`. Confirmed distinct in-pack from
+  `blast-guard` (reviews one bulk send's audience/suppression/stop-mechanism, not token plumbing),
+  `pref-guard` (audits whether a *preference* is honored, a layer above whether the *token* is even
+  still valid/bound to the right account), and `security-sweep` (payload encryption/content, not
+  token-to-account binding). Grounded in a real, specific, publicly reported bug rather than a
+  hypothesis: `IMGIITRoorkee/noticeboard-mobile-app` issue #58 — a logout handler's unregister call
+  passed a hardcoded placeholder value instead of the actual stored token, so the delete never matched
+  a row and logged-out phones kept receiving the previous user's notifications indefinitely (found via
+  WebSearch, read directly from the issue text in the search result; the MCP GitHub tools in this
+  session are scoped to this one repo and couldn't fetch it directly, so it's cited from the indexed
+  issue text rather than a full-issue fetch). Paired with two current, official, verified mechanism
+  facts a codebase handling this correctly would actually act on: Firebase's own "Best practices for
+  FCM registration token management" documents detecting an invalid-token response and deleting that
+  registration, and Apple's "Handling error responses from Apple Push Notification service" documents
+  `410 Unregistered`/`400 BadDeviceToken` as final, non-retryable responses requiring token deletion
+  (both confirmed directly against firebase.google.com and developer.apple.com, not a secondhand
+  summary — also checked and ruled out a false lead: an April 2024 Apple developer-forum report of
+  "Unregistered" responses disappearing turned out to be a temporary reporting gap during a platform
+  transition, not a removed mechanism, so the skill doesn't cite it). Added `skills/push-guard/SKILL.md`
+  (steps: logout/account-switch token release, OS-driven token-refresh replacement vs. duplicate-row
+  accumulation, provider dead-token response handling, payload-sensitivity severity check),
+  `examples/push-guard.md` (a handed-down-phone bug report walking all four steps to a hardcoded-string
+  logout bug plus three independent secondary gaps), README skills-table row + decision-table row +
+  intro paragraph (twenty-nine → thirty) + Examples section, `examples/README.md` link.
+  `python tools/validate.py` passes (`OK: 30 skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidates parked from this thread. Given this round's process note,
+the highest-value first step next time is checking this file's existing REJECTED/saturated log before
+re-researching any backend/infra/mobile/stats/i18n/sync/LLM-application angle from scratch.

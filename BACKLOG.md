@@ -1663,3 +1663,59 @@ is the fastest way to avoid this, faster than re-deriving saturation one WebSear
 Follow-up for the next run: no candidates parked from this thread. Given this round's process note,
 the highest-value first step next time is checking this file's existing REJECTED/saturated log before
 re-researching any backend/infra/mobile/stats/i18n/sync/LLM-application angle from scratch.
+
+## Drift audit — round 6 (2026-09-28): the five post-round-5 skills
+
+This session's `mcp__github` access is scoped to this one repo only (no `search_code` across all of
+GitHub, unlike the sessions that shipped `export-guard`/`trail-guard`/`proration-guard`/
+`residency-guard`/`push-guard`), so a fresh novelty sweep would be under-verified against this pack's
+own bar — WebSearch alone reliably stalls at "inconclusive" for that purpose, per rounds 6-12's
+repeated findings above. Picked the other standing option instead: drift-audit the five skills shipped
+since round 5 (2026-09-16, which covered `sunset-guard`/`consent-guard`) and never had a dedicated
+fact-verification pass — `export-guard`, `trail-guard`, `proration-guard`, `residency-guard`, and
+`push-guard`, all shipped 2026-09-22 through 2026-09-27. Read all five `SKILL.md` files in full,
+identified every externally-checkable claim, and verified each via WebSearch (no code-search needed
+for this direction — all five citations are either static GitHub issues/PRs or platform documentation):
+
+- `push-guard`: re-verified both provider mechanics against current search results, not just the
+  shipping round's citations. FCM: current Firebase guidance still confirms deleting a token on a
+  `messaging/registration-token-not-registered` / invalid-argument response. APNs: `410 Unregistered`
+  (final, don't retry) and `400 BadDeviceToken` are both still current and documented as non-retryable.
+  Also re-confirmed the skill's own hedge about the April 2024 forum report of "Unregistered" responses
+  disappearing was correctly excluded (a related forum thread, "APNs Returning 200 OK for Uninstalled
+  Apps Instead of 410 Error," shows real ongoing developer uncertainty about 410's reliability in
+  practice — but the skill already only claims what happens when the documented signal *does* fire and
+  separately hedges that live send-behavior can't be confirmed from source alone, so no change needed).
+  `IMGIITRoorkee/noticeboard-mobile-app` issue #58 still resolves as cited. No drift.
+- `residency-guard`: re-verified the Austria/France/Italy GDPR-Google-Analytics grounding fact —
+  confirmed CNIL (France) and Garante (Italy) both independently reached the same violation finding in
+  2022, matching the skill's "the same year" phrasing exactly. No drift.
+- `proration-guard`: re-verified Kill Bill issue #698 (still resolves, describes the `END_OF_TERM`/
+  immediate-cancellation-with-proration bug exactly as the skill states) and confirmed no change in how
+  the skill's citation is worded versus the actual issue text. No drift.
+- `trail-guard`: re-verified `ROCm/spur` PR #870 (still resolves; confirmed it implements the
+  `every_mutating_rpc_names_its_target` completeness test and the denial-path/early-return fix the
+  skill describes). No drift.
+- `export-guard`: re-verified both grounding citations — `FreshCode-Org/freshdata` issue #239 (still
+  resolves, confirmed fixed by PR #361's `dtype=str` fix, matching the skill's description) and
+  `EL-Bied-Ali/OnlyLive-Events` PR #19 (still resolves, confirmed the `findMany({ take: 20_000 })` →
+  keyset-paginated streaming-generator fix exactly as cited). Noted but not a drift issue: the same
+  repo has follow-on PRs (#25, #89) with near-identical titles about the same 20k-row truncation,
+  suggesting the bug recurred or the fix needed re-landing — doesn't change the accuracy of what PR #19
+  itself did, so no change to the skill. No drift.
+
+No fixes needed in any of the five skills — every externally-checkable claim in the pack's five most
+recently shipped skills now has a dedicated verification pass, on top of the one each already got
+during its own shipping round. `python tools/validate.py` still passes (`OK: 30 skills valid and
+consistent with README.`) — no skill files changed this run.
+
+Follow-up for the next run: all 30 skills now have at least one focused fact-verification pass since
+their most recent content change (round 3 covered the original 18, round 4 the next 5, round 5 the
+next 2, this round the next 5). If a future session has real cross-repo GitHub code search
+(`mcp__github__search_code` without a repo restriction), the fastest way to find fresh work is a
+genuinely new novelty angle outside the 20+ domains this file's sweep rounds have already mined
+(see the `push-guard` entry above for the fastest way to check that before spending search budget).
+Otherwise, the next drift-audit pass is only worth running once a specific cited tool/API/platform doc
+is known to have changed — there's no fixed schedule, and re-running this same check on unchanged
+sources next time would be exactly the "eyeballed by hand" busywork this file's own conventions exist
+to avoid.

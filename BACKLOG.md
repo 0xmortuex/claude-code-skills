@@ -1719,3 +1719,62 @@ Otherwise, the next drift-audit pass is only worth running once a specific cited
 is known to have changed — there's no fixed schedule, and re-running this same check on unchanged
 sources next time would be exactly the "eyeballed by hand" busywork this file's own conventions exist
 to avoid.
+
+## `resync-guard` — SHIPPED (2026-09-29, verified novel)
+
+Had `mcp__github__search_code`/`search_issues` available with no repo-scope restriction encountered
+in practice (same access as the `residency-guard`/`push-guard` sessions), so per the round-6 note,
+spent the budget on a genuinely fresh novelty angle rather than another drift pass on unchanged docs.
+
+- [x] **Real-time client reconnect/resync correctness — SHIPPED as `resync-guard` (verified novel).**
+  The candidate: does a WebSocket/SSE/long-polling client that disconnects and reconnects actually
+  recover the state it missed, or does it just resume the live stream and treat existing client state
+  as still current. Distinct from every angle this file's domain list already closed — not
+  `job-warden` (server-side queue/cron idempotency), not `stale-guard` (cache-invalidation-on-write,
+  a wrong-answer-on-request bug, not a missed-push-while-disconnected one), not `push-guard`/
+  `pref-guard` (out-of-app push-notification token/preference correctness, not in-app live-stream
+  state). Verified uncovered by two rounds of `filename:SKILL.md` search
+  (`websocket OR "server-sent events" reconnect gap`, `"reconnect" review audit "missed" OR "gap"
+  real-time`, `"Last-Event-ID" OR "resume token" missed events client state`, `"reconnect" "audit"
+  OR "review" websocket OR "server-sent events" client` — 400-2600 hits each, every one read past the
+  snippet): every hit is scaffold/build guidance for *implementing* WebSocket/SSE systems (connection
+  lifecycle, protocol choice, resume-token *design* as a feature to build) or a single checklist
+  bullet inside a broader backend-architecture skill, never an audit of whether *existing* reconnect
+  code actually closes the gap. One close-shaped near-miss checked and ruled out:
+  `hung-phan/system-skills` → `skills/system-review/SKILL.md` is an "explain a concept / gap-check an
+  approach / review a pasted RFC" reference wiki (confirmed by reading its own frontmatter description
+  and the referenced `communication/sse/SKILL.md` sub-page in full) — a systems-design *knowledge base*
+  for design-review conversations, not a code-level audit with file:line findings the way this pack's
+  skills work; different shape, not a duplicate. Grounded in two real, verified Mattermost issues
+  rather than a hypothesis: issue #16505 ("Information Loss: Messages Missing From Message Stream
+  After Connection Issue On Receiver Side") documents a receiver's WebSocket blip causing a sent
+  message to never arrive — not on reconnect, not after switching channels away and back — with the
+  sender given no indication anything failed; issue #30388 ("WebSocketClient requires
+  missedMessageListener for proper reconnection but lacks documentation/fallback") shows the SDK-level
+  version of the same gap — a resync hook exists but is opt-in and undocumented, so integrations built
+  against the SDK routinely ship without it wired up. Paired with a verified protocol-level fact: SSE's
+  `Last-Event-ID` auto-resume is real and spec-defined (WHATWG HTML living standard /
+  `EventSource`), while WebSocket (RFC 6455) has no session-resumption concept at all — any continuity
+  across a reconnect is entirely on the application, a real and citable asymmetry between the two
+  transports worth grounding the skill's Step 1 framing in. Added `skills/resync-guard/SKILL.md`
+  (steps: find state that's stream-only-fed vs. self-healing via independent refresh; check whether
+  the reconnect handler actually resyncs or just resumes the live stream; check whether an existing
+  resume mechanism is real end-to-end — server honors it, has bounded replayable history, and is
+  actually wired into the reconnect path rather than sitting unused like #30388's hook; check whether
+  a gap is visible to the user or looks identical to nothing happening), `examples/resync-guard.md`
+  (a live support-ticket queue where assignment events are fire-and-forget with no server-side queue
+  behind them and the client's reconnect handler never re-syncs, walking all four steps to a BLOCK
+  verdict that names the server-side fix — a queue or outbox behind the send — as necessary alongside
+  the client-side one, since no client fix alone can recover an event the server never kept), README
+  skills-table row + decision-table row + intro paragraph (thirty → thirty-one, rejected-candidates
+  sentence extended) + Examples section, `examples/README.md` link. Also fixed a second stale
+  "thirty" reference in the Install section's tip that had drifted one release behind, the same
+  recurring class of drift fixed multiple times before (2026-09-20, 2026-09-24, 2026-09-26).
+  `python tools/validate.py` passes (`OK: 31 skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidates parked from this thread. The next session with real
+cross-repo GitHub search should keep applying the round-6 process note (`grep -n -i "REJECTED"
+BACKLOG.md` before spending search budget on a "fresh" angle) — real-time/streaming was untouched
+territory this file's domain list hadn't named before today, so there may be adjacent angles worth a
+narrower look (e.g. WebSocket/SSE backpressure or fan-out correctness under load) but none were
+researched this round; don't assume they're novel without checking first.

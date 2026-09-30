@@ -1778,3 +1778,71 @@ BACKLOG.md` before spending search budget on a "fresh" angle) — real-time/stre
 territory this file's domain list hadn't named before today, so there may be adjacent angles worth a
 narrower look (e.g. WebSocket/SSE backpressure or fan-out correctness under load) but none were
 researched this round; don't assume they're novel without checking first.
+
+## `backpressure-guard` — SHIPPED (2026-09-30, verified novel)
+
+Had `mcp__github__search_code` available with no repo-scope restriction encountered in practice
+(same access as the sessions that shipped `push-guard`/`resync-guard`), so per the round-7 note,
+researched the exact adjacent angle it flagged: WebSocket/SSE backpressure or fan-out correctness
+under load.
+
+- [x] **Broadcast/fan-out backpressure audit — SHIPPED as `backpressure-guard` (verified novel).**
+  The candidate: does a server's broadcast/fan-out loop (pushing the same update to every connected
+  WebSocket/SSE client) stay correct when one connected client stalls — does that one slow consumer
+  block delivery to everyone else, and does whatever state is kept per connection (an outbound
+  buffer, an ack-tracking map) grow without bound the whole time that client isn't draining. Ran
+  four rounds of `filename:SKILL.md` search (`websocket backpressure fan-out`, `"slow consumer" OR
+  "backpressure" websocket audit review`, `"unbounded queue" OR "slow client" broadcast fan-out
+  memory` — 0 hits, `"slow consumer" OR "backpressure" step verdict BLOCK`, `broadcast fan-out
+  "memory" audit OR review websocket` — 1200+ hits total, every one read past the snippet): every
+  hit is the same "real bug pattern reinvented ad hoc as a checklist bullet, never shipped as its
+  own audit skill" shape that previously cleared `push-guard`/`export-guard`/`trail-guard`/
+  `blast-guard` — broad backend-architect/realtime-collaboration/chaos-and-resilience scaffolding
+  packs mention "backpressure," "slow consumer," and "fan-out" as two-word bullets or scaffold
+  snippets (`sickn33/agentic-awesome-skills`, multiple mirrors of a `neon-functions` skill, an
+  `.agents/skills/engineering-realtime-collaboration-engineer` skill repeated across several
+  cloned/forked repos), never as a dedicated code-level audit with file:line findings and a
+  BLOCK/CAUTION/SAFE verdict the way this pack's skills work. One near-miss checked and ruled out
+  again: `hung-phan/system-skills` → `system-review`'s `live-comments` interview template discusses
+  fanout backpressure as interview-prep prose (with a Cloudflare blog citation on WebSocket
+  reconnection storms — a different problem, connection-admission capacity, not per-connection
+  outbound-queue growth), not a repo-auditing skill. Important process note for whoever researches
+  this domain next: an initial WebSearch pass surfaced ~9 "real-world" GitHub issues (in repos like
+  `cocor-tech/moistello-backend`, `Justice989810/Pulse-Layer`, `aid-linkk/aidlink-backend`,
+  `astorise/Tachyon-Mesh`) with near-identical titles about this exact bug — checked one
+  (`actix/actix-web` issue #4275) and its own text states it "was identified via an AI-assisted
+  systems audit suite," opened September 27, 2026, i.e. bot-filed noise from an automated scanner,
+  not a real reported production incident, despite `actix-web` itself being a legitimate major
+  project. All ~9 were discarded as unverifiable/likely-fabricated grounding and none are cited in
+  the shipped skill. Re-searched for organic citations instead and found two: `actix/actix-web`
+  issue #1967 (filed February 2021, plain human language, no bot markers — "the client accepts
+  bytes without bound, such that it will consume infinite memory if the rate of bytes in exceeds the
+  rate of bytes out," proposing a bounded-buffer fix) and `socketio/socket.io` issue #4984 (opened
+  by a named reporter March 26, 2024, with a concrete reproduction — 500 client connections across
+  50 rooms, one broadcast per room per second with clients simulating a stalled ack, memory measured
+  climbing to 1557MB over 3 hours — root-caused to an orphaned `socket.acks` map entry per timed-out
+  broadcast, fixed in socket.io@4.8.4 by a timeout-triggered cleanup). Both verified directly against
+  the search results' issue text, both from real, widely-used, actively maintained projects
+  (actix-web, socket.io), both predating any AI-audit-bot filing pattern. Added
+  `skills/backpressure-guard/SKILL.md` (steps: find fan-out loops that push to every live
+  connection; check whether one connection's send can stall delivery to the rest; check whether the
+  per-connection outbound state — buffer or ack-map — is actually bounded; check whether anything
+  ever reclaims that state for a confirmed-stalled client), `examples/backpressure-guard.md` (a live
+  ops-dashboard broadcast with both failure modes — a synchronous unbounded-buffer fan-out loop and
+  an ack-tracking `Map` with no timeout cleanup — walked through all four steps to a BLOCK verdict
+  citing the socket.io fix as the pattern to mirror), README skills-table row + decision-table row +
+  intro paragraph (thirty-one → thirty-two, stale "thirty-one" install-tip count fixed in the same
+  pass) + Examples section, `examples/README.md` link. `python tools/validate.py` passes (`OK: 32
+  skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidates parked from this thread, but a process note worth keeping —
+when a WebSearch for "real-world" grounding returns a cluster of very-recently-filed GitHub issues
+with near-identical titles across otherwise-unrelated small repos, check at least one issue's full
+text for an "AI-assisted"/"audit suite"/bot-authorship disclosure before citing any of them; this
+round's cluster (dated September 27, 2026, the same class of automated-scanner spam this pack's own
+daily-agent process resembles) would have made it into a shipped skill's grounding uncaught if the
+first hit hadn't been spot-checked. Real-time/streaming now has two skills (`resync-guard`,
+`backpressure-guard`); the connection-storm/reconnect-capacity angle the `live-comments` interview
+template's Cloudflare citation touches on (LB accept-queue tuning, jittered reconnect after a mass
+deploy) is explicitly out of scope for both and was not researched for novelty — check before writing
+it up if picked up later.

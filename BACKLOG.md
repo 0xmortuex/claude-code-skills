@@ -1846,3 +1846,52 @@ first hit hadn't been spot-checked. Real-time/streaming now has two skills (`res
 template's Cloudflare citation touches on (LB accept-queue tuning, jittered reconnect after a mass
 deploy) is explicitly out of scope for both and was not researched for novelty — check before writing
 it up if picked up later.
+
+## Drift audit — round 7 (2026-10-01): the two post-round-6 skills
+
+This session's `mcp__github` access is scoped to this one repo only (same constraint noted in round
+6), so a fresh novelty sweep would again be under-verified against this pack's own bar. Picked the
+standing fallback instead: drift-audit the two skills shipped since round 6 (2026-09-28) that had
+never had a dedicated fact-verification pass — `resync-guard` (2026-09-29) and `backpressure-guard`
+(2026-09-30). Read both `SKILL.md` files in full, identified every externally-checkable claim, and
+verified each via WebSearch:
+
+- `resync-guard`: re-verified both Mattermost citations against current issue text. #16505
+  ("Information Loss: Messages Missing From Message Stream After Connection Issue On Receiver Side")
+  still resolves and matches the skill's description exactly — sender's message never reached the
+  receiver after a connection blip, not on reconnect, not after switching channels, sender given no
+  indication. #30388 (`WebSocketClient requires missedMessageListener for proper reconnection but
+  lacks documentation/fallback`) still resolves and matches — the sequence counter is only reset if a
+  `missedMessageListener`/`missedEventCallback` is registered, undocumented, causing silent failure
+  (search results describe an infinite-reconnect-loop consequence rather than the skill's "silent
+  gap" framing, but both stem from the same documented root cause: the opt-in, undocumented hook).
+  Also re-verified the two protocol-level framing facts: RFC 6455 WebSocket has no session-resumption
+  concept and no equivalent to SSE's `Last-Event-ID` (confirmed — "WebSocket has no equivalent to
+  Server-Sent Events' Last-Event-ID for reconnecting... the browser WebSocket API has no built-in
+  reconnect, retry, or message replay mechanism"), and the WHATWG HTML living standard's Server-Sent
+  Events section confirms `EventSource` automatically tracks and resends `Last-Event-ID` on
+  reconnect. No drift.
+- `backpressure-guard`: re-verified both grounding citations. `actix/actix-web` issue #1967 still
+  resolves and matches the skill's quote ("accepts bytes without bound, such that it will consume
+  infinite memory if the rate of bytes in exceeds the rate of bytes out") verbatim. `socketio/socket.io`
+  issue #4984 still resolves and matches the mechanism described (`socket.acks` entries orphaned when
+  a `broadcastWithAck`/`emitWithAck` timeout fires before the client responds, 500-client/50-room
+  reproduction climbing to ~1.5GB over 3 hours) — confirmed fixed by PRs #5452/#5461 ("clean up
+  socket.acks on broadcastWithAck timeout"). Specifically re-checked the skill's most falsifiable
+  claim — that the fix "shipped in socket.io@4.8.4" — against the actual `socket.io@4.8.4` GitHub
+  release notes: confirmed, the release's bug-fix list includes "cleanup pending acks on timeout to
+  prevent memory leak," published 2026-09-25, five days before the skill shipped. No drift.
+
+No fixes needed in either skill — both externally-checkable citation sets hold up against current
+source text. `python tools/validate.py` still passes (`OK: 32 skills valid and consistent with
+README.`) — no skill files changed this run.
+
+Follow-up for the next run: all 32 skills now have at least one dedicated fact-verification pass
+since their most recent content change (round 3: the original 18; round 4: next 5; round 5: next 2;
+round 6: next 5; this round: the final 2). The next drift-audit pass is only worth running once a
+specific cited tool/API/platform doc is known to have changed, or once new skills ship that haven't
+been checked yet — there's no fixed schedule. If a future session has real cross-repo GitHub code
+search (`mcp__github__search_code` without a repo restriction), the fastest way to find fresh novelty
+work is still: `grep -n -i "REJECTED\|already mined\|saturated" BACKLOG.md` first, then try the one
+still-open, unresearched angle noted above (WebSocket/SSE connection-storm / reconnect-capacity —
+LB accept-queue tuning, jittered reconnect after a mass deploy) before any other fresh sweep.

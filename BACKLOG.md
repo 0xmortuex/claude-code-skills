@@ -1895,3 +1895,83 @@ search (`mcp__github__search_code` without a repo restriction), the fastest way 
 work is still: `grep -n -i "REJECTED\|already mined\|saturated" BACKLOG.md` first, then try the one
 still-open, unresearched angle noted above (WebSocket/SSE connection-storm / reconnect-capacity —
 LB accept-queue tuning, jittered reconnect after a mass deploy) before any other fresh sweep.
+
+## `storm-guard` — SHIPPED (2026-10-02, verified novel)
+
+This session's GitHub access (`mcp__github` tools) was scoped to this one repo only, same constraint
+noted in rounds 6–7, so cross-repo code search wasn't available. Per the round-7 note, researched the
+one still-open, unresearched angle it flagged directly: WebSocket/SSE connection-storm /
+reconnect-capacity — does a mass-reconnect event (deploy, LB-enforced connection lifetime, dependency
+blip) overwhelm the backend, as distinct from `resync-guard` (data resync correctness) and
+`backpressure-guard` (ongoing health of an already-connected client), both of which explicitly carve
+this out — `backpressure-guard`'s own Boundaries section says outright: "Not a capacity-planning or
+connection-storm review... reconnect-storm mitigation after a deploy (jittered backoff,
+load-balancer accept-queue tuning)."
+
+- [x] **Reconnect-storm / mass-reconnect-capacity audit — SHIPPED as `storm-guard` (verified
+  novel).** The candidate: does a fleet of real-time clients and the backend they reconnect to
+  survive everyone reconnecting at once — synchronized (non-jittered) client backoff, and
+  auth/session/DB work with no cache or rate limit protecting it at fleet scale. Verified uncovered
+  with `WebSearch` (no `filename:SKILL.md` GitHub code search available this session, so used
+  `site:github.com "SKILL.md"` query variants plus direct searches for "reconnect storm" and
+  "connection storm" alongside "audit"/"review"): every hit was either general engineering
+  advice/blog content about jittered backoff (not a skill), or a **build**-oriented skill — most
+  notably `poorvith-mp/skills-developer` → `realtime-systems` ("Build WebSocket, SSE and pub/sub
+  features: presence, fan-out, reconnection and backpressure"), fetched and read in full: it mandates
+  jittered backoff as a scaffolding requirement and has one checklist line ("Client reconnection
+  implements exponential backoff with randomized jitter") but, confirmed by direct read, has no audit
+  procedure for load-balancer capacity planning, mass-reconnection stress-testing, or backend
+  shielding at fleet scale — a spec for building a new system, not a code-level review of an existing
+  one with file:line findings and a verdict, the shape every skill in this pack follows. Also
+  in-pack-confirmed distinct from `job-warden` (cron thundering herd is about jobs sharing a *schedule
+  trigger*, not clients reconnecting to a live service) and `stale-guard` (cache-stampede on one hot
+  key under concurrent request load is a different mechanism than many independent connections
+  arriving at once).
+  Grounded in two real incidents, both corroborated across multiple independent secondary sources
+  since direct access to the primary blogs (`discord.com`, `slack.engineering`) was egress-blocked in
+  this session's network — confirmed via `curl` returning a 403 from the proxy, not just a WebFetch
+  domain restriction, so cited only with that caveat stated plainly: Discord's own engineering
+  postmortem "You've Got (Too Much) Mail: Behind the Scenes of the 3/25/26 Voice Outage" (a
+  Kubernetes config change killed 17% of session servers, the survivors' millions of clients
+  reconnected at once, and the thundering herd overwhelmed a single Erlang supervisor's mailbox —
+  described consistently across five independent secondary write-ups: joshuabellew.com,
+  statusfield.com, dev.to, printenqrcode.com, evrimagaci.org); and Slack's Flannel edge-cache service,
+  built specifically so 100K simultaneous reconnects after a Gateway Server death hit an edge cache
+  instead of the backend databases directly (described consistently across snowan.gitbook.io,
+  systemdesign.one, an InfoQ conference talk, and others). Also grounded in a verified platform fact:
+  GCP's global external Application Load Balancer force-closes every WebSocket connection at a hard,
+  non-configurable 24-hour mark regardless of activity — meaning connections opened during one deploy
+  window get disconnected together, a full day later, whether or not anyone remembers the
+  correlation (confirmed via GCP's own documented behavior, cited by oneuptime.com and a
+  Medium/GCP-timeout writeup). One candidate secondary-source cluster was checked and discarded per
+  this pack's own established caution (see the `backpressure-guard` entry's process note on
+  AI-audit-bot-filed issues): a WebSearch hit citing "5,312 of 7,312 ticket requests refused, latency
+  26s" at 1000 simulated sockets came from `NC1107/slim-m`, a zero-star/zero-fork solo project with no
+  independent validation — not used as grounding, in favor of the two verified, well-known incidents
+  above. Added `skills/storm-guard/SKILL.md` (steps: find the reconnect trigger and whether
+  disconnects are already synchronized by a deploy pattern or LB connection-lifetime limit; check
+  whether the reconnect delay is genuinely randomized per-client or just a fixed/deterministic delay
+  that still re-synchronizes the fleet; check what one reconnect costs the backend — DB/auth/hydration
+  calls — and whether anything shields it at fleet scale; check whether a mass-reconnect has ever
+  actually been load-tested or is purely assumed-safe because "the code has backoff"),
+  `examples/storm-guard.md` (a pre-deploy review of a 50k-client realtime service with a fixed
+  3-second unjittered reconnect delay and three unshielded per-connection backend calls, walked
+  through all four steps to a BLOCK verdict citing both grounding incidents and recommending jitter
+  plus backend shielding or a staged pod-cycling rollout), README skills-table row + decision-table
+  row + intro paragraph (thirty-two → thirty-three, rejected/covered-candidates sentence extended) +
+  Examples section + install-tip count, `examples/README.md` link. `python tools/validate.py` passes
+  (`OK: 33 skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidates parked from this thread. This session's `mcp__github`
+access stayed scoped to this one repo (same as rounds 6–7) and `discord.com`/`slack.engineering` were
+both egress-blocked for direct primary-source verification (confirmed via a 403 from the network
+proxy itself, not just a WebFetch domain restriction) — if a future session has either broader GitHub
+code search or unblocked egress to those two domains, it's worth directly re-confirming the two
+citations above against their primary text rather than relying on secondary-source corroboration
+indefinitely, though nothing here is flagged as questionable, just unverified against the primary.
+Real-time/streaming now has three skills (`resync-guard`, `backpressure-guard`, `storm-guard`)
+covering, respectively: data-loss-on-reconnect, ongoing per-connection health while connected, and
+backend survival of the mass-arrival event itself — these three boundaries were cross-checked against
+each other this round and don't overlap. No further angle in this specific domain was identified as
+worth researching next; a fresh novelty sweep should look elsewhere, or (if GitHub code search stays
+repo-scoped) default to drift-auditing `storm-guard` itself once it's no longer brand-new.

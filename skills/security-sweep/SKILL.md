@@ -24,8 +24,9 @@ Walk the real risk categories, tracing untrusted input to where it does damage:
 - **Crypto misuse** — home-rolled crypto, ECB, static IVs, `Math.random` for tokens, missing signature verification.
 - **Sensitive-data exposure** — over-broad API responses, PII in logs, stack traces to users.
 - **Injection into the browser** — reflected/stored XSS where output isn't encoded for its context.
+- **CSV/spreadsheet formula injection** — untrusted text (names, addresses, free-text notes) written into a CSV/XLSX export a human is expected to open in Excel, LibreOffice, or Google Sheets. A cell value starting with `=`, `+`, `-`, `@`, tab (`0x09`), or carriage return (`0x0D`) is read by the spreadsheet app as a formula, not displayed as the literal text it is (CWE-1236, OWASP's CSV Injection) — a real, currently-exploited bug class, not a theoretical one (e.g. CVE-2026-45263, FacturaScripts' CSV export). Trace: does an export/report path write a user-controlled field into a delimited file with no check on its leading character? Fix: prefix the value with a single quote (`'`) whenever it starts with one of those characters — CSV quoting alone doesn't stop this, since the spreadsheet app's formula detection runs on cell content, not on how the field was delimited.
 
-Match the categories to what the code does — file-upload code gets path-traversal and content-type scrutiny; an API endpoint gets authz and injection scrutiny. Don't run a generic checklist blind.
+Match the categories to what the code does — file-upload code gets path-traversal and content-type scrutiny; an API endpoint gets authz and injection scrutiny; a CSV/report export gets formula-injection scrutiny. Don't run a generic checklist blind.
 
 ## The bar for reporting: a concrete failure path
 

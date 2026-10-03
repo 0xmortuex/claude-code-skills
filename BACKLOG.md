@@ -1975,3 +1975,60 @@ backend survival of the mass-arrival event itself — these three boundaries wer
 each other this round and don't overlap. No further angle in this specific domain was identified as
 worth researching next; a fresh novelty sweep should look elsewhere, or (if GitHub code search stays
 repo-scoped) default to drift-auditing `storm-guard` itself once it's no longer brand-new.
+
+## Skill improvement (2026-10-03): closed a real cross-file gap in `security-sweep`
+
+This session's `mcp__github` access was again scoped to this one repo only, so ran a fresh novelty
+sweep via `WebSearch` instead (same constraint as rounds 6–8). Five candidate categories were
+researched and all died — logging below so the next run doesn't re-walk them from zero — then,
+rather than force a sixth, read the pack's own cross-references for a gap already flagged in-pack
+but never closed, which turned up a real one.
+
+- [x] **New-skill candidates researched and rejected, don't re-research without a new angle:**
+  (a) trace/correlation-ID propagation across async/queue boundaries — covered by
+  `aj-geddes/useful-ai-prompts`' `correlation-tracing` (mirrored across claudskills,
+  claudemarketplaces, crossaitools — the same source behind the already-dead `clean-exit` and
+  "worker startup/readiness" candidates) plus `majiayu000/claude-skill-registry`'s
+  `jaeger-tracing-specialist`; (b) HTTP-level lost-update / concurrent-edit-overwrite (PATCH/PUT
+  with no version/ETag check letting a second writer silently clobber a first) — not confirmed dead
+  as cleanly as the others (search surfaced unrelated "skill-update concurrency" tooling, not an
+  app-review skill), but this is the same shape as this pack's own already-rejected "offline-sync
+  conflict resolution" candidate (see the intro paragraph's dropped-candidates list) and overlaps
+  `ln 628 concurrency auditor`'s broader scope (claudemarketplaces.com/levnikolaevich) — too close to
+  a documented duplicate to ship without a sharper differentiator than what today's search budget
+  found; worth one more targeted look (specifically: does any existing skill check for a *missing
+  version/If-Match check on a REST write endpoint*, as opposed to general thread/async concurrency or
+  offline-sync merge logic) before ruling it out for good; (c) file-upload security (MIME
+  sniffing/zip bombs/zip slip) — covered in depth by `florianbuetow/claude-code`'s `file-upload` skill
+  and the `endurain-project` `safeuploads` reference; (d) CSV/Excel formula injection as a
+  **standalone** skill — covered by this pack's own existing cross-references (see below) once
+  `security-sweep` actually names it, so a separate skill would be an internal duplicate.
+- [x] **Fixed: `security-sweep` never actually named CSV/spreadsheet formula injection, despite two
+  other skills in the pack pointing callers to it for exactly that.** Found while chasing candidate
+  (d) above: `export-guard`'s Boundaries section says "Doesn't cover CSV formula injection... that's
+  a security finding, also `security-sweep`'s territory" and `import-guard`'s says the same for
+  malicious file content — but `security-sweep`'s own "What to actually look for" checklist never
+  named the category; it would only be caught if the reviewer happened to generalize from "Injection"
+  (scoped to SQL/NoSQL/shell/eval/template) or "Injection into the browser" (XSS), neither of which
+  is about a spreadsheet application's own formula-execution-on-open behavior. Verified current and
+  real, not just textbook: OWASP's CSV Injection page and CWE-1236 (dangerous leading characters `=
+  + - @`, tab, CR — confirmed the single-quote-prefix mitigation is the current recommendation and
+  that a once-suggested tab-prefix workaround is now itself on the dangerous-character list) plus a
+  live, dated 2026 CVE (CVE-2026-45263, FacturaScripts' `CSVExport.php::writeData()` concatenating a
+  user-controlled field with no leading-character check, CVSS 8.0, PoC confirmed via a crafted
+  customer name field reaching an admin's CSV export) as a real-world instance of precisely the gap
+  this checklist bullet now names. Added one bullet to `skills/security-sweep/SKILL.md`'s risk-category
+  list (with the OWASP/CWE/CVE grounding and the single-quote-prefix fix, noting CSV quoting alone
+  doesn't stop it) and extended the "match the categories to what the code does" line to mention
+  export/report code. `python tools/validate.py` passes (`OK: 33 skills valid and consistent with
+  README.`) — no README/example changes needed since this is a checklist addition inside an existing
+  skill's body, not a new skill or a changed trigger surface.
+
+Follow-up for the next run: the lost-update/concurrent-edit-overwrite candidate (b above) is the one
+genuinely unresolved thread — worth a sharper, narrower search (missing version/If-Match checks on
+REST write endpoints specifically) rather than the broad terms tried this round before closing it
+for good one way or the other. No other skills in the pack were checked for the same
+"boundary-points-elsewhere-but-elsewhere-doesn't-actually-cover-it" gap pattern found in
+`security-sweep` this round — worth a quick deliberate pass (grep every skill's "Boundaries"
+section for what it says is someone else's territory, then confirm that other skill's body actually
+names it) since this is a cheap, high-signal check and today's instance was found somewhat by luck.

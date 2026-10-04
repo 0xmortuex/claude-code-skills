@@ -2027,8 +2027,52 @@ but never closed, which turned up a real one.
 Follow-up for the next run: the lost-update/concurrent-edit-overwrite candidate (b above) is the one
 genuinely unresolved thread — worth a sharper, narrower search (missing version/If-Match checks on
 REST write endpoints specifically) rather than the broad terms tried this round before closing it
-for good one way or the other. No other skills in the pack were checked for the same
-"boundary-points-elsewhere-but-elsewhere-doesn't-actually-cover-it" gap pattern found in
-`security-sweep` this round — worth a quick deliberate pass (grep every skill's "Boundaries"
-section for what it says is someone else's territory, then confirm that other skill's body actually
-names it) since this is a cheap, high-signal check and today's instance was found somewhat by luck.
+for good one way or the other.
+
+## Skill improvement (2026-10-04): ran the deliberate "Boundaries cross-reference" pass, found and fixed one real gap
+
+Before picking a task today, found the git state broken: `HEAD` was detached 3 commits ahead of both
+local and remote `main` (the 2026-10-01/02/03 daily runs had committed but never actually landed on
+`main` or pushed — likely a bug in an earlier run's own final step). Fixed first by fast-forwarding
+`main` to `HEAD` and confirming `origin/main` matched (`storm-guard` and the 2026-10-03
+`security-sweep` CSV-injection fix are now actually on `main`, not just sitting in a detached state).
+
+Then did the "quick deliberate pass" the round-9 note above asked for: extracted every skill's
+`## Boundaries` section (`awk` across all 33 `SKILL.md` files) and read every cross-reference of the
+shape "Not `X`'s territory" / "that's `X`'s territory" / "see X", then checked whether the named
+target skill's own body actually covers the thing being pointed at. Most held up (e.g. `export-guard`
+→ `security-sweep` for export authz/PII-exposure is covered by security-sweep's existing "Broken
+authorization" and "Sensitive-data exposure" bullets). One didn't:
+
+- [x] **Found and fixed: `import-guard`'s Boundaries section points to `security-sweep` for
+  "zip bombs, decompression attacks" on a file-upload attack surface, but `security-sweep`'s own
+  checklist never named that category** (confirmed by grep — zero other mentions of
+  "zip bomb"/"decompression"/"zip slip" anywhere in `skills/`) — the same shape of gap as the
+  2026-10-03 CSV-injection fix, found by the same "boundary-points-elsewhere" check that fix's own
+  follow-up note asked for. Verified current and real via `WebSearch`, not just CWE-409's textbook
+  definition: three corroborating 2026 CVEs on an authenticated file-upload path extracting an
+  attacker-supplied archive with no decompressed-size/entry-count cap — CVE-2026-3114 (Mattermost,
+  disclosed 2026-03-26 under advisory MMSA-2026-00598, cross-confirmed on Red Hat's and Debian's own
+  CVE trackers, not just an aggregator) and CVE-2026-61455 (Grav CMS, `ZipArchiver::extract()` with no
+  limit on uncompressed size/file count/nesting depth) — plus CVE-2026-59274 (Spring Integration's
+  `UnZipTransformer`) as a third independent instance, checked but not cited in the skill to keep the
+  grounding tight. Added one bullet ("Decompression / zip bombs") to
+  `skills/security-sweep/SKILL.md`'s risk-category checklist, citing CWE-409/CWE-770 and the two
+  verified CVEs, with the trace question (does the extraction path cap decompressed size/entry count
+  *during* extraction, not just validate the archive's own compressed metadata) and the fix (an
+  incrementally-checked ceiling, not a trust-the-declared-size check). Also extended the
+  "match the categories to what the code does" line to mention archive-extraction scrutiny for
+  file-upload code. `python tools/validate.py` passes (`OK: 33 skills valid and consistent with
+  README.`) — no README/example changes needed, same shape as the 2026-10-03 fix (a checklist
+  addition inside an existing skill's body, not a new skill or a changed trigger surface).
+
+Follow-up for the next run: the lost-update/concurrent-edit-overwrite candidate (b, logged
+2026-10-03 above) is still the one genuinely unresolved new-skill thread. The "boundary cross-reference"
+pass done today checked every skill's Boundaries section once; it's a cheap check worth repeating
+whenever a new skill ships (a new skill's Boundaries section might claim territory an existing skill
+doesn't actually cover, or an existing skill might gain a Boundaries claim about the new one that
+isn't yet true) rather than assuming today's pass caught everything for all future skills. Also worth
+a one-time git-hygiene check at the start of a future run: confirm `git branch --show-current` is
+`main` and `git status` doesn't say "detached" before trusting `git log` — this run found 3 days of
+undetected unpushed work purely by running `git branch -a` out of caution, and the daily-agent
+instructions don't currently say to check for that explicitly.

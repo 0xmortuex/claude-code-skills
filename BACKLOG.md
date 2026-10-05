@@ -2076,3 +2076,67 @@ a one-time git-hygiene check at the start of a future run: confirm `git branch -
 `main` and `git status` doesn't say "detached" before trusting `git log` — this run found 3 days of
 undetected unpushed work purely by running `git branch -a` out of caution, and the daily-agent
 instructions don't currently say to check for that explicitly.
+
+## Git-hygiene check (2026-10-05) + `overwrite-guard` — SHIPPED (verified novel)
+
+Start-of-run check per the 2026-10-04 note: `git status` showed `HEAD` detached again, 4 commits
+ahead of the local `main` branch pointer (storm-guard + both 2026-10-03/04 `security-sweep` fixes).
+`git fetch origin main` showed `origin/main` was already at that same commit — the detached `HEAD`
+and stale local `main` were a local-ref staleness artifact, not actually unpushed work this time (the
+2026-10-04 run's push did land). Fixed by fast-forwarding local `main` to `HEAD`
+(`git checkout main && git merge --ff-only`); `git push` correctly reported "Everything up-to-date."
+Worth keeping this check at the start of every run regardless — it's cheap and the failure mode
+(detached HEAD silently diverging from `main`) has now shown up twice.
+
+Picked up the one open thread from the 2026-10-03/04 notes: does any existing skill audit whether a
+PATCH/PUT/"save" endpoint on a shared record actually prevents a *lost update* — two concurrent
+writers silently clobbering each other because there's no version/revision/`If-Match` check, or one
+that exists but never actually fires. Ran several rounds of `WebSearch` with varied terms
+(`"SKILL.md"` + `optimistic concurrency`/`If-Match`/`ETag`/`last write wins`/`blind write`/`lost
+update`/`version column`, combined with `audit`/`review`/`PATCH`/`PUT`). Consistently found only two
+kinds of near-misses, read rather than assumed from a snippet: (1) broad code-review checklists
+(`addyosmani/agent-skills`, `wshobson/agents`, `garrytan/gstack`) that list "race conditions" or
+"state inconsistencies" as one generic bullet among dozens, with no dedicated mechanic for *this*
+bug; (2) in-process concurrency skills (`martinholovsky/SOTA-skills` → `async-concurrency`) scoped to
+threads/goroutines/channels/deadlocks — a genuinely different failure mode (shared memory inside one
+process) from two independent HTTP requests racing on the same stored row. Confirmed this candidate
+is distinct from this pack's own already-rejected "offline-sync / conflict-resolution" candidate
+(logged above): that one is about a client offline for hours/days needing real merge/CRDT logic
+against a mutation queue; this one is about an ordinary synchronous web/API save racing by seconds,
+which doesn't need (and would be the wrong framing for) merge logic — just a correctly-enforced
+version check.
+
+- [x] **`overwrite-guard` — SHIPPED (verified novel).** Audits whether two editors of the same record
+  (two people, two tabs, a person and a background job) can silently clobber each other on a
+  PATCH/PUT/ORM-`save()` read-modify-write path. Grounded in two real, filed bugs rather than a
+  hypothetical, each illustrating one of the skill's two failure categories: `spidermila/MedCover`
+  issue #461 (fetched and read in full) — eight SQLAlchemy models declare a `version` column
+  documented for optimistic locking, but it's never registered as the ORM's `version_id_col`, so the
+  `UPDATE` never gets a `WHERE version = :old_version` predicate; the column increments on every
+  write and enforces nothing, so a second concurrent edit silently overwrites the first with no
+  `StaleDataError`/`409` anywhere — "declared but never enforced." `CoderLambert/react-learning-playground`
+  issue #133 (fetched and read in full) — the subtler opposite trap: a revision check exists and
+  looks correct, but the editor's local draft is initialized once while the component later re-renders
+  with a refreshed `question` prop; the submit path builds `expectedRevision` from the *refreshed*
+  prop instead of the draft's actual base, so the compare-and-swap always matches current storage and
+  the stale draft overwrites newer data despite the optimistic-concurrency mechanism being present —
+  "enforced against the wrong baseline." Added `skills/overwrite-guard/SKILL.md` (four steps: find
+  read-modify-write paths on shared records; check whether a version/revision mechanism is actually
+  wired into the write, not just declared; if one exists, trace its baseline on both the server and
+  client side rather than trusting its presence; check whether a detected conflict is actually
+  rejected and surfaced or caught-and-overwritten-anyway), `examples/overwrite-guard.md` (a customer
+  profile PATCH endpoint with exactly the MedCover-shaped bug — a `version` column that increments
+  but is never read back or added to the `WHERE` clause — walked through all four steps, including a
+  clean N/A on step 3 rather than padding it, to a BLOCK verdict), README skills-table row +
+  decision-table row + intro paragraph (thirty-three → thirty-four) + Examples section + install-tip
+  count, `examples/README.md` link. `python tools/validate.py` passes (`OK: 34 skills valid and
+  consistent with README.`).
+
+Follow-up for the next run: no candidates parked from this thread. Per the 2026-08-23/26 notes the
+backend/infra novelty space was already assessed as largely saturated before this run found one more
+(`overwrite-guard`) — the next run should either run a fresh, differently-angled novelty sweep, repeat
+the boundary-cross-reference check now that a 34th skill exists, or continue drift-auditing existing
+skills' external citations as their sources age. Also worth it: `overwrite-guard` is brand new and
+hasn't had a dedicated fact-verification pass yet (it's grounded in the two GitHub issues cited above,
+not a versioned tool/API doc, so there's less drift surface than most skills, but it's still
+unverified-since-shipping by the pack's own convention).

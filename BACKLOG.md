@@ -2140,3 +2140,78 @@ skills' external citations as their sources age. Also worth it: `overwrite-guard
 hasn't had a dedicated fact-verification pass yet (it's grounded in the two GitHub issues cited above,
 not a versioned tool/API doc, so there's less drift surface than most skills, but it's still
 unverified-since-shipping by the pack's own convention).
+
+## Maintenance pass (2026-10-06): all checks clean, one new-skill candidate researched and rejected
+
+Git hygiene check first (per the 2026-10-04/05 notes): `git status` clean, `main` matched
+`origin/main`, no detached-HEAD drift this time. Then worked the three items the 2026-10-05 note
+left open, in order, plus a fresh novelty candidate — all came back clean, so nothing needed fixing
+and no skill file changed.
+
+- [x] **Boundary cross-reference pass, repeated for all 34 skills.** Extracted every skill's
+  `## Boundaries` section and checked each "not X's territory" / "that's X's territory" claim against
+  the named skill's actual body (the same mechanical check that found the CSV-injection and zip-bomb
+  gaps in `security-sweep` on 2026-10-03/04). Read all 34 sections in full this round. Every
+  cross-reference held up — most notably re-verified `trail-guard`'s claim that secrets/PII leaking
+  into logs is `secret-spill`'s and `security-sweep`'s territory: `security-sweep`'s checklist already
+  names both ("secrets logged or returned in responses" under Secrets, "PII in logs" under
+  Sensitive-data exposure). No new gap found; the two fixes made in the 2026-10-03/04 passes appear to
+  have closed the only real gaps that existed.
+- [x] **`overwrite-guard` fact-verification pass (the explicit follow-up from 2026-10-05).** Fetched
+  both grounding GitHub issues in full rather than trusting the skill's own summary:
+  `spidermila/MedCover` #461 confirmed exactly as cited (eight SQLAlchemy models with a documented
+  `version` column never registered as `version_id_col`, so no `WHERE version = :old_version`
+  predicate is ever added — "dead metadata"); `CoderLambert/react-learning-playground` #133 confirmed
+  exactly as cited (a draft editor sends `expectedRevision: question.revision` from a prop that
+  refreshed after the draft was taken, so the compare-and-swap always matches current storage). No
+  drift — both citations are accurate.
+- [x] **Re-verified the three CVEs `security-sweep` cited in its 2026-10-03/04 additions** (not yet
+  independently re-checked since those fixes landed): CVE-2026-45263 (FacturaScripts
+  `CSVExport.php::writeData()`, CVSS 8.0), CVE-2026-3114 (Mattermost zip-bomb memory exhaustion,
+  MMSA-2026-00598), and CVE-2026-61455 (Grav CMS `ZipArchiver::extract()`, CVSS 7.1) — all three
+  confirmed via independent vulnerability-database sources (Mend.io, Red Hat, Debian's own tracker,
+  SecureLayer7, Wiz, OSV) to match the skill's description of the flaw, the affected method, and the
+  impact. No drift found.
+- [x] **New-skill candidate: `idempotency-key-guard` (server-side `Idempotency-Key` header
+  implementation audit) — RESEARCHED, REJECTED as covered.** The angle: does an API's own
+  inbound-`Idempotency-Key` handling actually work — hashing/comparing the request body (not just the
+  key) so a reused key with a *different* payload doesn't silently return a stale cached response, a
+  genuine atomic claim (unique-constraint insert) instead of a check-then-act race between two
+  simultaneous identical requests, and a TTL/cleanup story consistent with the documented retry
+  window. Confirmed distinct from this pack's own `job-warden` (Q1 is about a job/worker correctly
+  *passing* an idempotency key to an outbound call, e.g. Stripe — not about building and auditing a
+  server's own inbound key-handling infrastructure) before researching external coverage. Found
+  `Intense-Visions/harness-engineering` → `agents/skills/claude-code/api-idempotency-keys/SKILL.md`
+  (fetched and read in full, not just a listing) covers all three core mechanisms nearly verbatim:
+  explicit "store a hash of the original request body alongside the key and compare on retry" with a
+  422 on mismatch, the key-as-distributed-lock/409-on-in-flight race-condition handling, and a
+  documented 24-hour TTL with a cleanup job. The one gap it doesn't cover — per-user/per-tenant key
+  scoping, so one caller can't guess or collide another's key and read their cached response — is real
+  but too thin to carry a standalone skill alone (same shape as several already-rejected candidates in
+  this file with a single thin residual gap). The broader space is also well-trodden in blog/article
+  form (`dev.to`, `zuplo.com`, multiple "the race condition nobody tests for" posts all converging on
+  the same unique-constraint-not-check-then-act fix), reinforcing that this is settled, not novel,
+  ground. Closed as covered; do not re-research without a materially different angle than
+  harness-engineering's skill.
+
+Follow-ups discovered this run, logged for whoever picks this up next (none investigated further —
+flagging, not claiming):
+- Drift-audit due: `migration-guard` and `job-warden`'s Postgres/MySQL/k8s/queue-platform specifics
+  were last verified in round 2 (2026-08-18), about seven weeks before this note — worth a fresh pass
+  against current docs given how much else has shipped since, even though nothing specific is
+  currently flagged as wrong.
+- New-skill candidate, unresearched: **webhook signature/replay-window verification** — does an
+  *inbound* webhook handler verify its HMAC signature with a constant-time compare, reject requests
+  outside a timestamp freshness window (replay protection), and avoid a secret-rotation window where
+  both old and new secrets are silently accepted with no sunset. Check it isn't already covered by the
+  same aggregator packs (`majiayu000/claude-skill-registry`, `hookdeck/webhook-skills`) that saturated
+  the 2026-08-23 "webhook/API delivery reliability" sweep before writing anything.
+- New-skill candidate, unresearched: **saga/multi-step compensation-completeness audit** — when a
+  multi-step workflow fails partway through (charge card, then provision resource, then notify), does
+  the code actually roll back/compensate the steps that already succeeded, or leave orphaned side
+  effects with no reconciliation. Verify this is distinct from `job-warden`'s poison-message/batch
+  questions (which cover one step's retry behavior, not a multi-step workflow's rollback completeness)
+  and from `backfill-pilot`'s undo-capture (a single engineer-run script, not a user-facing multi-step
+  product flow) before researching external novelty.
+`python tools/validate.py` still passes (`OK: 34 skills valid and consistent with README.`) — no
+skill files touched this run, so no README/example changes were needed either.

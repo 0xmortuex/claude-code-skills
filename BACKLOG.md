@@ -2215,3 +2215,78 @@ flagging, not claiming):
   product flow) before researching external novelty.
 `python tools/validate.py` still passes (`OK: 34 skills valid and consistent with README.`) — no
 skill files touched this run, so no README/example changes were needed either.
+
+## Maintenance pass (2026-10-07): two open candidates researched and rejected, due drift audit cleared
+
+Git hygiene check first (per the 2026-10-04/05 notes): `git status` showed `HEAD` detached but
+pointing at the same commit as local and remote `main` (a local-ref staleness artifact, same
+harmless shape as 2026-10-05, not unpushed work) — fast-forwarded local `main` to match. Then worked
+the three items the 2026-10-06 note left open, in order. All three came back either rejected or
+clean, so no skill file changed — this run's deliverable is the research record below.
+
+- [x] **New-skill candidate: webhook signature/replay-window verification — REJECTED, saturated.**
+  The angle: does an *inbound* webhook handler verify its HMAC signature with a constant-time
+  compare, reject requests outside a timestamp freshness window, and handle secret rotation without
+  a window where neither old nor new secret works. Fetched one dedicated skill in full rather than
+  trusting a listing: `Intense-Visions/harness-engineering` →
+  `agents/skills/claude-code/api-webhook-security/SKILL.md` covers all three mechanisms essentially
+  verbatim — `crypto.timingSafeEqual` for the comparison, a documented ±5-minute (300s) timestamp
+  tolerance window matching Stripe's own `stripe.webhooks.constructEvent` behavior, and an explicit
+  dual-secret-acceptance rotation procedure (`verifyAnySecret()` trying both old and new secrets
+  during the rotation window) with no downtime gap. This is the same `Intense-Visions/harness-engineering`
+  pack already cited against the 2026-10-06 `idempotency-key-guard` rejection, now confirmed to cover
+  this candidate too. Independently corroborated by four more distinct hits found via `WebSearch`
+  (not read in full, but consistent naming/scope across unrelated authors is itself evidence of
+  saturation): `jeremylongshore/claude-code-plugins-plus-skills` → `webhook-signature-validator`
+  (explicitly flags "replay-window misconfiguration" as a pitfall it checks for), `comeonoliver/SkillsHub`
+  → `webhook-security`, `terminalskills/skills` → `webhook-security`, and `hookdeck/webhook-skills`
+  → `github-webhooks` (the same aggregator pack that already saturated the 2026-08-23 "webhook/API
+  delivery reliability" sweep this item's own wording flagged as a risk to check against). Closed as
+  covered; do not re-research without a materially different angle than
+  harness-engineering's skill (e.g. a slice specific to a less-common signing scheme, or
+  per-tenant/per-caller key-scoping abuse rather than the HMAC+timestamp+rotation mechanics
+  themselves).
+- [x] **New-skill candidate: saga/multi-step compensation-completeness audit — REJECTED, saturated.**
+  The angle: when a multi-step workflow fails partway through, does the code actually
+  compensate/roll back the steps that already succeeded, or leave orphaned side effects. Confirmed
+  distinct from `job-warden` (single-step retry/idempotency, not multi-step rollback) and
+  `backfill-pilot` (an engineer's own script, not a user-facing product flow) before researching
+  externally, per the 2026-10-06 note's own framing. Found the category densely covered by multiple
+  independent authors: `wshobson/agents` → `saga-orchestration` lists "debugging stuck saga states in
+  production where compensation steps never complete" and "test compensation paths explicitly" as
+  core use cases/best practices (per its own listed description, not a vague marketplace blurb) —
+  that is this candidate's exact audit angle, not just scaffold-a-new-saga; `dykyi-roman/awesome-claude-code`
+  → `saga-pattern-knowledge` is explicitly framed as "patterns, antipatterns, and audits"; a `tessl.io`
+  registry listing for the same `wshobson/agents` skill separately describes "a troubleshooting
+  section that pairs each problem with specific code fixes" — again the audit/debug angle, not pure
+  scaffolding. Two further independent hits (`Skillforge` → `saga-pattern-orchestrator` and
+  `saga-orchestration-engineer`, from `jamiojala`) reinforce that this is a well-mined niche with
+  several authors converging on the same scope. Could not fetch any of these `SKILL.md` files in full
+  (several aggregator domains — `tessl.io`, `playbooks.com`, `openskillindex.com`, `grep.app` — are
+  blocked by this environment's egress proxy, and guessed raw GitHub paths 404'd without a way to list
+  the actual tree), so this rejection rests on multiple independent, consistently-worded secondary
+  hits rather than one primary-source read — weaker grounding than the webhook item above. Flagging
+  that explicitly: if a future run can reach one of these (e.g. from an environment without the
+  egress block, or by finding the exact file path another way) and it turns out *not* to cover the
+  audit angle as claimed, this should be reopened rather than treated as permanently settled.
+- [x] **Drift audit: `migration-guard` and `job-warden`'s Postgres/k8s claims, due since round 2
+  (2026-08-18).** Re-verified the two most load-bearing externally-checkable claims against current
+  primary docs. `migration-guard`'s `CREATE INDEX CONCURRENTLY` section: confirmed a failed
+  `CONCURRENTLY` build leaves an entry in `pg_index` marked invalid *before* the build starts, which
+  `IF NOT EXISTS` on a retry will silently accept as "already exists" rather than rebuilding — the
+  exact failure mode the skill already names ("don't assume a failed run left nothing behind"), and
+  the documented recovery (`DROP INDEX CONCURRENTLY IF EXISTS` then retry as a separate autocommit
+  statement) matches the skill's wording exactly. `job-warden`'s `concurrencyPolicy: Forbid` claim:
+  confirmed against the current Kubernetes `batch/v1` CronJob API reference — `Allow`/`Forbid`/`Replace`
+  with `Forbid` skipping the next run if the previous one hasn't finished, as the skill states. No
+  drift found in either; no skill file changed.
+
+`python tools/validate.py` still passes (`OK: 34 skills valid and consistent with README.`) — no
+skill files touched this run, so no README/example changes were needed either.
+
+Follow-up for the next run: the saga-audit rejection above has weaker grounding than this pack's
+usual bar (secondary hits only, no primary-source fetch) — worth revisiting if a way around the
+egress-blocked aggregator domains turns up. Otherwise the backend/infra novelty space remains
+assessed as saturated (per 2026-08-23/26 and 2026-10-06 notes); the next run should either run a
+fresh, differently-angled novelty sweep or continue drift-auditing the remaining skills whose
+external citations haven't been re-checked since they shipped.

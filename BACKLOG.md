@@ -2290,3 +2290,58 @@ egress-blocked aggregator domains turns up. Otherwise the backend/infra novelty 
 assessed as saturated (per 2026-08-23/26 and 2026-10-06 notes); the next run should either run a
 fresh, differently-angled novelty sweep or continue drift-auditing the remaining skills whose
 external citations haven't been re-checked since they shipped.
+
+## Drift audit — round 8 (2026-10-08): `storm-guard`, the one skill round 7 didn't reach
+
+`storm-guard` shipped 2026-10-02, after round 7 (2026-10-01, which covered `resync-guard` and
+`backpressure-guard`) — it had never had a dedicated fact-verification pass, and the round-7 note
+explicitly listed it as the obvious next target. `overwrite-guard` (shipped 2026-10-05) was already
+covered by the 2026-10-06 maintenance pass, so this round only needed `storm-guard`. Read the full
+`SKILL.md` and identified three externally-checkable claims:
+
+- **Discord's "You've Got (Too Much) Mail" postmortem (March 25, 2026 voice outage) — re-confirmed,
+  no drift.** The skill's own text already hedges that primary blog access was unavailable when it
+  was written and leans on corroborating secondary write-ups. This round found the primary post
+  (`discord.com/blog/behind-the-scenes-of-the-3-25-26-voice-outage`) does exist and is indexed (title,
+  authors Bo Ingram and Stephen Birarda, and a summary confirming "a configuration update
+  unintentionally shut down a large share of session management servers at once... losing 17% of them
+  at once sent a cascade through downstream systems, ultimately overwhelming a service responsible for
+  routing voice/video calls" — matching the skill's framing), but `discord.com` itself is
+  egress-blocked in this environment, so the specific Erlang-supervisor/mailbox-queue detail still
+  can't be confirmed from the primary source today, same as when the skill was written. No change —
+  the existing hedge is still the accurate thing to say.
+- **Slack's Flannel edge cache — re-confirmed, no drift.** `slack.engineering` is also egress-blocked
+  this round, but search results confirm the underlying post exists and describes exactly the
+  mechanism the skill cites: mass reconnects (an entire office losing and regaining network at once)
+  overloading backend servers, fixed by an edge cache that serves bootstrap/startup data to
+  reconnecting clients instead of hitting the core. The skill's specific "100K clients" / "Gateway
+  Server" phrasing wasn't independently confirmed in secondary snippets this round (not contradicted
+  either — just not covered), consistent with the skill's existing citation confidence. No change.
+- **GCP's "24h WebSocket cap" — found and fixed a real overclaim.** The skill stated GCP's global
+  external Application Load Balancer enforces "a hard, non-configurable 24 hours" WebSocket lifetime.
+  Multiple secondary sources (a GitHub discussion quoting Google's own docs, a third-party GCP
+  load-balancing guide) instead describe 86400 seconds (24h) as the *effective maximum you're allowed
+  to configure* for the backend service timeout — Google documents it as a value you set, and
+  recommends against going higher because GFEs restart periodically for maintenance regardless of the
+  configured value. That's a materially different claim than "hard, non-configurable": the timeout is
+  a setting, not a fixed wall, even though Google's own maintenance cadence makes ~24h a practical
+  ceiling in practice. (Official `cloud.google.com`/`docs.cloud.google.com` pages were egress-blocked
+  this round, so this rests on secondary sources quoting the docs rather than a direct primary read —
+  flagging that explicitly rather than treating it as fully settled.) Fixed the overclaim in both the
+  frontmatter description and the intro paragraph of `skills/storm-guard/SKILL.md` to describe it as a
+  configurable backend-service-timeout setting with a documented ~24h recommended ceiling (tied to
+  periodic GFE maintenance restarts), rather than an immutable 24h hard cap — the underlying
+  mass-disconnect-by-connection-start-time insight the skill builds on is unchanged and still correct
+  either way, only the "non-configurable" framing was wrong. `examples/storm-guard.md` doesn't repeat
+  this claim, so it needed no change.
+
+`python tools/validate.py` passes (`OK: 34 skills valid and consistent with README.`). One skill file
+changed (`skills/storm-guard/SKILL.md`); `overwrite-guard` needed no further action (already verified
+2026-10-06).
+
+Follow-up for the next run: all 34 skills now have at least one dedicated fact-verification pass since
+their most recent content change. If a future session has unblocked egress to `cloud.google.com`/
+`docs.cloud.google.com`, worth a direct primary-source read of the backend-service-timeout docs to
+fully settle the GCP claim above rather than relying on secondary quotes. Otherwise, continue either a
+fresh differently-angled novelty sweep (per the 2026-08-23/26/2026-10-06 saturation notes) or drift-audit
+on a specific-known-change basis rather than a fixed schedule.

@@ -2345,3 +2345,81 @@ their most recent content change. If a future session has unblocked egress to `c
 fully settle the GCP claim above rather than relying on secondary quotes. Otherwise, continue either a
 fresh differently-angled novelty sweep (per the 2026-08-23/26/2026-10-06 saturation notes) or drift-audit
 on a specific-known-change basis rather than a fixed schedule.
+
+## Maintenance pass (2026-10-09): GCP egress re-check (still blocked), two new-skill candidates researched and rejected
+
+Git hygiene check first: `HEAD` was detached at the same commit `origin/main` had just fast-forwarded
+to (another local-ref staleness artifact, same harmless shape as prior notes) — fetched and
+fast-forwarded local `main` to match, no data at risk.
+
+- Re-tried the round-8 follow-up: direct `WebFetch` of `cloud.google.com/load-balancing/docs/backend-service`
+  (redirects to `docs.cloud.google.com/...`) still fails (`ENOTFOUND` — egress to that host remains
+  blocked in this environment). A `WebSearch` for the `timeoutSec` range turned up a third-party API
+  mirror (flutter-io) stating the allowed range is 1–2,147,483,647 seconds with a 30s default, and an
+  unrelated App Engine Flexible doc (1-hour WebSocket timeout, a *different* product from the global
+  external ALB this skill's claim is about) — nothing that contradicts or confirms the ~24h
+  recommended-ceiling wording `storm-guard` already carries since the 2026-10-08 fix. No change needed;
+  still blocked for a true primary-source read.
+- [x] **New-skill candidate: agent cost/loop-runaway audit — REJECTED, saturated.** The angle: review
+  code that orchestrates LLM/agent calls (agentic loops, tool-calling chains, recursive sub-agent
+  spawning) for missing iteration/recursion caps, no per-call or per-session $ budget, unbounded
+  retry-around-LLM-call loops, and unbounded sub-agent fan-out. Distinct from this pack's own
+  `job-warden` (queue/cron idempotency, not LLM-specific) and from the prompt-injection *security*
+  review already rejected on 2026-08-27 (that's abuse-resistance, not cost/runaway control). Found
+  multiple independent, directly-on-point hits, fetched (via `raw.githubusercontent.com`, returned as
+  model-summarized rather than verbatim content — flagging that fidelity caveat explicitly) rather than
+  trusted from a search snippet: `sickn33/agentic-awesome-skills` →
+  `skills/runaway-guard/SKILL.md` (named $-cap per call site, concrete iteration-bound constants,
+  bounded retries with no retry on 4xx, amplifier anti-patterns like recursion-over-LLM-output and
+  webhook-triggers-itself); `wolverin0/claude-skills` → `skills/audit/audit-domain-10-cost/SKILL.md`
+  (explicit audit-phase checklist: runaway loops, unbounded LLM/API calls, missing rate limits, infra
+  cost amplifiers); `jiayaoqijia/cryptoskill` →
+  `skills/payments/0xklen-cap-agent-tool-call-recursion-depth/SKILL.md` (the fan-out/depth slice
+  specifically — caps subagent spawn depth and total descendant count); `ericrisco/rsc-harness` →
+  `skills/agent-safety/SKILL.md` plus sibling `cost-tracking/SKILL.md` and `llm-pipeline/SKILL.md`
+  (tool-call rate cap, session cost cap, loop/step cap, abort-not-just-log budget enforcement).
+  Closed as covered; do not re-research without a materially different angle than these (e.g. a slice
+  none of them name, such as cross-session budget aggregation across multiple concurrent agent runs).
+- [x] **New-skill candidate: GraphQL N+1 / resolver fan-out cost audit — REJECTED, saturated.** The
+  angle: review GraphQL resolver code for N+1 patterns an ORM-level checker wouldn't catch, missing
+  query depth/complexity limits, and per-item resolver fan-out. Found a direct, dedicated match read
+  in full (same fetch-fidelity caveat as above): `majiayu000/claude-skill-registry-data` →
+  `data/graphql-reviewer/SKILL.md` — explicitly a *review* skill (triggers on reviewing existing
+  schema/resolver code, not scaffolding a new server), checks missing DataLoader batching (rated
+  critical), over-fetching, missing depth/complexity limits, unbounded list pagination, and raw error
+  leakage, with a file:line severity-rated output format near-identical to this pack's own report
+  style. Closed as covered; do not re-research without a different angle.
+- Gap acknowledged, not treated as settled: this round's research used GitHub code search only — the
+  GitHub MCP tool itself is scoped to `0xmortuex/claude-code-skills` and refused every other repo, so
+  all of the above came from `WebFetch` of raw URLs (summarized, not verbatim) rather than the
+  `search_code`/`get_file_contents` tools. Marketplace sites (claudskills.com, mcpmarket, lobehub) and
+  two repos named in earlier backlog entries (`UnitOneAI/SecuritySkills`,
+  `Intense-Visions/harness-engineering`) were not independently re-checked this round — the GitHub
+  code-search hit volume (2,000–15,000+ results per query across many independent authors) is
+  consistent with genuine saturation rather than one false positive, but flagging the narrower tool
+  access so a future run doesn't assume marketplace coverage was re-verified here.
+
+`python tools/validate.py` still passes (`OK: 34 skills valid and consistent with README.`) — no skill
+files touched this run (both candidates died), so no README/example changes were needed either.
+
+Follow-up for the next run — three fresh, unresearched candidates, deliberately *outside* the
+backend/infra space the 2026-08-23/26 notes called saturated (per their own suggestion to look further
+afield before re-sweeping the same territory):
+- New-skill candidate, unresearched: **dynamic-UI accessibility regression audit** — SPA route changes
+  and async content updates that silently break ARIA live-region announcements, focus management (focus
+  lost or stuck after a modal/route change), and keyboard-trap regressions introduced by a component
+  rewrite. Check novelty against a11y-specific skill packs before writing anything; this pack has no
+  frontend-accessibility coverage at all today.
+- New-skill candidate, unresearched: **offline-first sync conflict-resolution audit** — a mobile/PWA
+  app that queues writes made while offline and replays them on reconnect: does the replay actually
+  detect and resolve conflicting edits (last-write-wins silently discarding a concurrent edit, vs. a
+  documented merge/CRDT strategy), and does a replay failure partway through leave the local queue and
+  server state inconsistent. Verify distinct from `job-warden` (server-side queue idempotency, not
+  client-side offline-queue replay) and `overwrite-guard` (concurrent-edit detection on a live
+  request, not a replayed offline queue) before researching external novelty.
+- New-skill candidate, unresearched: **i18n pluralization/RTL-layout correctness audit** — string
+  concatenation that assumes English word order or a simple singular/plural split (breaks for
+  languages with 0/1/few/many/other plural categories, per CLDR), and RTL-layout mirroring gaps
+  (icons/chevrons that don't flip, text-direction-dependent CSS that was only tested in LTR). Distinct
+  from `clock-sweep` (date/time correctness, not text/layout). Check this isn't already covered by a
+  dedicated i18n-review skill before writing anything.

@@ -2410,6 +2410,10 @@ afield before re-sweeping the same territory):
   lost or stuck after a modal/route change), and keyboard-trap regressions introduced by a component
   rewrite. Check novelty against a11y-specific skill packs before writing anything; this pack has no
   frontend-accessibility coverage at all today.
+  **[CORRECTED 2026-10-10: this was not actually unresearched — see the maintenance-pass entry below.
+  "Accessibility (WCAG) source-code review audit" was already REJECTED as saturated on 2026-09-03ish
+  (search this file for that exact line) and re-confirmed today. Do not re-research without a
+  materially narrower angle than plain WCAG/ARIA auditing.]**
 - New-skill candidate, unresearched: **offline-first sync conflict-resolution audit** — a mobile/PWA
   app that queues writes made while offline and replays them on reconnect: does the replay actually
   detect and resolve conflicting edits (last-write-wins silently discarding a concurrent edit, vs. a
@@ -2417,9 +2421,103 @@ afield before re-sweeping the same territory):
   server state inconsistent. Verify distinct from `job-warden` (server-side queue idempotency, not
   client-side offline-queue replay) and `overwrite-guard` (concurrent-edit detection on a live
   request, not a replayed offline queue) before researching external novelty.
+  **[CORRECTED 2026-10-10: this was not actually unresearched either — "Offline-sync / conflict-
+  resolution correctness audit" was already REJECTED twice (first pass, then re-confirmed in the
+  `push-guard` round) — see the maintenance-pass entry below. Do not re-research without a materially
+  different angle than LWW-vs-merge/CRDT failure-mode auditing.]**
 - New-skill candidate, unresearched: **i18n pluralization/RTL-layout correctness audit** — string
   concatenation that assumes English word order or a simple singular/plural split (breaks for
   languages with 0/1/few/many/other plural categories, per CLDR), and RTL-layout mirroring gaps
   (icons/chevrons that don't flip, text-direction-dependent CSS that was only tested in LTR). Distinct
   from `clock-sweep` (date/time correctness, not text/layout). Check this isn't already covered by a
   dedicated i18n-review skill before writing anything.
+  **[CORRECTED 2026-10-10: also not actually unresearched — "Internationalization/locale correctness
+  audit" was already REJECTED as saturated in the same round as the offline-sync rejection above, and
+  that round's own citation (`i18n-readiness-review`) explicitly names pluralization *and* RTL as two
+  of its eight checked dimensions, so this item is the same rejected category, not a narrower one. See
+  the maintenance-pass entry below. Do not re-research without a materially different angle.]**
+
+## Maintenance pass (2026-10-10): all three "fresh" candidates from the 2026-10-09 note were stale duplicates
+
+Before researching any of the three "unresearched" candidates the previous note left (dynamic-UI
+accessibility, offline-first sync conflict-resolution, i18n pluralization/RTL), ran
+`grep -n -i "REJECTED\|already mined" BACKLOG.md` on all three terms first — the exact discipline this
+file's own 2026-09-27 process note (`push-guard`'s entry) calls for and the exact step the 2026-10-09
+note's author skipped. All three turned out to be re-hashes of categories already closed, in one case
+after a non-trivial amount of fresh search budget was spent before the duplicate was caught:
+
+- **Offline-first sync conflict-resolution audit — re-confirmed REJECTED.** Didn't trust the grep
+  alone; re-ran real research to see if today's ecosystem had changed since the original 2026-09-05
+  rejection. It hadn't. Fresh hits, all read for real content rather than trusted from a listing:
+  `secondsky/claude-skills` → `mobile-offline-support` (fetched in full) opens "Build offline-first
+  mobile applications..." and its only conflict guidance is an uncommented last-write-wins function
+  with a commented-out "or merge" alternative and no guidance on which is safe when — a build/scaffold
+  skill, not a review skill, consistent with the original rejection's framing. `SylphxAI/skills` →
+  `design-offline-sync` (fetched in full; the `offline-sync-conflict-review` name a search engine
+  surfaced doesn't actually exist as a directory in that repo — it's an aggregator's own re-title of
+  this same skill) is a 19-line *design* skill ("Design an offline sync and conflict protocol..."),
+  not an audit of existing code. A paid ToolForge Labs listing on agensi.io ("Repair Offline Sync,
+  Reconnect & Conflict Recovery Bugs," $8.99) describes almost exactly this candidate's scope in its
+  marketing copy — real evidence the pain point is genuine and monetized, but paywalled and
+  unverifiable in full, so it doesn't count as "read the actual content" under this pack's bar either
+  way. None of this contradicts the original verdict: real coverage exists, distributed across
+  scaffold-side skills and at least one multi-lens review skill's "Replication/Sync correctness" lens
+  (per the original citations), not packaged as a standalone audit skill — same shape as the
+  `clean-exit`/RBAC rejections. Also independently re-confirmed `overwrite-guard`'s own Boundaries
+  section already draws this exact line ("Not offline-sync / mobile conflict-resolution territory...
+  it needs a real merge strategy, not a version check") — that boundary was written deliberately, not
+  left as an oversight, so it's not a found gap either. Closed as covered, now for the third time; the
+  next run should not pick this back up without an angle none of the three rounds have tried.
+- **i18n pluralization/RTL-layout audit — re-confirmed REJECTED.** Fetched `daymade/claude-code-skills`
+  → `i18n-expert/SKILL.md` in full: its "Audit → Fix → Validate" workflow is real and does lean
+  audit-first, but it only checks `_one`/`_other` plural keys (not full CLDR zero/one/two/few/many/
+  other) and treats RTL as conditional/out-of-scope by default — so today's narrower framing isn't
+  covered by *this* skill. But the category itself doesn't need a narrower framing to die: the
+  original 2026-09-03ish rejection's own citation, `i18n-readiness-review`, already names pluralization
+  and RTL/layout-expansion as two of its eight checked dimensions in one audit. Closed as covered.
+- **Dynamic-UI accessibility regression audit — re-confirmed REJECTED.** Fresh search for the
+  specific ARIA-live-region/focus-management/keyboard-trap framing surfaced `sanky369/vibe-building-
+  skills` → `accessibility-excellence` (explicit live-region guidance: `role="alert"` for blocking
+  errors vs. `aria-live="polite"` for background status, plus a rule that the region must pre-exist in
+  the DOM) and `ibelick/ui-skills` → `fixing-accessibility` (eval scenarios specifically covering modal
+  focus-trapping, initial focus, and focus restoration on close — the "regression after a rewrite"
+  shape this candidate wanted). Both are additional, more specific confirmations on top of the original
+  rejection's citations. Closed as covered.
+
+Lesson for future rounds, stated plainly since this is the second time it's been skipped (first at
+2026-09-27): a candidate landing in a "Follow-up for the next run" note is not evidence it's
+unresearched — it only means whoever wrote the note didn't check. `grep -n -i "REJECTED"` against the
+candidate's keywords is a 10-second step that would have saved essentially all of the search budget
+this round spent re-confirming three dead ends. Doing the grep *first* and then still re-verifying with
+fresh searches (rather than trusting a 2026-09-03-era rejection blindly forever) is the right balance —
+done above — but skipping the grep entirely, as both the 2026-10-09 note and (almost) this round did
+before catching it, is pure waste.
+
+`python tools/validate.py` still passes (`OK: 34 skills valid and consistent with README.`) — no skill
+files touched this run; all three candidates died, so no README/example changes were needed either.
+
+Follow-up for the next run — two genuinely fresh leads, checked against this file's full history
+(not just skimmed) before being written down here, in territory the saturation notes above haven't
+named yet:
+- New-skill candidate, unresearched: **field-level encryption / key-rotation correctness audit** —
+  does an application that encrypts specific columns/fields (PII, payment details, health data)
+  actually keep that encryption sound over time: a searchable/deterministic-encryption scheme that
+  breaks uniqueness or equality-query assumptions it wasn't designed for, a key-rotation procedure that
+  only re-wraps the data-encryption key but never re-encrypts existing rows under the new key (so an
+  old, "rotated-away" key must still stay available to read old data forever), and envelope-encryption
+  access-control drift (a KMS key policy that's wider than the one application role that's supposed to
+  use it). `grep`ped this file for "encryption"/"key rotation"/"field-level" first — found only
+  unrelated passing mentions, not a prior research round — so this really does look unmined, not just
+  unresearched-on-paper like the three above. Verify distinct from `secret-spill` (leaked credentials
+  in git history, not at-rest data encryption) and `security-sweep` (payload/transport-level findings
+  in a diff, not a standing crypto-architecture audit) before researching external novelty.
+- New-skill candidate, unresearched: **mobile app privacy-label/data-safety-form accuracy audit** —
+  does an app's actual code (SDKs embedded, data actually collected/transmitted, third-party
+  processors) match what its App Store "Privacy Nutrition Label" or Play Console "Data Safety" form
+  declares, catching the common drift mode of a new analytics SDK or ad network added to the code
+  without anyone updating the declared-data-types form. Caution before researching: `rollout-guard`'s
+  own research already found several *pre-submission compliance* checkers (`cruisediary/apple-app-
+  review-skills`, `devsemih/appstore-review-skill`, `safaiyeh/app-store-review-skill`) that check
+  "privacy manifests, entitlements, metadata" — read those in full first, since "does the declared
+  manifest match the code" may already be exactly what one of them does, which would kill this
+  candidate the same way the other three died today.

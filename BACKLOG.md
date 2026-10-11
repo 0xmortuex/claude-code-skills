@@ -2499,18 +2499,8 @@ files touched this run; all three candidates died, so no README/example changes 
 Follow-up for the next run — two genuinely fresh leads, checked against this file's full history
 (not just skimmed) before being written down here, in territory the saturation notes above haven't
 named yet:
-- New-skill candidate, unresearched: **field-level encryption / key-rotation correctness audit** —
-  does an application that encrypts specific columns/fields (PII, payment details, health data)
-  actually keep that encryption sound over time: a searchable/deterministic-encryption scheme that
-  breaks uniqueness or equality-query assumptions it wasn't designed for, a key-rotation procedure that
-  only re-wraps the data-encryption key but never re-encrypts existing rows under the new key (so an
-  old, "rotated-away" key must still stay available to read old data forever), and envelope-encryption
-  access-control drift (a KMS key policy that's wider than the one application role that's supposed to
-  use it). `grep`ped this file for "encryption"/"key rotation"/"field-level" first — found only
-  unrelated passing mentions, not a prior research round — so this really does look unmined, not just
-  unresearched-on-paper like the three above. Verify distinct from `secret-spill` (leaked credentials
-  in git history, not at-rest data encryption) and `security-sweep` (payload/transport-level findings
-  in a diff, not a standing crypto-architecture audit) before researching external novelty.
+- [x] **`cipher-guard` — SHIPPED 2026-10-11 (verified novel), see the maintenance-pass entry below.**
+  The field-level encryption / key-rotation correctness audit candidate. Picked up this thread.
 - New-skill candidate, unresearched: **mobile app privacy-label/data-safety-form accuracy audit** —
   does an app's actual code (SDKs embedded, data actually collected/transmitted, third-party
   processors) match what its App Store "Privacy Nutrition Label" or Play Console "Data Safety" form
@@ -2521,3 +2511,62 @@ named yet:
   "privacy manifests, entitlements, metadata" — read those in full first, since "does the declared
   manifest match the code" may already be exactly what one of them does, which would kill this
   candidate the same way the other three died today.
+
+## `cipher-guard` — SHIPPED (2026-10-11, verified novel)
+
+Git hygiene check first: `HEAD` was detached at the same commit `origin/main` already pointed to
+(the same harmless local-ref-staleness shape every prior note has described) — fast-forwarded local
+`main` to match, no data at risk.
+
+Picked up the 2026-10-10 note's first fresh lead: **field-level encryption / key-rotation
+correctness audit** — does an application that encrypts specific columns/fields actually keep that
+encryption sound over the data's whole lifetime, not just at write time. Researched all three named
+sub-angles against primary sources before writing anything:
+
+- **Deterministic/searchable encryption vs. equality-query correctness — confirmed uncovered.**
+  Checked `briiirussell/cybersecurity-skills` → `skills/crypto-audit/SKILL.md` (fetched in full, a
+  real dedicated audit skill, not a scaffold — "Audit cryptography implementation," output is an
+  audit report) since it's the closest match found for the broader candidate: it covers nonce
+  uniqueness and a point-in-time "verify IAM permissions cover both encrypt AND decrypt" KMS check,
+  but never mentions deterministic encryption, searchable encryption, or equality-query/uniqueness
+  tradeoffs at all. Also checked `mukul975/Anthropic-Cybersecurity-Skills` →
+  `performing-cryptographic-audit-of-application/SKILL.md` (fetched in full) — static algorithm/mode/
+  hardcoded-key/KDF scanning only, no searchable-encryption content. Found no skill anywhere covering
+  this angle. Independently found a real, filed bug confirming the problem is genuine, not
+  hypothetical: `rails/rails#51553` ("Validation Does Not Work with Multiple Encryption Scheme") — a
+  `uniqueness: true` validation on a column migrating from non-deterministic to
+  `deterministic: true` encryption silently stops catching duplicates against any row still holding
+  old-scheme ciphertext, per the maintainer-side comment: "the uniqueness validator cannot issue a DB
+  query to check for uniqueness" against the previous scheme.
+- **Key-rotation re-wrap vs. re-encrypt — confirmed uncovered.** The same `crypto-audit` skill
+  mentions key-ID-per-ciphertext and a revocation question but never distinguishes re-wrapping a DEK
+  from re-encrypting the rows it protects. `mukul975/.../implementing-envelope-encryption-with-aws-kms`
+  (fetched in full) is a scaffold/build skill ("Objectives" are implementation tasks) whose only
+  rotation language is "Key rotation re-encrypts DEKs with new master key" — that's the KEK-rewrap
+  operation, and the skill never flags that this is a different, weaker guarantee than re-encrypting
+  the actual data; an initial search summary's claim that this skill has an automated "auditkeypolicy"
+  check turned out to be unfounded once the raw file was actually read (worth noting as a concrete
+  instance of why this file's rule is "read the actual content," not "trust a search snippet"). Found
+  a real, filed design issue confirming the exact two-operations distinction this candidate names:
+  `pgexperts/chisel#140` names "credential rotation" (KEK re-wrap, O(1), "touches only the
+  superblock") as different from "bulk DEK rotation" (full re-encryption, O(total_pages)), and states
+  the bulk path "is only needed when the DEK itself is believed compromised — e.g., a process memory
+  dump exposed the in-session DEK."
+- **Envelope-encryption key-policy access-control drift — confirmed uncovered.** Checked
+  `briiirussell/cybersecurity-skills` → `skills/iam-audit/SKILL.md` (fetched in full, since
+  `crypto-audit` explicitly defers to it for "KMS / HSM patterns") — it's a general IAM least-privilege
+  audit (cloud roles, access-advisor reports, permission accretion) that never mentions KMS, HSMs, or
+  key policies at all; general IAM audits don't substitute for a KMS-key-specific one. Grounded the
+  mechanism in AWS's own KMS IAM best-practices guidance, which warns that an IAM statement with
+  `Resource: "*"` on `kms:Decrypt`/`kms:GenerateDataKey` can reach keys the account doesn't own,
+  letting a principal decrypt ciphertext under *any* key that granted that account access — not just
+  the one a reviewer thinks they're scoping.
+
+Added `skills/cipher-guard/SKILL.md`, `examples/cipher-guard.md`, README skills-table + decision-table
+rows, intro paragraph/count updates (thirty-four → thirty-five). `python tools/validate.py` passes
+(`OK: 35 skills valid and consistent with README.`).
+
+Follow-up for the next run: the second 2026-10-10 lead — **mobile app privacy-label/data-safety-form
+accuracy audit** — is still unresearched; its own entry above already flags the caution to check
+`rollout-guard`'s cited pre-submission compliance checkers in full before researching external
+novelty, since one of them may already do exactly this.

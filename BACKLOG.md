@@ -2570,3 +2570,64 @@ Follow-up for the next run: the second 2026-10-10 lead — **mobile app privacy-
 accuracy audit** — is still unresearched; its own entry above already flags the caution to check
 `rollout-guard`'s cited pre-submission compliance checkers in full before researching external
 novelty, since one of them may already do exactly this.
+
+## Maintenance pass (2026-10-12): privacy-label candidate researched and rejected; two fresh leads logged
+
+Picked up the one open lead from the 2026-10-11 note (git hygiene: local `main` was 6 commits behind
+`origin/main` after a detached-HEAD checkout — fast-forwarded, no data at risk, same harmless shape
+every prior note has described).
+
+- [x] **Mobile app privacy-label/data-safety-form accuracy audit — REJECTED, covered.** The angle:
+  does an app's actual code/SDKs (what's collected and transmitted) match what its App Store "Privacy
+  Nutrition Label" or Play Console "Data Safety" form declares, catching the common drift mode of a
+  new analytics/ad SDK added without the form being updated. Followed the caution the 2026-10-10 note
+  left and checked `rollout-guard`'s own cited pre-submission checkers in full first: fetched
+  `cruisediary/apple-app-review-skills`'s `privacy-manifest-check`, `data-minimization-audit`, and
+  `privacy-policy-check` (all three read in full, not trusted from a listing) — all three check
+  `PrivacyInfo.xcprivacy`/permission-API usage/in-app policy links, but none compare the store's "App
+  Privacy" declared data types against actual code or SDK behavior; also fetched `github/awesome-copilot`
+  → `apple-appstore-reviewer` in full — it flags "data collection without disclosure" and "3rd-party SDK
+  compliance" generically but never names the Nutrition Label or instructs a declared-vs-code
+  cross-reference. The iOS side was a real (if partial) gap. The **Android side kills the candidate
+  outright**: `android/skills` (the official Android team's own GitHub org, `developer.android.com`-
+  sourced, read in full at `play/play-policy-insights/SKILL.md`) is "an automated auditor... that
+  cross-references static code analysis with Play Store declarations to generate deterministic
+  compliance reports, identifying undeclared data collection... across... Data Safety and Privacy
+  domains" — a two-phase orchestrator + subagent pipeline whose explicit goal set includes
+  `data_safety_part_1`/`data_safety_part_2`. That is this candidate's exact core mechanic (declared
+  label vs. actual code), shipped by the platform owner itself, not a third party. The problem is real
+  (an academic study of 6,051 apps found ~1/3 of collection/sharing disclosures conflict and 90%+ of
+  Data Safety labels have at least one inconsistency; a 2023 Mozilla study separately found ~80% of
+  reviewed apps' labels false or misleading vs. their own privacy policy) but it's already solved by a
+  prominent, official source — same shape as the `clean-exit`/RBAC/offline-sync rejections: a near-exact
+  match exists, the residual (iOS-side explicitness, cross-release drift tracking) is too thin to carry
+  a standalone skill alone. Closed as covered; do not re-research without an angle neither
+  `play-policy-insights` nor the three cruisediary skills touch.
+
+No skill shipped this round (the one candidate died) — per the daily-agent rule, an unverified/covered
+candidate is worse than no skill, and `python tools/validate.py` still passes (`OK: 35 skills valid and
+consistent with README.`), unchanged since no skill files were touched.
+
+Two fresh leads for the next run, surfaced while closing out the above but **not yet verified as
+novel** — research before writing either:
+- New-skill candidate, unresearched: **webhook/API signature-verification correctness audit** — HMAC
+  computed over a re-parsed/re-serialized body instead of the exact raw bytes (breaks verification or,
+  worse, gets implemented as "skip verification if it fails to parse"), a non-constant-time comparison
+  (`==`/`string.Equals`) vulnerable to timing attacks instead of `crypto.timingSafeEqual`/`hmac.compare_digest`,
+  and a missing or too-wide replay-tolerance window on the signed timestamp. Caution: `security-sweep`
+  already lists "missing signature verification" as one bullet under its "Crypto misuse" category
+  (`skills/security-sweep/SKILL.md:24`) — check whether that's a thin mention a dedicated skill would
+  duplicate, or whether the raw-body/timing-safety/replay-window specifics are a genuinely deeper audit
+  that bullet doesn't attempt, before researching external coverage.
+- New-skill candidate, unresearched: **concurrent OAuth/JWT refresh-token race audit** — two requests
+  that both see an expiring token and both trigger a refresh, where the loser's refresh either forks the
+  token family (both mint valid-looking tokens) or overwrites/revokes the winner's new token, logging the
+  user out or breaking single-use/rotation guarantees. Grounded in real, named 2026 advisories found this
+  round (not yet independently re-verified against primary sources, and not yet checked against any
+  existing skill pack for novelty): `better-auth` CVE-2026-53517 (non-atomic read-validate-revoke-mint at
+  the refresh endpoint forks the token family under concurrent requests), NocoDB CVE-2026-47386 (concurrent
+  single-use-code exchange mints two valid token pairs, breaking the PKCE single-use guarantee), and a
+  real Coder PR (singleflight-dedup + optimistic-locking fix for one caller's refresh clearing another's
+  valid token). Distinct from this pack's own `job-warden` (queue/cron idempotency, not an interactive
+  auth-refresh race) and `overwrite-guard` (concurrent record edits, not token state) — verify that
+  framing holds and check for existing coverage before writing anything.

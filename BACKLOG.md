@@ -2631,3 +2631,62 @@ novel** — research before writing either:
   valid token). Distinct from this pack's own `job-warden` (queue/cron idempotency, not an interactive
   auth-refresh race) and `overwrite-guard` (concurrent record edits, not token state) — verify that
   framing holds and check for existing coverage before writing anything.
+
+## Maintenance pass (2026-10-13): both "fresh" leads were stale duplicates (again); shipped a small clock-sweep gap instead
+
+Git hygiene check first: local `main` was detached and 7 commits behind `origin/main` (same harmless
+staleness shape every prior note has described) — fetched and fast-forwarded to `origin/main`, no data
+at risk.
+
+Before researching either of the 2026-10-12 note's "two fresh leads," ran the `grep -n -i "REJECTED"`
+discipline this file's own 2026-10-10 entry calls for — and both died immediately, for the third time
+this exact mistake has happened (first at 2026-09-27, again at 2026-10-10, now the leads themselves
+were stale on arrival):
+
+- [x] **Webhook/API signature-verification correctness audit — already REJECTED, same category.**
+  This is the identical candidate rejected on 2026-10-07 (search this file for "api-webhook-security"):
+  `Intense-Visions/harness-engineering` → `api-webhook-security/SKILL.md` already covers
+  `crypto.timingSafeEqual` constant-time comparison, a documented ±5-minute timestamp-tolerance window,
+  and dual-secret-acceptance rotation — the exact three mechanisms the 2026-10-12 note re-described
+  (raw-body HMAC, non-constant-time compare, replay-tolerance window) almost word-for-word. No new
+  angle was offered this time either. Closed as covered; still the same verdict.
+- [x] **Concurrent OAuth/JWT refresh-token race audit — already REJECTED, same category.** This is the
+  identical candidate rejected on 2026-09-06 (search this file for "thundering-herd refresh calls"):
+  `jeremylongshore/tons-of-skills-marketplace`'s auth-pack skills (`hubspot-auth`, `podium-auth`, etc.)
+  already name both halves — the concurrent-refresh thundering-herd/single-flight fix and the
+  rotation-invalidates-a-concurrent-caller's-token race. The 2026-10-12 note's framing (loser's refresh
+  forks the token family or clobbers the winner's new token) is the same race described from the other
+  side, with sharper CVE citations (`better-auth` CVE-2026-53517, NocoDB CVE-2026-47386) — real and
+  worth keeping as grounding evidence if this is ever revisited, but they document the same mechanism
+  the 2026-09-06 rejection already found covered, not a new one. Closed as covered; still the same
+  verdict.
+
+Both candidates died without needing fresh external research — the grep-first discipline worked exactly
+as the 2026-10-10 note intended. Rather than end the run with nothing shipped, read every skill's
+`SKILL.md` in full looking for a real, narrow, *already-grounded* gap small enough to verify and fix in
+one sitting, instead of starting a new broad novelty sweep cold. Found one in `clock-sweep`: its sweep
+list covers naive/aware mixing, DST-unsafe day arithmetic, offset-as-zone, and serialization boundaries,
+but never mentions **month-granular calendar arithmetic** — adding/subtracting months for billing
+anchors or annual reminders, where a day-of-month that doesn't exist in the target month must clamp
+(Jan 31 + 1 month → Feb 28/29) and, critically, the clamped result must never be fed back in as the next
+anchor or the date silently walks earlier every time it crosses a short month. Verified this is a real,
+documented bug class, not a hypothetical: Stripe's own billing-cycle docs describe the clamp-from-the-
+*original*-anchor contract explicitly (a day-31 anchor bills Feb 28/29, then back to Mar 31 — it doesn't
+stay clamped), which is exactly the "derive from last month's result" bug that violates that contract.
+Confirmed `proration-guard` doesn't cover this either (its period-boundary language is about which
+billing period a credit applies against, not how the next recurrence date itself is computed) — so this
+isn't an internal duplicate. **Added as a 7th sweep bullet + a Fix-patterns bullet + a hostile-clock
+verification case to `skills/clock-sweep/SKILL.md`** (not a new skill — this is a real gap in an
+existing skill's sweep list, and the pack is well past the point where every new finding deserves its
+own file). Also added "month-granular calendar arithmetic (billing-anchor day-of-month drift)" to the
+frontmatter description and a "renews on the wrong day every few months" trigger phrase so this
+actually fires. `python tools/validate.py` passes (`OK: 35 skills valid and consistent with README.`,
+unchanged skill count since this touched an existing file, not a new one).
+
+Follow-up for the next run: the two 2026-10-12 leads are now closed for good — do not re-log either
+without a materially different angle than what's cited above and in their original 2026-10-07/09-06
+rejections. No fresh unresearched candidates are queued; the next run should do a genuinely new novelty
+sweep in territory this file hasn't named yet (the pack is 35 skills deep across backend/infra, mobile,
+billing, messaging, compliance, and real-time/connection correctness — frontend-build-tooling and
+data-pipeline/ETL-specific correctness are two areas no prior round has explicitly tried), or continue
+drift-auditing specific tool-syntax claims as docs age.

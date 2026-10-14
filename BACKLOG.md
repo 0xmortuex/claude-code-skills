@@ -2690,3 +2690,70 @@ sweep in territory this file hasn't named yet (the pack is 35 skills deep across
 billing, messaging, compliance, and real-time/connection correctness — frontend-build-tooling and
 data-pipeline/ETL-specific correctness are two areas no prior round has explicitly tried), or continue
 drift-auditing specific tool-syntax claims as docs age.
+
+## Maintenance pass (2026-10-14): the two newly-suggested areas tried, five candidates all saturated
+
+Git hygiene check first: local `main` matched `origin/main` exactly (clean fast-forward state, nothing
+to reconcile) — no action needed, unlike most prior runs' detached-HEAD staleness.
+
+Picked up the 2026-10-13 note's suggestion to try the two previously-untouched areas (frontend-build-
+tooling, data-pipeline/ETL correctness) plus two infra-adjacent ideas that came up while reading. All
+five died on external saturation, each checked against real `SKILL.md` content (not just listing
+snippets) via GitHub code search:
+
+- [x] **Frontend build-output secret/source-map leakage — REJECTED, saturated.** The candidate:
+  production source maps left enabled (`.map` files exposing full original source — comments, internal
+  endpoints, sometimes literal keys) and secrets inlined into the client bundle via a bundler's public-
+  env-var convention (`NEXT_PUBLIC_*`, `VITE_*`, `EXPO_PUBLIC_*`) when a value needed to stay server-only.
+  Real problem, but already shipped as a dedicated check in many places, not a stray mention: `addyosmani/
+  web-quality-skills` (official — Addy Osmani, Google Chrome web-perf lead) → `skills/best-practices/
+  SKILL.md` has the exact "hidden-source-map vs. exposed source-map in production" code comparison,
+  mirrored verbatim across at least 8 other repos that vendor it (`davila7/claude-code-templates`,
+  `tech-leads-club/agent-skills`, `open-gsd/gsd-pi`, others). `Shankulkarni/vibe-audit` →
+  `audit-vercel-deployment/SKILL.md` names this exact pairing as one "consistent class of
+  misconfiguration": "secrets end up in the browser bundle (via `NEXT_PUBLIC_` prefix), source maps are
+  enabled in production." `JoviDeCroock/forklight` → `audit-secrets/SKILL.md` and
+  `suhailkakar/the-skills` → `secrets-and-env/SKILL.md` both dedicate a skill specifically to client-
+  bundle secret exposure. Closed as covered; do not re-research without a sub-angle none of these touch.
+- [x] **Stale JS chunks after a rolling deploy (`ChunkLoadError`/`vite:preloadError`) — REJECTED,
+  saturated.** The candidate: a tab left open across a deploy requests a content-hashed chunk the new
+  build no longer serves, breaking navigation with no recovery. `enowdev/enowxcli` →
+  `skills/frontend-errors/SKILL.md` has a dedicated "§7: After a deploy" section naming the exact
+  mechanism and all three browsers' error strings. Multiple Sentry-triage skills (`brianlovin/agent-
+  config`, `getsentry/sentry-for-ai`, and four more mirrors) explicitly classify `ChunkLoadError` as a
+  known, self-resolving deployment-caching pattern with a documented fix (reload-on-chunk-error). Closed
+  as covered.
+- [x] **Tailwind JIT/purge silently dropping dynamically-constructed class names
+  (`` `bg-${color}-500` `` never generated because the scanner needs literal strings) — REJECTED,
+  saturated.** Extremely common ground: 15+ independent `SKILL.md` files name this exact gotcha
+  (`0xDarkMatter/claude-mods` → `tailwind-ops`, `curiositech/windags-skills` + its `port-daddy` mirror →
+  `tailwind-v4-expert`, `mew-ton/coding-guidelines` → a skill with no other purpose than this one rule,
+  `antfu/skills` → `unocss`, and a dozen more), all converging on the same fix (`safelist` /
+  `@source inline(...)`). Closed as covered.
+- [x] **Serverless/Lambda-to-RDS connection-pool exhaustion (each cold-started function opening its own
+  connection, no pooling) — REJECTED, saturated.** This is treated as baseline AWS-serverless knowledge,
+  not a gap: the official `aws/agent-toolkit-for-aws` → `rds-oracle/SKILL.md` and `rds-sqlserver/
+  SKILL.md` both name "module-level connection pool outside the handler" + RDS Proxy explicitly, and the
+  same RDS-Proxy-for-Lambda fix appears near-verbatim in at least 10 other independent serverless/AWS
+  skills found this round. Closed as covered.
+- [x] **Distributed lock / leader-election fencing-token correctness — re-confirmed already REJECTED.**
+  Before researching, grepped this file per the 2026-10-10 discipline and found this exact candidate was
+  already researched and closed as saturated on 2026-09-28 (`j4flmao/agent-skills` → `dist-sys-auditor`
+  cites the same Kleppmann fencing-token argument). No new angle offered; not re-opened.
+
+Also checked whether `stale-guard`'s own "near-miss" search-index/primary-database sync-audit thread
+(flagged unresolved in two earlier rounds, around the 2026-09 marks) had anything new to add — re-read
+`skills/stale-guard/SKILL.md`, which already explicitly lists "search indexes (Elastic mirroring the
+DB)" as one of the copies it audits for staleness; this is an internal duplicate, not a gap, so left
+alone.
+
+No skill shipped this round — five real candidates, five saturated. `python tools/validate.py` still
+passes (`OK: 35 skills valid and consistent with README.`), unchanged since no skill files were touched.
+
+No fresh unresearched candidates survived this round's checking to queue for next time. The next run
+should either (a) try territory further from this pack's existing backend/infra/billing/compliance
+center of gravity — e.g. CLI-tool argument-parsing/exit-code correctness, desktop-app auto-update
+integrity, or game-server tick/simulation determinism — none of which this file has tried yet, or
+(b) pick up the standing drift-audit fallback: re-verify specific tool-syntax claims (Postgres/MySQL/
+git/CI/cloud-provider command flags) across the 35 skills against current docs, since that surface ages
+independent of novelty and hasn't had a full pass since round 8 (2026-10-08).

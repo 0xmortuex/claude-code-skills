@@ -2757,3 +2757,80 @@ integrity, or game-server tick/simulation determinism — none of which this fil
 (b) pick up the standing drift-audit fallback: re-verify specific tool-syntax claims (Postgres/MySQL/
 git/CI/cloud-provider command flags) across the 35 skills against current docs, since that surface ages
 independent of novelty and hasn't had a full pass since round 8 (2026-10-08).
+
+## Maintenance pass (2026-10-15): three fresh-territory candidates saturated; drift audit round 9 (`cipher-guard`) clean
+
+Git hygiene check first: local `main` was detached one commit ahead of the local `main` ref (the
+2026-10-14 maintenance commit existed on `origin/main` already — just a stale local branch pointer,
+same harmless shape prior notes describe) — fast-forwarded local `main` to match, no data at risk.
+
+Tried the three specific unresearched areas the 2026-10-14 note named (CLI-tool argument-parsing/exit-
+code correctness, desktop-app auto-update integrity, game-server tick/simulation determinism). All
+three died on real, dedicated external coverage, checked via GitHub code search against actual
+`SKILL.md` content:
+
+- [x] **CLI argument-parsing/exit-code correctness — REJECTED, saturated.** Searched
+  `filename:SKILL.md` for exit-code/argument-parsing audit language. Found a crowded field of
+  dedicated CLI-correctness skills, not just incidental mentions: `kylesnowschwartz/ralph-ban` →
+  `skills/cli-qa/SKILL.md` ("QA a CLI tool", "validate exit codes", golden-file comparison of
+  stdout/stderr/exit-code as separate evidence channels), `0xDarkMatter/claude-mods` →
+  `skills/cli-ops/SKILL.md` (semantic exit-code enumeration 0-7, stderr-vs-stdout discipline),
+  `Roasbeef/beefstack` → `skills/agent-cli/SKILL.md` (explicit "use semantic exit codes, not just
+  0/1" + documenting them for agent consumption), and `alibaba/fast-modeling-language` →
+  `skills/fml/SKILL.md` (a full exit-code table with distinct codes per failure class). Closed as
+  covered; do not re-research without a sub-angle none of these touch.
+- [x] **Desktop-app auto-update integrity — REJECTED, saturated.** The candidate (signature
+  verification on update artifacts, staged/rollback-capable rollout) is explicitly named, not a
+  tangential mention, across multiple dedicated sources: `martinholovsky/claude-skills-generator` →
+  `skills/auto-update-systems/SKILL.md` (and its `ConnectiveTCS/Gradient_Generator` mirror) is
+  entirely about this — cites CVE-2024-39698 (a real signature-verification-bypass CVE) by name and
+  covers signature verification, rollback mechanisms, and staged rollouts as its three stated
+  specialties. `florianbuetow/claude-code` → `plugins/appsec/skills/integrity/SKILL.md` (mirrored in
+  `florianbuetow/codex-plugins`) and `scholarly360/owasp-top10-web-skills` →
+  `skills/software-data-integrity-failures/SKILL.md` both name "auto-update without verifying digital
+  signatures" as an explicit checklist item (the latter citing CWE-494 directly). Closed as covered.
+- [x] **Game-server tick/simulation determinism — REJECTED, saturated.** `zeroes-ones/Skills` →
+  `skills/05-development/game-networking-developer/SKILL.md` states the exact property this
+  candidate targets as "Rule 6: Determinism is a requirement for lockstep, not a luxury... one
+  divergent `sin()` call desyncs the entire simulation," naming fixed-point/deterministic-float
+  libraries as the fix. `dreamteam-hq/brigid` → `skills/gamedev-multiplayer/SKILL.md` has a dedicated
+  "Determinism Assumptions Without Verification" anti-pattern section plus a separate tick-rate-
+  stability check. `fcsouza/agent-skills` → `skills/game-backend-architecture/SKILL.md` (mirrored in
+  two other repos) covers the fixed-timestep-accumulator/configurable-tick-rate mechanics this
+  candidate would have needed to build from scratch. Closed as covered.
+
+With all three fresh leads dead, ran the overdue drift-audit round instead (last full pass was round 8,
+2026-10-08; `cipher-guard` shipped 2026-10-11, after that round, and had never had a dedicated
+fact-verification pass). Read the full `skills/cipher-guard/SKILL.md` and verified every externally-
+checkable claim against primary/authoritative sources:
+
+- **`rails/rails#51553`** ("Validation Does Not Work with Multiple Encryption Scheme") — confirmed real
+  via direct fetch of the issue page: closed as stale/`completed` in August 2024 with no fix merged, a
+  maintainer reply confirming the limitation is inherent (the validator can't query ciphertext encrypted
+  under the previous non-deterministic scheme). If anything this *strengthens* the skill's claim — the
+  bug is still live in current Rails, not patched. No change needed.
+  Note: GitHub's own page now shows this backlog file's own prior entry as the only other citation of
+  the issue found on the web — expected, not a problem.
+- **`pgexperts/chisel#140`** — confirmed via search: issue separates "credential rotation" (re-wrap,
+  touches only the superblock, O(1)) from "bulk DEK rotation" (full re-encryption, O(total_pages)),
+  matching the skill's wording closely; PR #159 implementing bulk DEK rotation is linked as closing it.
+  No drift.
+- **AWS KMS wildcard-`Resource: "*"` cross-account `kms:Decrypt` reach** — confirmed against AWS's own
+  IAM-policies-best-practices page: an IAM policy (as opposed to a key policy) with a wildcard resource
+  can reach keys in other accounts that have granted the caller's account access, not just keys the
+  account owns itself — matches the skill's framing. No drift.
+- **AWS KMS automatic rotation rotates only the CMK's backing key material, leaving already-wrapped
+  DEKs decryptable** — confirmed: AWS retains all prior backing key material indefinitely specifically
+  so ciphertext encrypted under earlier rotations keeps decrypting; the key ID itself never changes.
+  No drift.
+
+All four claims checked out — no fixes needed, no skill files touched this round. `python tools/validate.py`
+still passes (`OK: 35 skills valid and consistent with README.`), unchanged skill count.
+
+Follow-up for the next run: no fresh unresearched candidates survived today's checking. The next run
+should either (a) try territory further still from this pack's backend/infra/billing/compliance/
+real-time center of gravity than today's three attempts (which were themselves already one layer out
+and still saturated) — e.g. machine-learning training-pipeline reproducibility, embedded/firmware
+OTA-update correctness, or browser-extension permission/manifest drift — or (b) treat the drift-audit
+thread as fully caught up again (all 35 skills now have a pass since their last content change) and wait
+for either a new skill to ship or a specific external fact to be reported stale before re-checking.

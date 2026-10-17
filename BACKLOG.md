@@ -2834,3 +2834,85 @@ and still saturated) — e.g. machine-learning training-pipeline reproducibility
 OTA-update correctness, or browser-extension permission/manifest drift — or (b) treat the drift-audit
 thread as fully caught up again (all 35 skills now have a pass since their last content change) and wait
 for either a new skill to ship or a specific external fact to be reported stale before re-checking.
+
+## Maintenance pass (2026-10-17): the three 10-15 leads plus five more, all saturated
+
+Git hygiene check first: this session's clone had a stale `origin/main` remote-tracking ref (showed
+3438765, two commits behind the real `origin/main`/`432dbdd` — the 2026-10-14/15 maintenance commits
+had in fact already landed on the remote). A plain `git fetch` resolved it; no actual divergence, no
+force-push, nothing lost. Noting it in case another run's clone shows the same stale-ref symptom.
+
+Tried all three leads the 2026-10-15 note named, plus five more candidates that came up while reading
+this file's own exhaustive "already covered" list for gaps in its coverage. All eight died on real,
+dedicated external coverage, each checked against actual `SKILL.md` content via GitHub code search
+(not just a title match):
+
+- [x] **Browser-extension permission/manifest drift — REJECTED, saturated.** `sealad886/agent-plugins`
+  → `extension-security-and-permissions/SKILL.md` ("re-audit permissions whenever the feature set
+  expands"), `saeedkolivand/ai-job-hunter-app` → `.claude/skills/extension-standards/SKILL.md` (a
+  dedicated "Permissions — least privilege" section plus protocol-lockstep drift checks), and
+  `LeoYeAI/openclaw-master-skills` → `openclaw-cws-publisher/SKILL.md` (a `validate_cws_package.py`
+  script that specifically blocks "persistent host permissions... missing permission justifications,
+  privacy-practice drift") all cover this directly, not tangentially. Closed as covered.
+- [x] **Embedded/firmware OTA-update correctness — REJECTED, saturated.** Extremely crowded: at least
+  eight independent dedicated OTA skills found (`easyzoom/aix-skills` → `ota-update-integration`,
+  `tonone-ai/tonone` → `volt-ota` + `volt-firmware` with explicit partition-table/rollback-condition
+  design, `asalhamed/dev-agents` → `firmware-ota-agent` naming TUF/Uptane/IETF SUIT signed-update
+  metadata, `ggrace519/claude-code-dev-studio` → `embed-ota` covering signature verification/A-B
+  swap/resumability). Closed as covered.
+- [x] **ML training-pipeline reproducibility — REJECTED, saturated.** 9000+ code-search hits; dozens
+  of dedicated MLOps skills name the exact practice (seed-setting, dataset/environment versioning,
+  experiment-tracking lineage) as a first-class concern (`ayush488-glitch/mlops-stack` →
+  `mlops-training-eval/SKILL.md` has a literal "Step 5: Model Training Pipeline / The Four
+  Reproducibility Elements" section). Closed as covered.
+- [x] **Soft-delete query-scope leakage (`deleted_at` filter forgotten in some read path, leaking
+  soft-deleted rows back to users) — REJECTED, saturated.** A real, specific bug pattern, but it's
+  treated as a standard bullet in general schema-design guidance everywhere it was found
+  (`mohitagw15856/pm-claude-skills` → `database-schema-design/SKILL.md`: "All application queries
+  MUST filter `WHERE deleted_at IS NULL`... Use a view or ORM scope to enforce this"; `avo-hq/avo` →
+  `avo-filters/SKILL.md` ships a first-class `Scope` construct specifically for this; PostHog's own
+  `signals-scout-feature-flags/SKILL.md` independently reinvents the same "soft-deleted but still
+  called" check for a different entity). Also overlaps this pack's own prior-rejected "multi-tenant
+  isolation" candidate (line ~127, 269 hits, 4+ dedicated auditors) closely enough that a standalone
+  skill would mostly duplicate it. Closed as covered.
+- [x] **JWT algorithm-confusion / `alg:none` verification correctness — REJECTED, saturated.** Over a
+  dozen near-identical dedicated skills found (`sickn33/agentic-awesome-skills` →
+  `hunt-jwt-crypto`, `plurigrid/asi` → `exploiting-jwt-algorithm-confusion-attack`, mirrored in at
+  least six other marketplaces). This pack's own `security-sweep` already names crypto-misuse as one
+  of its OWASP-style categories, so the defensive angle is covered in-pack too. Closed as covered.
+- [x] **Third-party script / SRI supply-chain trust — REJECTED, saturated.** `addyosmani/
+  web-quality-skills` (official, Google Chrome web-perf lead) → `best-practices/SKILL.md` covers this
+  by name, citing the real 2024 `polyfill.io` supply-chain attack (~100k sites); `UnboundCompute/
+  security-agent-skills` → `auditing-third-party-script-and-sri-trust/SKILL.md` is a dedicated skill
+  for exactly this; `jamditis/claude-skills-journalism` → `api-hardening/SKILL.md` cites the same CVE
+  with a date and source. Closed as covered.
+- [x] **Mobile deep-link / App Links / Universal Links hijacking (`assetlinks.json` / AASA
+  verification) — REJECTED, saturated.** A whole family of near-identical
+  `exploiting-deeplink-vulnerabilities` skills, mirrored across a dozen+ repos, plus
+  `agents-inc/skills` → `mobile-deep-linking-app-links/SKILL.md` covering the defensive/correctness
+  side (verification-file hosting requirements, custom-URI-scheme hijacking risk). Closed as covered.
+- [x] **Idempotency-key TTL/expiry correctness (TTL shorter than the retry window silently
+  reintroducing duplicates) — re-confirmed already covered.** This is the same ground this file
+  already closed as "duplicate of `job-warden` Q1" (line ~127); today's search surfaced a specific
+  dedicated skill making the exact point (`j4flmao/agent-skills` → `idempotency/SKILL.md`: "Expiring
+  keys too early: If the TTL is shorter than the maximum retry window, retries after expiry create
+  duplicates") — strengthens the prior rejection rather than reopening it. Not re-opened.
+
+No skill shipped this round — eight real candidates, eight saturated. `python tools/validate.py`
+still passes (`OK: 35 skills valid and consistent with README.`), unchanged skill count and `main`
+now correctly tracks `origin/main` at the same commit (see git-hygiene note above).
+
+Follow-up for the next run: two genuinely fresh, *unresearched* leads surfaced while reading today —
+hand these off rather than re-trying today's eight exhausted angles:
+- [ ] **LLM prompt/response cache invalidation** — an application that caches LLM completions keyed
+  only on the user input, where a prompt-template edit, a system-prompt change, or a model-version
+  bump should invalidate the cache but the key doesn't include any of those dimensions, serving stale
+  completions under the new template/model's name. This is `stale-guard`'s invariant B (every cache
+  key must contain every dimension that changes the value) applied to a specifically AI-native case —
+  worth checking whether that's close enough to be an in-pack duplicate, or different enough (prompt
+  hashing, template-version pinning, eval-gate-before-cache-warm) to clear the novelty bar on its own.
+- [ ] **Monorepo remote build-cache poisoning/staleness** (Bazel remote cache, Turborepo/Nx remote
+  cache, sccache) serving an artifact built under different inputs than the cache key captured —
+  environment variables, non-hermetic steps, or a flaky test cached as a false "pass" that then gets
+  replayed on every later build with the same inputs. Not yet checked against external skill coverage
+  at all — do that research first.

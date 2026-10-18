@@ -2904,15 +2904,59 @@ now correctly tracks `origin/main` at the same commit (see git-hygiene note abov
 
 Follow-up for the next run: two genuinely fresh, *unresearched* leads surfaced while reading today —
 hand these off rather than re-trying today's eight exhausted angles:
-- [ ] **LLM prompt/response cache invalidation** — an application that caches LLM completions keyed
-  only on the user input, where a prompt-template edit, a system-prompt change, or a model-version
-  bump should invalidate the cache but the key doesn't include any of those dimensions, serving stale
-  completions under the new template/model's name. This is `stale-guard`'s invariant B (every cache
-  key must contain every dimension that changes the value) applied to a specifically AI-native case —
-  worth checking whether that's close enough to be an in-pack duplicate, or different enough (prompt
-  hashing, template-version pinning, eval-gate-before-cache-warm) to clear the novelty bar on its own.
-- [ ] **Monorepo remote build-cache poisoning/staleness** (Bazel remote cache, Turborepo/Nx remote
-  cache, sccache) serving an artifact built under different inputs than the cache key captured —
-  environment variables, non-hermetic steps, or a flaky test cached as a false "pass" that then gets
-  replayed on every later build with the same inputs. Not yet checked against external skill coverage
-  at all — do that research first.
+- [x] **LLM prompt/response cache invalidation** — researched and REJECTED, saturated; see
+  maintenance pass (2026-10-18) below.
+- [x] **Monorepo remote build-cache poisoning/staleness** — researched and REJECTED, saturated; see
+  maintenance pass (2026-10-18) below.
+
+## Maintenance pass (2026-10-18): the two outstanding 10-17 leads tried, both saturated
+
+Git hygiene check first: this session's clone had `HEAD` detached one commit *ahead* of the local
+`main` ref (local `main` was pinned to `3438765`, three commits behind `48c3842`), while `origin/main`
+already carried all three — the same harmless stale-local-ref shape prior rounds have described, just
+inverted (ahead instead of behind). `git checkout main && git merge --ff-only 48c3842` fast-forwarded
+the local branch; `git push origin main` correctly reported "Everything up-to-date" and a fresh
+`git fetch` confirmed `origin/main` already matched. No divergence, no force-push, nothing lost.
+
+Tried both leads the 2026-10-17 note handed off, each checked against actual `SKILL.md` content via
+GitHub code search (not just a title match):
+
+- [x] **LLM prompt/response cache invalidation — REJECTED, saturated.** `ajyadav013/claude-kit` →
+  `skills/llm-caching-strategies/SKILL.md` names this exact scenario as a trigger condition verbatim:
+  "Designing invalidation for cached answers when the underlying knowledge base or policy changes" and
+  "Diagnosing a prompt cache that reports a surprisingly low hit rate despite a 'stable' system prompt" —
+  the dedicated failure mode this candidate would have built from scratch. `jamiojala/skillforge` →
+  `skills/llm-caching-strategist/SKILL.md` ships a validation step literally named `invalidation-test`
+  against `semantic cache`/`prompt cache` keywords. Both treat cache-key-dimension completeness
+  (template/model/policy version) as the core correctness property, not a tangential mention. Closed as
+  covered; do not re-research without a sub-angle neither of these touches.
+- [x] **Monorepo remote build-cache poisoning/staleness — REJECTED, saturated.** `yigitkonur/
+  skills-by-yigitkonur` → `skills/ci-cd-optimize/SKILL.md` names "poisoning" by that word as one of the
+  three things its dedicated `references/caching.md` covers for dependency/build caches. `mckissinger/
+  bosun` → `skills/bosun-ci/SKILL.md` states the exact invariant this candidate targets: "the key must
+  cover every input the task reads, including environment variables and tool versions... cached passes
+  hide the reruns that flake evidence depends on." `mcorbett51090/RavenClaude` →
+  `plugins/developer-tooling/skills/optimize-build-and-cache/SKILL.md` has a dedicated "hermeticity
+  leaks" section calling out timestamps, absolute paths, mid-build network fetches, and unpinned tool
+  versions as poisoning a build cache's trust, with "a cache that can return a wrong artifact is worse
+  than no cache." All three hit the specific mechanism (under-specified cache key vs. non-hermetic
+  input), not just general build-speed advice. Closed as covered.
+
+No skill shipped this round — two real candidates, two saturated. `python tools/validate.py` still
+passes (`OK: 35 skills valid and consistent with README.`), unchanged skill count.
+
+Follow-up for the next run: three fresh, *unresearched* leads surfaced while reading today — hand these
+off rather than re-trying today's two exhausted angles:
+- [ ] **Infrastructure-as-code state drift** (Terraform/Pulumi/CloudFormation) — a resource modified
+  out-of-band (console click-ops, a manual `kubectl`/CLI fix during an incident) causes the next
+  `plan`/`apply` to silently destroy-and-recreate it, or a stale/unrefreshed state file makes the planner
+  miss a resource that's now orphaned or duplicated. Not yet checked against external skill coverage.
+- [ ] **Feature-flag lifecycle staleness** — a flag fully rolled out to 100% (or killed to 0%) months
+  ago, but the `if (flag)` branches and the old code path were never removed; a later edit to the "dead"
+  branch silently does nothing in production, or removing the SDK call flips users back to a code path
+  nobody has run in months. Worth checking whether this is distinct enough from this pack's own
+  `skew-check` (mixed-version deploy hazards) to clear the novelty bar. Not yet checked externally.
+- [ ] **Kubernetes liveness/readiness probe correctness** — a probe that checks a different dependency
+  boundary than the real health signal (e.g. pings a static `/health` that never touches the DB pool a
+  request actually needs), causing either a restart-loop that doesn't fix the real problem or traffic
+  routed to a pod that can't serve it. Not yet checked against external skill coverage at all.

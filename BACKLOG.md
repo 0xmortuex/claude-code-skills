@@ -2947,16 +2947,125 @@ passes (`OK: 35 skills valid and consistent with README.`), unchanged skill coun
 
 Follow-up for the next run: three fresh, *unresearched* leads surfaced while reading today — hand these
 off rather than re-trying today's two exhausted angles:
-- [ ] **Infrastructure-as-code state drift** (Terraform/Pulumi/CloudFormation) — a resource modified
-  out-of-band (console click-ops, a manual `kubectl`/CLI fix during an incident) causes the next
-  `plan`/`apply` to silently destroy-and-recreate it, or a stale/unrefreshed state file makes the planner
-  miss a resource that's now orphaned or duplicated. Not yet checked against external skill coverage.
-- [ ] **Feature-flag lifecycle staleness** — a flag fully rolled out to 100% (or killed to 0%) months
-  ago, but the `if (flag)` branches and the old code path were never removed; a later edit to the "dead"
-  branch silently does nothing in production, or removing the SDK call flips users back to a code path
-  nobody has run in months. Worth checking whether this is distinct enough from this pack's own
-  `skew-check` (mixed-version deploy hazards) to clear the novelty bar. Not yet checked externally.
-- [ ] **Kubernetes liveness/readiness probe correctness** — a probe that checks a different dependency
-  boundary than the real health signal (e.g. pings a static `/health` that never touches the DB pool a
-  request actually needs), causing either a restart-loop that doesn't fix the real problem or traffic
-  routed to a pod that can't serve it. Not yet checked against external skill coverage at all.
+- [x] **Infrastructure-as-code state drift** — researched and REJECTED, saturated; see maintenance pass
+  (2026-10-19) below.
+- [x] **Feature-flag lifecycle staleness** — researched and REJECTED, saturated; see maintenance pass
+  (2026-10-19) below.
+- [x] **Kubernetes liveness/readiness probe correctness** — researched and REJECTED, saturated; see
+  maintenance pass (2026-10-19) below.
+
+## Maintenance pass (2026-10-19): eight candidates researched, all saturated — crowded adjacent territory
+
+Git hygiene check first: this session's clone had `HEAD` detached at `f3fd4c1` (four commits ahead of
+the local `main` ref, which was still pinned to `3438765`) while `origin/main` already carried all four
+— the same harmless stale-local-ref shape prior rounds have described (rounds 2026-10-15, -17, -18), each
+time in a different direction. `git checkout main && git merge --ff-only f3fd4c1` fast-forwarded the
+local branch; `git push origin main` correctly reported "Everything up-to-date". No divergence, no
+force-push, nothing lost.
+
+Tried all three leads the 2026-10-18 note handed off, each checked against actual `SKILL.md` content via
+GitHub code search (not just a title match):
+
+- [x] **Infrastructure-as-code (Terraform/Pulumi/CloudFormation) state drift — REJECTED, saturated.**
+  Extremely crowded, not a tangential mention: `tonone-ai/tonone` → `skills/terra-drift/SKILL.md` is a
+  dedicated drift-detection-and-remediation workflow triggering verbatim on "our state does not match
+  reality"; `fabn/claude-plugins` → `plugins/terraform/skills/drift/SKILL.md` names the exact
+  out-of-band-change mechanism ("identify resources where remote state differs from Terraform code...
+  approve alignment, commit verified code"); `thrashr888/hcptf-cli` → `.skills/drift/SKILL.md` and at
+  least ten other `terraform-*`/`iac-*` skills all carry a named drift-detection section. Closed as
+  covered.
+- [x] **Feature-flag lifecycle staleness (fully-rolled-out flags and their dead code paths never
+  removed) — REJECTED, saturated.** `SamuelChien/mega-skills-collection` →
+  `flag-cleanup/SKILL.md` is a dedicated `/flag-cleanup` workflow scanning for "flags older than 90
+  days, used in ≤2 places"; `moonshineaitech/LunaStack` → `feature-flag/SKILL.md` states the exact
+  failure mode this candidate targets almost verbatim ("Don't let flags accumulate past 90 days without
+  review... Don't forget to remove both the flag AND the dead code path when cleaning up — half-removed
+  flags are worse than active ones"); `iceflower/agent-skills` → `feature-flag/SKILL.md` adds CI-enforced
+  flag-age tracking. Closed as covered.
+- [x] **Kubernetes liveness/readiness probe correctness (a probe checking the wrong dependency boundary)
+  — REJECTED, saturated.** This is the same failure mode the 2026-08-20 round already rejected under
+  "worker startup/readiness audit" (health-check-validator, prod-readiness-review, etc.), re-confirmed
+  today with an even more specific match: `ericrisco/rsc-harness` → `skills/monitoring/SKILL.md` states
+  the exact anti-pattern verbatim as a table row — "Probe cascades every downstream [dependency] → one
+  slow dep fails the probe → restart loop" and "Liveness checks the database → slow DB → restart loop
+  turns a blip into an outage → liveness = process only; DB lives in readiness". `cjsmitty/ai-agent-lab`
+  → `k8s-probe-tuning/SKILL.md`, `RedHatProductSecurity/prodsec-skills` → `health-probes/SKILL.md`, and
+  `ShaileshRawat1403/dax` → `deploy-readiness/SKILL.md` ("Flag readiness handlers that signal ready
+  before warm-up is complete") all cover the same boundary-confusion bug. Closed as covered; do not
+  re-research without a sub-angle none of these touch.
+
+With all three leads dead, searched five more candidates in adjacent-but-untried territory before
+concluding today's research (all checked against real `SKILL.md` content, not title matches):
+
+- [x] **Webhook receiver signature verification / replay / idempotency — REJECTED, saturated.**
+  `deangrant/agents` → `.agents/skills/api-webhook-signature-verification/SKILL.md` and
+  `jeremylongshore/tons-of-skills-marketplace` → `skills/.curated/creating-webhook-handlers/SKILL.md`
+  cover HMAC-over-raw-body, constant-time compare, timestamp replay windows, and idempotent handling as
+  their stated scope, not a side mention. Closed as covered.
+- [x] **Distributed rate limiting / token-bucket state not actually shared across instances — REJECTED,
+  saturated.** `sickn33/agentic-awesome-skills` → `skills/upstash-ratelimit/SKILL.md` ("Because state
+  lives in Redis, every instance of a serverless function...") and `axosecurity/ai-function-builder-
+  skills` → `skills/redis-token-bucket-rate-limiter/SKILL.md` are dedicated, correctly-scoped skills for
+  exactly this failure mode. Closed as covered.
+- [x] **SAML/OIDC signing-certificate rotation across multiple IdPs/applications — REJECTED,
+  saturated.** `selvarajmurugesan90/ops-engineering-skills` →
+  `certificate-lifecycle-management-at-scale/SKILL.md` is named by a sibling skill specifically as the
+  place that tracks "rotating the SAML/OIDC signing certificates this federation trust depends on,
+  across many applications at once" — the exact candidate. Closed as covered.
+- [x] **Saga/distributed-transaction compensation completeness (a failed step leaves an earlier step's
+  side effect uncompensated) — REJECTED, saturated.** At least eight independent dedicated skills
+  (`wshobson/agents` → `saga-orchestration/SKILL.md`: "Don't skip compensation testing — the rollback
+  path is the hardest to get right"; `ggichuru/cto-brain` → `distributed-sagas-and-workflows/SKILL.md`;
+  `giuseppe-trisciuoglio/developer-kit` → `spring-boot-saga-pattern/SKILL.md`: "Verify every forward
+  step has a corresponding compensation"). Closed as covered.
+- [x] **Read-replica lag causing read-after-write staleness — REJECTED, saturated.** A full family of
+  dedicated skills: `SkillMedev/skills` → `replication-lag-debugger/SKILL.md` (triggers verbatim on
+  "users see stale data right after saving"), `bedkillerspacex-boop/codex-skill-library` →
+  `read-replica-lag-incident/SKILL.md`, `shubhamtaywade82/node-agent-skills` → three separate
+  `node-*-read-replica*` skills, `ericrisco/rsc-harness` → `skills/scaling/SKILL.md` ("Replicas serve
+  reads, never the source of truth for read-after-write"). Closed as covered.
+
+Two more candidates checked quickly after that (confirming the pattern rather than exhausting the
+search): **OAuth token-refresh thundering herd** (`jeremylongshore/tons-of-skills-marketplace` →
+`hubspot-auth/SKILL.md` and `guidewire-install-auth/SKILL.md` both name the exact "single-flight gate"
+fix) and **presigned-URL scope/expiry abuse** (`UnboundCompute/security-agent-skills` →
+`auditing-presigned-url-scope-abuse/SKILL.md` is a dedicated skill matching this candidate almost
+word-for-word) and **mobile IAP receipt-validation/entitlement-restore correctness** (Unity's own
+official `Unity-Technologies/skills` → `implement-in-app-purchases/SKILL.md`, plus `capawesome-team` and
+multiple KMP packs, all cover receipt validation, entitlement checking, and restore-purchase flows as
+named sections) — both saturated too.
+
+No skill shipped this round — eight candidates researched in depth, two more spot-checked, all ten
+saturated. `python tools/validate.py` still passes (`OK: 35 skills valid and consistent with README.`),
+unchanged skill count.
+
+**Pattern worth naming plainly:** today's ten candidates spanned this pack's own adjacent territory
+(infra drift, probes, flags) and genuinely different territory (webhooks, rate limiting, SSO certs,
+sagas, replication, OAuth, presigned URLs, IAP) — all ten were already covered by dedicated, specific
+skills elsewhere. The broader Claude-skill ecosystem (large generic marketplaces like
+`sickn33/agentic-awesome-skills`, `jeremylongshore/tons-of-skills-marketplace`,
+`shubhamtaywade82/node-agent-skills`) has grown dense enough that most well-known backend/infra
+correctness bugs now have a dedicated skill somewhere. This pack's remaining edge is likely in narrower,
+more specific "audit an existing implementation for a particular lifecycle bug" framings (the
+`*-guard` pattern already used here) rather than broad infra/protocol topics — future rounds should
+lean into that rather than re-trying generic infra ground.
+
+Follow-up for the next run: three fresh, *unresearched* leads for next time, chosen to be a layer away
+from today's ten exhausted angles rather than adjacent to them:
+- [ ] **Multi-tenant Postgres row-level security (RLS) policy drift/bypass** — a table added after RLS
+  was first rolled out that forgets `ENABLE ROW LEVEL SECURITY`, or a policy that's technically present
+  but silently bypassed because the app connects with a superuser/`BYPASSRLS` role or a service-role
+  connection string meant only for migrations — a correctness audit of *existing* RLS coverage, not a
+  how-to-write-RLS skill. Not yet checked against external skill coverage.
+- [ ] **ETL/data-pipeline schema-evolution silent data loss** — a producer renames or reorders a column
+  and a downstream consumer using positional/implicit mapping (instead of a named schema contract) keeps
+  running without erroring, silently nulling or misassigning a field. Distinct from this pack's
+  `skew-check` (deploy-time version skew) and `migration-guard` (schema changes against the owning DB) —
+  this is a cross-system contract gap between a producer and a consumer that don't deploy together. Not
+  yet checked externally.
+- [ ] **OTP/email-link single-use and rate-limit correctness** — a one-time passcode or magic-link token
+  that's still accepted after first use (no invalidation on success), a new code issued without
+  invalidating the prior one (two valid codes outstanding at once), or no rate limit on verification
+  attempts enabling enumeration. Worth checking whether this is distinct enough from generic auth/session
+  skills and from this pack's own `push-guard`/`overwrite-guard` territory to clear the novelty bar. Not
+  yet checked externally.

@@ -3052,20 +3052,91 @@ lean into that rather than re-trying generic infra ground.
 
 Follow-up for the next run: three fresh, *unresearched* leads for next time, chosen to be a layer away
 from today's ten exhausted angles rather than adjacent to them:
-- [ ] **Multi-tenant Postgres row-level security (RLS) policy drift/bypass** — a table added after RLS
-  was first rolled out that forgets `ENABLE ROW LEVEL SECURITY`, or a policy that's technically present
-  but silently bypassed because the app connects with a superuser/`BYPASSRLS` role or a service-role
-  connection string meant only for migrations — a correctness audit of *existing* RLS coverage, not a
-  how-to-write-RLS skill. Not yet checked against external skill coverage.
-- [ ] **ETL/data-pipeline schema-evolution silent data loss** — a producer renames or reorders a column
-  and a downstream consumer using positional/implicit mapping (instead of a named schema contract) keeps
-  running without erroring, silently nulling or misassigning a field. Distinct from this pack's
-  `skew-check` (deploy-time version skew) and `migration-guard` (schema changes against the owning DB) —
-  this is a cross-system contract gap between a producer and a consumer that don't deploy together. Not
-  yet checked externally.
-- [ ] **OTP/email-link single-use and rate-limit correctness** — a one-time passcode or magic-link token
-  that's still accepted after first use (no invalidation on success), a new code issued without
-  invalidating the prior one (two valid codes outstanding at once), or no rate limit on verification
-  attempts enabling enumeration. Worth checking whether this is distinct enough from generic auth/session
-  skills and from this pack's own `push-guard`/`overwrite-guard` territory to clear the novelty bar. Not
-  yet checked externally.
+- [x] **Multi-tenant Postgres row-level security (RLS) policy drift/bypass** — researched and REJECTED,
+  saturated; see maintenance pass (2026-10-20) below.
+- [x] **ETL/data-pipeline schema-evolution silent data loss (positional/implicit mapping)** — researched
+  and REJECTED, saturated; see maintenance pass (2026-10-20) below.
+- [x] **OTP/email-link single-use and rate-limit correctness** — researched and REJECTED, saturated; see
+  maintenance pass (2026-10-20) below.
+
+## Maintenance pass (2026-10-20): five candidates researched, all saturated — the pattern holds
+
+Git hygiene check first: clean clone, `main` already matched `origin/main`, no detached-HEAD/stale-ref
+repair needed this time (the first round in several without one).
+
+Tried the three leads the 2026-10-19 round handed off, each checked against actual `SKILL.md`/reference
+content via GitHub code search (not title matches):
+
+- [x] **Multi-tenant Postgres RLS policy drift/bypass — REJECTED, saturated.** The exact audit framing
+  (not how-to-write-RLS) is already explicit, dedicated content: `Nmor/the-council` →
+  `skills/postgres-patterns/SKILL.md` states it as a checklist line almost verbatim — "Verify cross-tenant
+  reads and writes with the actual runtime role; it must lack superuser, BYPASSRLS and ownership bypass.
+  Test missing tenant context and pooled connection reuse. Use FORCE ROW LEVEL SECURITY where owners need
+  isolation." At least six independent forks of a Supabase-focused skill (`Asymmetric-al/core`,
+  `seaworld008/Commonly-used-high-value-skills`, `PracticalSwan/agent-skills`, others) carry the same
+  `SECURITY DEFINER` / `BYPASSRLS` bypass warning as a named anti-pattern:
+  "`SECURITY DEFINER` functions bypass RLS... Never add `SECURITY DEFINER` to resolve a permission error;
+  it silently removes access control without fixing the underlying cause." `aibot88/sec_skill_store` →
+  `postgres-security-and-data-access-hardening/SKILL.md` names the exact design step ("state the bypass
+  risks (table owner, `BYPASSRLS`)"). Closed as covered.
+- [x] **ETL/data-pipeline schema-evolution silent data loss (positional mapping) — REJECTED, saturated.**
+  The specific positional-reuse failure is named directly: the "Schema Evolution Compatibility" entry on
+  claudskills.com (surfaced via web search, content not independently re-fetched but the description is
+  specific and on-point) states it evolves shared data contracts — "events, API payloads, DB columns,
+  protobuf/avro" — "without breaking live consumers," with the explicit rule "never reusing an Avro
+  position and reserving retired fields." `selvarajmurugesan90/ops-engineering-skills` →
+  `kafka-schema-registry-and-compatibility-management/SKILL.md` and `Nmor/the-council` →
+  `skills/api-design/references/schema-evolution.md` cover the same producer/consumer contract-breakage
+  territory with compatibility-mode enforcement (`BACKWARD`/`FORWARD`/`FULL`) as their stated scope. The
+  specific "positional/implicit mapping with no named contract" framing is less densely covered than the
+  schema-registry case, but close enough (the Avro-position rule is the same root cause under a different
+  serialization) to not clear the novelty bar today. Closed as covered.
+- [x] **OTP/email-link single-use and rate-limit correctness — REJECTED, saturated.** The most densely
+  covered of the three: `himself65/auth-spec` → `skills/create-auth/references/features/email-otp.md`
+  states the exact invariants this candidate names, almost verbatim — "Each code is single-use — consume
+  with one conditional write (affected-rows check), never find-then-delete," "Delete all previous codes
+  for the same email when generating a new one," and "3-5 failed attempts per code, then invalidate it and
+  require a new send (OWASP recommends 3)." `tyroneross/build-loop` →
+  `skills/authentication/references/resend-otp-magic-link.md` adds the companion half ("Within
+  `expiresIn` window: invalidate the previous token, send a new one... Rate-limit per email: max 3 sends
+  per 10 minutes"). `diegosouzapw/awesome-omni-skills` → `broken-authentication/SKILL.md` (and its v2/omni
+  variants) audits exactly these properties ("Single-use enforcement," "Test rate limiting on OTP
+  endpoint"). Closed as covered.
+
+Two more candidates spot-checked beyond the handoff list, both also saturated:
+
+- [x] **ML feature-store training/serving skew (a feature computed one way at training time, another at
+  serving time, degrading a model silently) — REJECTED, saturated.** `databricks/databricks-agent-skills`
+  → `skills/databricks-ml-training/SKILL.md` and its `references/feature-store.md` name the exact failure
+  mode as the lead paragraph: "The problem it solves — training-serving skew. When your training pipeline
+  computes features one way and your serving pipeline computes them differently, models degrade silently
+  in production," plus the companion point-in-time-join/future-leakage check. Closed as covered.
+- [x] **Email authentication (SPF/DKIM/DMARC alignment) deliverability audit — REJECTED, saturated.**
+  `aaron-he-zhu/aaron-marketing-skills` → `email/setup/deliverability-qa/SKILL.md` and
+  `mcorbett51090/RavenClaude` → `plugins/email-engineering/skills/deliverability-audit/SKILL.md` are
+  dedicated pre-send audits scoring SPF/DKIM pass, DMARC *alignment* specifically ("does DMARC pass (an
+  authenticated identifier aligns with `From:`)? A pass on auth but fail on alignment is the most common
+  'but we have SPF!' trap"), domain/IP reputation, and list hygiene. Closed as covered.
+
+No skill shipped this round — five candidates researched, all saturated. `python tools/validate.py` still
+passes (`OK: 35 skills valid and consistent with README.`), unchanged skill count. Two quick checks on
+candidate #6/#7 (credential-rotation propagation lag, seat/license-count enforcement drift) came back
+noisy/inconclusive rather than a clean saturated-or-clear verdict — logged below as genuinely unresearched
+leads rather than guessed at.
+
+Follow-up for the next run — two fresh, *unresearched* leads:
+- [ ] **Credential/secret rotation propagation lag** — a DB/API credential rotated in the secrets manager
+  (Vault lease renewal, RDS IAM auth token, a rotated API key) where a long-lived connection pool, sidecar
+  cache, or in-memory client keeps using the stale credential until a forced restart/reconnect — causing
+  either an outage at the old-credential revocation boundary, or (the more interesting bug) silently
+  continuing to work past expected revocation because rotation never actually propagated to every
+  consumer. Distinct from this pack's `secret-spill` (incident response for a *leaked* credential) and the
+  already-rejected SAML/OIDC signing-certificate rotation (federation-trust certs specifically, not
+  general app credentials). Today's search was noisy (mostly unrelated changelog hits for "credential" +
+  "rotation") rather than a clean saturated-or-clear read — needs a properly targeted pass next time.
+- [ ] **Seat/license-count enforcement drift** — distinct from this pack's `proration-guard` (billing math
+  on plan changes): whether a deactivated/removed user still silently counts against a seat-based license
+  limit (or the reverse — an SSO/SCIM just-in-time-provisioned user slips in before the next seat-count
+  reconciliation, exceeding what was paid for). Today's search was similarly inconclusive — mostly generic
+  billing/seat-meter UI docs, no clear dedicated audit skill found but no strong negative either. Needs a
+  properly targeted pass next time, not a guess either way.

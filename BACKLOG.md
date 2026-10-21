@@ -3125,18 +3125,45 @@ noisy/inconclusive rather than a clean saturated-or-clear verdict — logged bel
 leads rather than guessed at.
 
 Follow-up for the next run — two fresh, *unresearched* leads:
-- [ ] **Credential/secret rotation propagation lag** — a DB/API credential rotated in the secrets manager
-  (Vault lease renewal, RDS IAM auth token, a rotated API key) where a long-lived connection pool, sidecar
-  cache, or in-memory client keeps using the stale credential until a forced restart/reconnect — causing
-  either an outage at the old-credential revocation boundary, or (the more interesting bug) silently
-  continuing to work past expected revocation because rotation never actually propagated to every
-  consumer. Distinct from this pack's `secret-spill` (incident response for a *leaked* credential) and the
-  already-rejected SAML/OIDC signing-certificate rotation (federation-trust certs specifically, not
-  general app credentials). Today's search was noisy (mostly unrelated changelog hits for "credential" +
-  "rotation") rather than a clean saturated-or-clear read — needs a properly targeted pass next time.
+- [x] **`rotation-guard` — SHIPPED (verified novel), credential/secret rotation propagation lag.** A
+  DB/API credential rotated in the secrets manager (Vault lease renewal, RDS password, a rotated API key)
+  where a long-lived connection pool, sidecar cache, or in-memory client keeps using the stale credential
+  until a forced restart/reconnect — causing either an outage at the old-credential revocation boundary,
+  or the more interesting bug: silently continuing to work past expected revocation because rotation
+  never actually propagated to every consumer. Verified uncovered with a properly targeted pass (the
+  "noisy" search from last run was the wrong query shape): the most prominent mirrored "rotation" skill
+  across marketplaces, `aj-geddes/useful-ai-prompts` → `skills/secrets-rotation/` (mirrored on
+  claudskills.com, crossaitools.com, claudemarketplaces.com, skillselion.com), was fetched directly
+  (SKILL.md + all three `references/` guides: Node.js, Python/Vault, Kubernetes) and confirmed to be a
+  *build-a-rotation-pipeline* scaffold (generate/store/rollback a new secret) with no coverage at all of
+  stale connection pools, in-memory client caches, Vault lease-renewal responsibility, or the
+  env-var-vs-volume-mount Kubernetes distinction — the "use grace periods" bullet is the only overlap, one
+  line of general advice, not an audit. The openclaw-superpowers `secrets-hygiene` skill that also
+  surfaces for rotation queries audits a different thing entirely (which *Claude Code skills* have access
+  to secrets), not application credential propagation. Grounded in real, documented mechanics rather than
+  invented ones: Kubernetes' own env-var-resolved-once-at-container-start vs. volume-mount-refreshed-on-sync
+  behavior (confirmed via Microsoft's engineering playbook and a Huawei Cloud CCE guide, both naming the
+  exact `secretKeyRef`-stays-stale / volume-gets-updated split), HashiCorp Vault's documented
+  client-owns-lease-renewal model, and AWS Secrets Manager's documented alternating-users rotation
+  template (the real fix for the no-overlap-window outage case) versus the single-user template's
+  revoke-on-the-spot shape. Distinct from this pack's `secret-spill` (incident response for a credential
+  that already *leaked*) and `cipher-guard` (data-at-rest encryption-key rotation, not operational
+  auth credentials). Added `skills/rotation-guard/SKILL.md`, README skills-table row + decision-table row
+  + intro paragraph (thirty-five → thirty-six), `examples/rotation-guard.md` (an RDS single-user rotation
+  causing a partial-pod outage, diagnosed down to the missing connection-pool max-lifetime and the
+  never-refreshed `secretKeyRef` env var, with a billing-key rotation about to repeat the same mistake).
+  `python tools/validate.py` passes (36/36).
 - [ ] **Seat/license-count enforcement drift** — distinct from this pack's `proration-guard` (billing math
   on plan changes): whether a deactivated/removed user still silently counts against a seat-based license
   limit (or the reverse — an SSO/SCIM just-in-time-provisioned user slips in before the next seat-count
-  reconciliation, exceeding what was paid for). Today's search was similarly inconclusive — mostly generic
-  billing/seat-meter UI docs, no clear dedicated audit skill found but no strong negative either. Needs a
-  properly targeted pass next time, not a guess either way.
+  reconciliation, exceeding what was paid for). A properly targeted pass this run found real adjacent
+  material but nothing conclusive either way: `docs.getthread.com`'s "Seat Count True-Up" skill-library
+  entry is the closest hit, but it's an MSP billing-reconciliation runbook (compare RMM device counts
+  against invoices monthly), not a code-level audit of an app's own seat-enforcement logic; a
+  `securifyai.co` writeup documents the exact race-condition failure mode (concurrent requests all read
+  the seat count before any write lands, so all pass validation and the limit is bypassed) as a real,
+  named vulnerability class, and a `github.com/impruthvi/saas-foundation` PR shows the fix pattern
+  (lock-then-count-then-insert) being implemented from scratch rather than audited — so the race-condition
+  angle looks genuinely open, but the deactivation-still-counts and SCIM-JIT-slips-in-early angles weren't
+  separately confirmed clear. Needs one more properly scoped pass focused on those two sub-angles
+  specifically (not the race condition, which looks promising) before writing it up either way.

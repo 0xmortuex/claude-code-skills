@@ -3153,17 +3153,33 @@ Follow-up for the next run — two fresh, *unresearched* leads:
   causing a partial-pod outage, diagnosed down to the missing connection-pool max-lifetime and the
   never-refreshed `secretKeyRef` env var, with a billing-key rotation about to repeat the same mistake).
   `python tools/validate.py` passes (36/36).
-- [ ] **Seat/license-count enforcement drift** — distinct from this pack's `proration-guard` (billing math
-  on plan changes): whether a deactivated/removed user still silently counts against a seat-based license
-  limit (or the reverse — an SSO/SCIM just-in-time-provisioned user slips in before the next seat-count
-  reconciliation, exceeding what was paid for). A properly targeted pass this run found real adjacent
-  material but nothing conclusive either way: `docs.getthread.com`'s "Seat Count True-Up" skill-library
-  entry is the closest hit, but it's an MSP billing-reconciliation runbook (compare RMM device counts
-  against invoices monthly), not a code-level audit of an app's own seat-enforcement logic; a
-  `securifyai.co` writeup documents the exact race-condition failure mode (concurrent requests all read
-  the seat count before any write lands, so all pass validation and the limit is bypassed) as a real,
-  named vulnerability class, and a `github.com/impruthvi/saas-foundation` PR shows the fix pattern
-  (lock-then-count-then-insert) being implemented from scratch rather than audited — so the race-condition
-  angle looks genuinely open, but the deactivation-still-counts and SCIM-JIT-slips-in-early angles weren't
-  separately confirmed clear. Needs one more properly scoped pass focused on those two sub-angles
-  specifically (not the race condition, which looks promising) before writing it up either way.
+- [x] **`seat-guard` — SHIPPED (verified novel), seat/license-count enforcement drift.** Distinct from
+  this pack's `proration-guard` (billing math on plan changes, not seat-limit enforcement). The prior
+  pass had confirmed the concurrent-read race angle (two requests both read the seat count before either
+  write lands) as likely novel via `securifyai.co` and a from-scratch fix PR at
+  `github.com/impruthvi/saas-foundation`, but left the other two sub-angles unresolved. This pass closed
+  both: **deactivation-still-counts** (a deactivated/suspended user keeps silently occupying a seat
+  because the counter invite-time enforcement reads is never decremented by deactivation) — searched
+  GitHub code search across ~600+ `SKILL.md` hits for seat/SCIM/deactivate terms plus claudskills.com/
+  claudemarketplaces.com/skillselion.com; the closest hits
+  (`AwesomeSalesforceSkills` → `skills/admin/experience-cloud-member-management/SKILL.md`,
+  `dragonked2/alphacode` → `playbook/SKILL.md` §43.2.116) are an admin operational runbook for one's own
+  org and a one-line mention inside a sprawling generic bug catalog, not a dedicated code-level audit —
+  confirmed as a real, recurring, named complaint via Jira FE-5012, and GitLab/Pipedrive/Docketwise/
+  Kayako support docs all describing exactly this discrepancy independently. **SCIM/JIT-provisioning
+  bypass** (a new user provisioned via SSO JIT or SCIM auto-provisioning never runs the seat check that
+  only lives in the manual "invite user" path) — no skill or marketplace listing addresses this; closest
+  hits (a Clerk orgs skill, `dragonked2/alphacode` §43.2.280) cover SCIM *authorization/tenant-binding*,
+  not seat-count enforcement. Verified as real, documented mechanics via Scalekit's own vendor cookbook
+  ("Enforce seat limits with SCIM provisioning," stating plainly that "the provisioning protocol doesn't
+  check licence counts, so the customer's identity provider can push users past the plan limit") and
+  Clockify's SCIM error docs independently corroborating seats running out during SCIM sync. All three
+  sub-angles — race, deactivation, SCIM/JIT — bundled into one `seat-guard` skill rather than three
+  separate skills, since they're three ways the same single "seat count" invariant can drift, which
+  matches how this pack's other `*-guard` skills group related failure modes of one invariant (e.g.
+  `cipher-guard` bundling uniqueness-check drift + key-rotation correctness + KMS policy scope). Added
+  `skills/seat-guard/SKILL.md`, README skills-table row + decision-table row + intro paragraph (thirty-six
+  → thirty-seven, plus fixing a stale "thirty-five" left over from an earlier count-bump miss),
+  `examples/seat-guard.md` (an org over its 25-seat limit, diagnosed to a disconnected billing counter
+  that deactivation never touches plus a freshly-added Okta SCIM path with zero seat enforcement at all).
+  `python tools/validate.py` passes (37/37).

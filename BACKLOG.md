@@ -3183,3 +3183,71 @@ Follow-up for the next run — two fresh, *unresearched* leads:
   `examples/seat-guard.md` (an org over its 25-seat limit, diagnosed to a disconnected billing counter
   that deactivation never touches plus a freshly-added Okta SCIM path with zero seat enforcement at all).
   `python tools/validate.py` passes (37/37).
+
+## `restore-guard` — SHIPPED (2026-10-23, verified novel); one more fresh lead found and parked
+
+Git hygiene check first: clean clone, local `main` already matched `origin/main` (no detached-HEAD
+repair needed). Since the 2026-10-20 note left no concrete unresearched leads (the handoff list had
+already been exhausted into two SHIPPED skills), this run researched four fresh, not-yet-tried candidates
+from scratch rather than picking up a stale thread:
+
+- [x] **Soft-delete/trash restore completeness — SHIPPED as `restore-guard` (verified novel).** The
+  mirror image of this pack's `erasure-guard`: when a soft-deleted record is restored within its grace
+  period, does the restore path actually reverse everything the delete triggered — cascading soft-delete
+  of child records, an explicit search-index delete/exclusion, a negative-cache "gone" tombstone with its
+  own TTL, cross-service soft-delete fan-out — or does restore just flip the parent's `deleted_at` flag
+  back while the rest of the system has already moved on. Also covers a distinct timing bug rather than a
+  missing call: a scheduled hard-delete/purge job enqueued at delete time with a fixed fire time that
+  restore never cancels, which can still permanently destroy the just-restored row on schedule unless the
+  job itself re-checks live state at execution time. Searched GitHub code search across six query variants
+  combining soft-delete/restore/undelete with cascading, search-index, CDN, grace-period, and purge-race
+  terms; the only hits were generic ORM/framework trash-and-restore *library features* (CakePHP's `Trash`
+  behavior, Rails' `paranoia` gem) that implement cascading restore as a feature to build, not a correctness
+  audit of an existing implementation, and none mention search-index re-indexing, cache-tombstone clearing,
+  or the purge-job race at all. Distinct from `erasure-guard` (that skill verifies deletion reaches
+  everywhere; this one verifies the way *back* does, once a restore feature exists), `overwrite-guard`
+  (concurrent-edit conflicts on a never-deleted record, not a delete-then-restore cycle), and `tombstone`
+  (removing unused *code*, not restoring live *data*). Added `skills/restore-guard/SKILL.md`, README
+  skills-table row + decision-table row + intro paragraph (thirty-seven → thirty-eight, including a stale
+  "thirty-seven" in the install-tip paragraph the 2026-10-20 count-bump missed), `examples/restore-guard.md`
+  (a 30-day workspace trash where a real user report — "search still shows it as deleted after restore" —
+  leads to finding that *and* two unreported gaps: child documents' cascading soft-delete never reversed,
+  and a purge job that would have hard-deleted the restored workspace in 30 days regardless). `python
+  tools/validate.py` passes (38/38).
+- [x] **Bulk "select-all-across-pages" admin action correctness — NOVEL, found but not shipped this
+  round; next run's first candidate.** An admin UI's "select all N matching filter" (not just the visible
+  page) that performs a bulk action (delete/export/reassign) raises two separable backend questions: does
+  execution re-resolve the filter at action time (risking the matched set changing between selection and
+  execution) or snapshot the ID set at selection time, and is there any bound/confirmation gate on how many
+  rows "select all" can actually touch in one action. Searched GitHub code search broadly (500+ raw hits,
+  narrowed via tighter queries); every match was a frontend table/UI-component skill (shadcn data-tables,
+  generic "bulk actions" UI patterns) addressing the checkbox/toolbar UX, not backend re-resolution,
+  pagination-cursor drift under concurrent writes, or a row-count safety bound. Not picked up this round
+  only because one ship per day is this pack's own rule, not because it's weaker than `restore-guard` —
+  treat it as pre-verified novel, not a fresh research task, for whoever picks it up next.
+- [x] **Multi-tab/multi-device autosave collision — REJECTED, substantially covered.** Distinct from
+  `overwrite-guard` in theory (autosave has no explicit "Save" button, no user-visible conflict moment, and
+  often runs a different debounced-PATCH code path than an explicit save), but two independent skills
+  already close that gap in practice: `Manoj-11-Dahal/try-Skills` →
+  `.../browser-cross-tab-form-state-conflict/SKILL.md` tests exactly this ("two isolated tabs making
+  edits... compare conflict detection, save order, and recovery") and names autosave by name in its
+  checklist; `JanKrajewskiIT/claude` → `document-autosave/SKILL.md` states the needed fix directly ("Send
+  the last acknowledged revision with each write," "Treat revision mismatch as a conflict, not a transient
+  retry," "Do not allow stale responses to overwrite newer local edits"). Together they cover both the
+  audit framing and the fix shape. Closed as covered.
+- [x] **Usage-metering event double-count/drop for metered billing — REJECTED, covered (borderline).**
+  Distinct from this pack's `proration-guard` (billing *math* on plan changes, not event-ingestion
+  correctness), but `geminimir/meterguard` names the exact failure modes and fixes directly — deterministic
+  idempotency-key dedup ("Every usage event stored with deterministic idempotency key... Send same event
+  twice — counts once") and a late-event watermark/replay window (48h lateness + reconciliation epsilon
+  check). It's a build-shaped integration guide rather than an audit of an *existing* pipeline and doesn't
+  name Kafka-rebalance or crashed-aggregator specifics, but between `meterguard`, `stripemeter`, and
+  flowglad's idempotency-key guidance the core double-count/drop failure modes are named and solved by name
+  across multiple independent sources. Closer to saturated than the autosave candidate. Closed as covered.
+
+No other skill files touched this round — one shipped, one new fresh lead parked above, two rejected.
+
+Follow-up for the next run: pick up **bulk "select-all-across-pages" admin action correctness** first
+(pre-verified novel above, no re-research needed) — scope it as one skill covering both the filter
+re-resolution/snapshot question and the row-count safety bound, the same way `seat-guard` bundled three
+related drift modes of one invariant into a single skill rather than three.

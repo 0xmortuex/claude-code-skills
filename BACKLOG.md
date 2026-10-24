@@ -3251,3 +3251,37 @@ Follow-up for the next run: pick up **bulk "select-all-across-pages" admin actio
 (pre-verified novel above, no re-research needed) — scope it as one skill covering both the filter
 re-resolution/snapshot question and the row-count safety bound, the same way `seat-guard` bundled three
 related drift modes of one invariant into a single skill rather than three.
+
+## `selectall-guard` — SHIPPED (2026-10-24, verified novel)
+
+Git hygiene check first: clean clone, local `main` already matched `origin/main` (no detached-HEAD
+repair needed).
+
+- [x] **Bulk "select-all-across-pages" admin action correctness — SHIPPED as `selectall-guard`.** Picked
+  up the pre-verified-novel lead the 2026-10-23 run parked. Ran one confirmatory round before writing
+  (two targeted web searches for SKILL.md / skill-registry content on filter re-resolution vs.
+  ID-snapshot semantics and row-count bounds for "select all matching" bulk actions) rather than trusting
+  the prior pass blind — turned up only generic admin-UI bulk-action docs (Goodnotes, CVAT, PatternFly,
+  a GitLab design issue) and one close-but-different GitLab MR (bulk AI vulnerability actions resolving
+  scope server-side via an empty-ID-array convention) — no dedicated SKILL.md or skill-registry entry
+  audits the snapshot-vs-re-resolve question or the row-count-bound question for an *existing*
+  implementation. Confirms the 2026-10-23 finding; shipped. Scoped as one skill bundling both
+  sub-questions (which contract the backend implements, and whether there's an observable cap), the same
+  grouping pattern as `seat-guard`/`cipher-guard`/`restore-guard` bundling related drift modes of one
+  invariant rather than splitting into separate skills. Distinct from `job-warden` (correctness of
+  processing a queued item once scope is fixed, not how scope gets fixed), `backfill-pilot` (engineer-run
+  one-off migration, not a user-triggered admin feature with no dry-run), `blast-guard` (audience
+  targeting for irreversible sends specifically, not bulk admin actions generally), and `overwrite-guard`
+  (single-record concurrent edits, no bulk selection). Added `skills/selectall-guard/SKILL.md`, README
+  skills-table row + decision-table row + intro paragraph (thirty-eight → thirty-nine, in both the intro
+  sentence and the install-tip paragraph), `examples/selectall-guard.md` (a queued ticket-reassignment
+  bulk action that re-resolves an open "status=unassigned, team=billing" filter through a real multi-minute
+  queue delay with no row-count divergence check, silently reassigning tickets the admin never approved).
+  `python tools/validate.py` passes (`OK: 39 skills valid and consistent with README.`).
+
+No other skill files touched this round.
+
+Follow-up for the next run: no concrete unresearched lead parked this time — the next run should do a
+fresh novelty sweep from scratch (per the pattern noted in the 2026-10-19 round: this pack's remaining
+edge is in narrow "audit an existing implementation for a particular lifecycle bug" framings, not broad
+infra/protocol topics) rather than assuming nothing is left.

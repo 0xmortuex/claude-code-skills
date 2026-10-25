@@ -124,13 +124,15 @@ Follow-ups discovered this run:
   Same allocation/sum-conservation pattern also independently reinvented in `zakariaf/SplitFair` and
   `aKhalid2013/HalvyECC`. Verdict: well-trodden ground reinvented 4+ times independently, closed as a
   documented non-starter — do not re-research this without a genuinely new angle.
-- [ ] Researched-and-passed this run, do not re-research without a new angle: Unicode/text correctness
+- [x] Researched-and-passed this run, do not re-research without a new angle: Unicode/text correctness
   (`Sir-chawakorn/sanook-cli` → `unicode-text-correctness`, 9★, near-identical seven-step method),
   read-path pagination auditing (65 hits, several dedicated; also overlaps `backfill-pilot`),
   idempotency/retry review (duplicate of `job-warden` Q1), replica-lag/read-your-writes
   (`StevenACoffman/steve-skill-market` → `replication-lag-as-correctness`, direct match), multi-tenant
   isolation (269 hits, 4+ dedicated auditors), stale feature-flag cleanup (PostHog ships it),
   backup/restore drills (443 hits), unbounded-query/OOM audit (folded into perf-review skills).
+  Checkbox left stale since this entry was written — fixed 2026-10-25, no further action (all sub-items
+  were already rejected-as-covered, not actionable).
 
 ## Note for the next run (2026-08-19)
 All 18 skills have now had a drift-verification pass (round 1: secret-spill; round 2: migration-guard, backfill-pilot, job-warden, portability-audit; round 3: the remaining 13). Don't re-run the same pass again next time — nothing here is stale enough to justify it. Two real directions remain open:
@@ -3285,3 +3287,80 @@ Follow-up for the next run: no concrete unresearched lead parked this time — t
 fresh novelty sweep from scratch (per the pattern noted in the 2026-10-19 round: this pack's remaining
 edge is in narrow "audit an existing implementation for a particular lifecycle bug" framings, not broad
 infra/protocol topics) rather than assuming nothing is left.
+
+## Maintenance pass (2026-10-25): fresh novelty sweep, one promising lead parked, four rejected
+
+Git hygiene check first: clean clone, local `main` already matched `origin/main` (no detached-HEAD
+repair needed). `python tools/validate.py` passes (`OK: 39 skills valid and consistent with README.`)
+both before and after this pass — no skill files touched. Picked up the 2026-10-24 note's instruction
+to do a fresh sweep from scratch rather than assume nothing is left. Used targeted GitHub code search
+(`filename:SKILL.md` + specific terms, several query variants per candidate, reading actual matched
+content rather than titles) across five fresh, not-yet-tried candidates:
+
+- [x] **Inventory/stock oversell race (concurrent purchase exceeding limited stock) — REJECTED,
+  saturated.** Extremely densely covered: a "race-condition" hunting `SKILL.md` mirrored across at
+  least a dozen pentest-skill repos (`yaklang/hack-skills`, `ersinkoc/security-check`,
+  `1arley/ornn` → `race-condition-hunter`, `hiepck/ARTEX-EN` → `hunt-race-conditions`, others) names
+  "Inventory Oversell" as a dedicated named subsection with its own detection method. `Rzyfront/Vendix`
+  ships a real production fix pattern (`skills/vendix-inventory-stock/SKILL.md`: reserve-on-add inside
+  the same transaction, `allow_negative_available: false` atomic claim). Closed as covered.
+- [x] **Referral/reward clawback on reversal (referrer credited and spends the reward before the
+  referred user's purchase is refunded/reversed) — REJECTED, covered.** `0disoft/mustflow` →
+  `.mustflow/skills/referral-incentive-integrity-review/SKILL.md` names this almost exactly in its own
+  trigger description — "pending, vested, or reversed rewards... self-referral and reward farming
+  controls... refundable purchases." `finsilabs/awesome-ecommerce-skills` →
+  `skills/customer-crm/referral-program/SKILL.md` and `referral-viral-loops/SKILL.md` state the
+  structural fix directly ("Wait 7–14 days after the referee's order before granting the referrer
+  reward — this prevents rewards on returned orders"). `H-mmer/pentest-agents` →
+  `agent-business-logic/SKILL.md` lists "Referral / invite abuse" (self-referral, circular chains,
+  payment without delivery) as a named business-logic exploit class. Closed as covered.
+- [x] **Support/admin impersonation ("login as user") session-lifecycle audit (scope limits, audit
+  logging, termination conditions, token identity leakage) — REJECTED, covered.** `AS-FOSS/aegis-skills`
+  → `skills/code/authz-access-control/SKILL.md` has a dedicated "Delegation & Impersonation" section
+  naming the exact checks this candidate proposed almost verbatim: "verify scope limits (time-boxed,
+  reason captured), immutable audit log entry with actor+target+reason, termination on password change,
+  and no token minting that drops the original actor identity." `0disoft/mustflow` →
+  `session-management-review/SKILL.md` covers session-id reissuance at impersonation start/end;
+  `bedkillerspacex-boop/codex-skill-library` → `account-takeover-methodology/SKILL.md` lists "Support /
+  impersonation: Overbroad 'login as user' without audit" as a named ATO vector. Closed as covered.
+- [x] **Trial/plan-tier expiration enforcement drift (trial-to-paid/expired transition not atomic, a
+  downgrade leaving premium access reachable via a direct endpoint) — REJECTED, covered.**
+  `jschulte/claude-plugins` → `codebase-audit/skills/health-audit-domain/SKILL.md` names this nearly
+  word-for-word as a dedicated checklist: "Can a user on a free plan access premium features by knowing
+  the right URL or API endpoint?", "What happens at the exact moment of expiration? Is there a grace
+  period? Is the transition from trial to paid/expired handled atomically?", "When they downgrade, is
+  access to premium features revoked? Is data created with premium features handled correctly after
+  downgrade?" Closed as covered.
+- [ ] **Terms-of-service / privacy-policy version re-acceptance gating — NOVEL, found but not shipped
+  this round; next run's first candidate.** The angle: when a product bumps its ToS/privacy-policy
+  version and requires existing users to re-accept, does enforcement actually hold everywhere a session
+  can reach the product — web app gate, mobile app gate, and (the usual gap) the API/backend itself —
+  or does only the web client carry the block, leaving an older mobile build, a direct API integration,
+  or a webhook/service account free to keep operating indefinitely on a stale acceptance. A second,
+  related sub-question: is the re-accept check actually enforced server-side on every authenticated
+  route (a `must_reaccept` flag checked in middleware) or only shown as a client-side modal that a
+  direct API call never triggers. Searched six query variants (`filename:SKILL.md` combined with
+  "re-accept"/"terms version"/"policy_version"/"tos_version"/"EULA" + enforcement/gating/bypass terms);
+  every hit was either (a) a *drafting* skill for the legal text itself (`RobertHH-IS/legalcode-skills`
+  → `legalcode-terms-of-service-drafter/SKILL.md` — pre-ticked-checkbox anti-patterns, disclosure
+  requirements, but nothing about auditing an *existing* implementation's enforcement surface), or (b)
+  one project's own idiosyncratic one-off implementation notes (`akbhoi/labkiosk`), not a reusable audit
+  skill. Distinct from this pack's `consent-guard` (cookie/tracking-script consent before trackers fire,
+  a different mechanism and a different legal basis — GDPR consent vs. contract acceptance) and
+  `pref-guard` (notification opt-out preferences, not legal-document versioning). Not picked up this
+  round only because one ship per day is this pack's own rule — treat it as pre-verified novel across six
+  search variants, not a fresh research task, for whoever picks it up next. Before shipping: still worth
+  one more confirmatory pass (per the `selectall-guard` precedent of re-checking a prior round's finding
+  before trusting it blind) and grounding in a real documented incident or platform mechanic (e.g. how
+  GDPR consent-withdrawal case law treats continued processing on stale consent, or a concrete "mobile
+  app kept working for months after we required re-acceptance on web" bug report) rather than shipping
+  on the search-emptiness alone.
+
+No skill shipped this round — one checkbox bookkeeping fix, four candidates researched and rejected
+(all genuinely new angles, not re-treads of the ~70 already-rejected candidates logged in prior rounds),
+one promising lead parked for next time.
+
+Follow-up for the next run: pick up **terms-of-service / privacy-policy version re-acceptance gating**
+first (pre-verified-novel above across six search variants) — do the one confirmatory pass and real-world
+grounding noted above before writing the skill, the same discipline `selectall-guard` applied to the
+`restore-guard` round's handoff.

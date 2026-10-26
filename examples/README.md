@@ -44,6 +44,7 @@ you can see what "good" looks like before you try a skill on your own repo.
 - [seat-guard.md](seat-guard.md)
 - [restore-guard.md](restore-guard.md)
 - [selectall-guard.md](selectall-guard.md)
+- [reaccept-guard.md](reaccept-guard.md)
 
 Want to add one for another skill? Keep it short (a realistic trigger message,
 then the key beats of the response — not a full essay) and make sure it

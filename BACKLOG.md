@@ -3331,36 +3331,34 @@ content rather than titles) across five fresh, not-yet-tried candidates:
   period? Is the transition from trial to paid/expired handled atomically?", "When they downgrade, is
   access to premium features revoked? Is data created with premium features handled correctly after
   downgrade?" Closed as covered.
-- [ ] **Terms-of-service / privacy-policy version re-acceptance gating — NOVEL, found but not shipped
-  this round; next run's first candidate.** The angle: when a product bumps its ToS/privacy-policy
-  version and requires existing users to re-accept, does enforcement actually hold everywhere a session
-  can reach the product — web app gate, mobile app gate, and (the usual gap) the API/backend itself —
-  or does only the web client carry the block, leaving an older mobile build, a direct API integration,
-  or a webhook/service account free to keep operating indefinitely on a stale acceptance. A second,
-  related sub-question: is the re-accept check actually enforced server-side on every authenticated
-  route (a `must_reaccept` flag checked in middleware) or only shown as a client-side modal that a
-  direct API call never triggers. Searched six query variants (`filename:SKILL.md` combined with
-  "re-accept"/"terms version"/"policy_version"/"tos_version"/"EULA" + enforcement/gating/bypass terms);
-  every hit was either (a) a *drafting* skill for the legal text itself (`RobertHH-IS/legalcode-skills`
-  → `legalcode-terms-of-service-drafter/SKILL.md` — pre-ticked-checkbox anti-patterns, disclosure
-  requirements, but nothing about auditing an *existing* implementation's enforcement surface), or (b)
-  one project's own idiosyncratic one-off implementation notes (`akbhoi/labkiosk`), not a reusable audit
-  skill. Distinct from this pack's `consent-guard` (cookie/tracking-script consent before trackers fire,
-  a different mechanism and a different legal basis — GDPR consent vs. contract acceptance) and
-  `pref-guard` (notification opt-out preferences, not legal-document versioning). Not picked up this
-  round only because one ship per day is this pack's own rule — treat it as pre-verified novel across six
-  search variants, not a fresh research task, for whoever picks it up next. Before shipping: still worth
-  one more confirmatory pass (per the `selectall-guard` precedent of re-checking a prior round's finding
-  before trusting it blind) and grounding in a real documented incident or platform mechanic (e.g. how
-  GDPR consent-withdrawal case law treats continued processing on stale consent, or a concrete "mobile
-  app kept working for months after we required re-acceptance on web" bug report) rather than shipping
-  on the search-emptiness alone.
+- [x] **Terms-of-service / privacy-policy version re-acceptance gating — SHIPPED as `reaccept-guard`.**
+  Did the confirmatory pass this item asked for before shipping: two fresh search variants
+  (`SKILL.md` + "terms of service"/"privacy policy" re-acceptance enforcement; `must_reaccept`/
+  `tos_version`/`policy_version` enforcement/bypass) turned up no existing skill auditing this —
+  only generic skill-safety-review tooling and a general compliance-checker skill unrelated to
+  re-acceptance enforcement, confirming the prior round's six-variant search. Grounded in real
+  platform mechanics rather than the search-emptiness alone: Google's Zero Touch Enrollment API
+  returns a 403 with a `latestTosAccepted: false` field for stale-ToS API requests (confirming
+  API-level enforcement is a real, named mechanic, not a hypothetical edge case), and a USPTO
+  patent filing on EULA-version-aware gateways plus independent practitioner guidance both make
+  the same point this skill's Step 1 opens with: client-side version checks are tamperable and
+  bypassable, so the server must enforce the decision per-request, independent of which client
+  asked. Shipped `skills/reaccept-guard/SKILL.md` + `examples/reaccept-guard.md`, wired into both
+  README tables and the Examples list; `tools/validate.py` passes (40 skills).
 
-No skill shipped this round — one checkbox bookkeeping fix, four candidates researched and rejected
-(all genuinely new angles, not re-treads of the ~70 already-rejected candidates logged in prior rounds),
-one promising lead parked for next time.
+Shipped `reaccept-guard` this round (see above) — the one parked lead from the prior round, after its
+confirmatory pass and real-world grounding. No other backlog items are currently open.
 
-Follow-up for the next run: pick up **terms-of-service / privacy-policy version re-acceptance gating**
-first (pre-verified-novel above across six search variants) — do the one confirmatory pass and real-world
-grounding noted above before writing the skill, the same discipline `selectall-guard` applied to the
-`restore-guard` round's handoff.
+Follow-up for the next run: no parked candidate exists right now, so the next run needs to research and
+log 3-5 fresh, specific candidates before picking one to ship (per this pack's own process) rather than
+inventing busywork. Leads worth checking first since they're adjacent to what's already in the pack but
+not yet confirmed covered or novel: (1) feature-flag/experiment kill-switch audit — does flipping a flag
+off in an incident actually stop every code path that reads it (cached flag evaluations, a client SDK that
+only polls periodically, a server that read the flag once at boot) rather than just the admin-panel toggle
+looking flipped; (2) webhook-delivery idempotency/replay audit — distinct from `job-warden` (internal
+cron/queue correctness) and `rotation-guard` (credential propagation), this would be about whether a
+receiving endpoint actually dedupes a third-party webhook provider's at-least-once redelivery instead of
+double-processing a payment-captured or order-shipped event; (3) multi-currency/rounding-drift audit for
+money math across conversion, tax, and refund paths — distinct from `proration-guard` (plan-change policy
+correctness) and `cipher-guard`/`seat-guard` (not money-math at all). All three need the same novelty
+research `reaccept-guard` got before being shipped, not assumed clear.

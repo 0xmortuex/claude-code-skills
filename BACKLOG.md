@@ -3362,3 +3362,159 @@ double-processing a payment-captured or order-shipped event; (3) multi-currency/
 money math across conversion, tax, and refund paths — distinct from `proration-guard` (plan-change policy
 correctness) and `cipher-guard`/`seat-guard` (not money-math at all). All three need the same novelty
 research `reaccept-guard` got before being shipped, not assumed clear.
+
+## Drift audit — round 10 (2026-10-27): the five post-round-9 skills, plus the three 10-25 leads closed
+
+Git hygiene check first: clean clone, local `main` already matched `origin/main`. `python tools/validate.py`
+passes (`OK: 40 skills valid and consistent with README.`) both before and after this pass — no skill
+files touched.
+
+**The three parked leads from the 2026-10-25 note — all REJECTED, saturated.** Used targeted GitHub code
+search (`filename:SKILL.md` + specific terms, multiple query variants, reading actual matched content)
+before touching any of them, per this pack's own bar:
+
+- [x] **Feature-flag/experiment kill-switch audit (does flipping a flag off in an incident actually stop
+  every code path, not just the admin-panel toggle) — REJECTED, saturated.** `JantonioFC/skillsbank` →
+  `skills/flag-cleanup/SKILL.md` ships a dedicated `kill_switch_audit.py` script literally named for this.
+  `cosmix/loom` → `skills/loom-feature-flags/SKILL.md` covers the exact cached-evaluation mechanic this
+  candidate proposed almost verbatim: "Never make the availability of a feature depend on the availability
+  of the flag service... Cache aggressively (in-memory + local file/Redis), refresh in the background,
+  tolerate staleness... Propagate activation fast (pub/sub/streaming), but the hot-path read is always
+  local." `SkillMedev/skills` → `skills/feature-flags/SKILL.md` adds the client-SDK-polling angle directly
+  ("Cache evaluations locally and stream updates; a per-request network call... puts the flag provider on
+  your critical path") plus a named "re-test a kill switch quarterly" discipline. Closed as covered.
+- [x] **Webhook-delivery idempotency/replay audit for a receiving endpoint — REJECTED, saturated.**
+  Extremely densely covered, more so than almost anything else checked in this pack's history:
+  `hookdeck/webhook-skills` ships a whole dedicated `webhook-handler-patterns` skill with its own
+  `references/idempotency.md` ("Dedupe retries and replays") and `references/handler-sequence.md`
+  ("Verify first, parse second, handle idempotently third"), repeated per-provider across a dozen sibling
+  skills in the same repo (`maxio-webhooks`, `twitter-webhooks`, `cronofy-webhooks`, `telnyx-webhooks`,
+  etc). `sandeepmvl/rails-skills` → `skills/30-webhook-handling/SKILL.md` and `ericrisco/rsc-harness` →
+  `skills/webhooks/SKILL.md` both describe themselves as exactly this candidate ("a provider-agnostic
+  endpoint that proves pushed events are authentic and never processes one twice: raw-body HMAC, ~5-min
+  replay window, idempotency on the event id, fast-ack-then-queue"). Closed as covered.
+- [x] **Multi-currency/rounding-drift audit for money math across conversion, tax, and refund paths —
+  REJECTED, saturated.** `Sir-chawakorn/sanook-cli` → `skills/money-decimal-arithmetic/SKILL.md` covers
+  this almost exactly: "per-currency exponents (ISO 4217), explicit rounding modes (banker's vs half-up),
+  largest-remainder allocation that sums exactly, FX triangulation... to eliminate float drift and
+  off-by-a-penny totals." `codekit-labs/testctl` → `skills/money-guard/SKILL.md` is explicitly a drift-audit
+  framing: "Generate tests that protect money math — correct rounding to each currency's precision, no
+  floating-point drift, multi-currency conversion, and totals that reconcile." `open-mercato/open-mercato`'s
+  security-report skill and several CFO/ecom-tax skills independently name the same reconciliation angle
+  (conversion/tax/refund rounding drift). Closed as covered.
+
+**Three fresh candidates tried this round — all REJECTED, saturated**, continuing the sweep rather than
+re-treading the closed three above:
+
+- [x] **Outbound webhook delivery reliability (retry schedule, ordering guarantees, dead-letter/replay for
+  *your* customers subscribing to events you send) — REJECTED, saturated.** Distinct in principle from the
+  receiving-side webhook skills above, but just as densely covered from the sending side:
+  `samber/developer-platform-skills` → `skills/webhook-platform-design/SKILL.md` ("this skill applies
+  [retry/idempotency] ideas to outbound delivery only"), `alexpate/devtool-skills` →
+  `skills/webhook-delivery/SKILL.md`, `nahid-sparktales/agent-dispatcher` → `skills/backend/webhooks/SKILL.md`
+  ("Outbound: contract published, deliveries signed, backoff bounded, destination URL restricted"), and
+  `cosmix/loom` → `skills/loom-webhooks/SKILL.md` (per-endpoint delivery/DLQ/retry metrics, customer-facing
+  delivery log + self-serve replay) all name this exact scope. Closed as covered.
+- [x] **Cursor/keyset-pagination drift audit (does a paginated listing API skip or duplicate rows when the
+  underlying table changes between page fetches) — REJECTED, saturated.** `loqmanali/backend-ai-skills-pack`
+  → `skills/cursor-pagination/SKILL.md` is a dedicated skill on exactly this ("paginating a large or
+  fast-changing table... keyset pagination walks the table by remembering the last row seen, not by
+  counting"). Closed as covered.
+- [x] **Multi-tenant resource quota / noisy-neighbor isolation audit (per-tenant compute/storage quota
+  enforcement, as distinct from this pack's `seat-guard` which is user-count licensing, not resource
+  quotas) — REJECTED, saturated.** At least three dedicated skills across two repos cover this directly:
+  `syntedge/syntedge-skills` → `skills/multi-tenant-isolation/SKILL.md` ("Isolate tenants at data, compute,
+  and noisy-neighbor layers with measurable guarantees"), `sickn33/agentic-awesome-skills` →
+  `skills/saas-multi-tenant/SKILL.md` and `skills/multi-tenant-llm-hosting/SKILL.md` (tenant isolation,
+  quotas, noisy-neighbor protection, billing attribution). Closed as covered.
+
+One more candidate tried and also rejected, surfaced while reading pentest-skill hits during the above
+searches:
+
+- [x] **Single-use promo/coupon code redemption race (concurrent redemption exceeding max-uses, or two
+  codes silently stacking when policy says only one should apply) — REJECTED, saturated.** Same shape as
+  `seat-guard`'s Step 1 race applied to coupons instead of seats, but already covered on both the
+  security-testing side (`elementalsouls/Claude-BugHunter`, `uphiago/recon-skills`, and several forks all
+  ship `hunt-race-condition/SKILL.md` naming "coupon double-redemption" and "gift-card double-spend" as
+  dedicated named attack classes with working PoCs) and the build side (`finsilabs/awesome-ecommerce-skills`
+  → `skills/pricing-promotions/coupon-management/SKILL.md`: "Validate at order creation, not just at
+  cart — re-check coupon validity (expiry, usage limits) when the order is actually placed to handle race
+  conditions"). Closed as covered.
+
+**No new-skill candidate survived novelty research this round** — seven tried, seven rejected. Rather than
+force a 41st skill into already-crowded territory or invent busywork, did the standing fallback instead:
+drift-audited the five skills shipped since drift-audit round 9 (2026-10-15, which covered `cipher-guard`)
+that had never had a dedicated fact-verification pass — `rotation-guard` (2026-10-21), `seat-guard`
+(2026-10-22), `restore-guard` (2026-10-23), `selectall-guard` (2026-10-24), and `reaccept-guard`
+(2026-10-26). Read all five `SKILL.md` files in full, identified every externally-checkable claim, and
+verified each via `WebSearch`:
+
+- `rotation-guard`: re-verified the AWS Secrets Manager "alternating users" rotation strategy claim against
+  AWS's own current docs (`docs.aws.amazon.com/secretsmanager/.../tutorials_rotation-alternating.html` and
+  `.../rotation-strategy.html`) — confirmed accurate: two cloned DB users take turns being "current" so the
+  previous one stays valid through the rotation cycle, exactly as described. Re-verified the Kubernetes
+  `Secret`-as-volume-vs-env-var claim, including the specific `subPath` exception — confirmed via multiple
+  independent current sources (a Kubernetes Discuss thread, a GitLab merge request quoting the upstream
+  docs, `ahmet.im`'s writeup on `configMapAndSecretChangeDetectionStrategy`, the Secrets Store CSI driver's
+  own "Known Limitations" page): a `subPath`-mounted Secret never receives live updates regardless of
+  change-detection strategy, while a whole-volume mount updates after the kubelet sync period plus cache
+  propagation delay (documented as up to roughly a minute or two) — matching the skill's claim exactly. No
+  drift.
+- `seat-guard`: re-verified the "Jira, Pipedrive, Docketwise, Kayako, and GitLab have all tracked exactly
+  this discrepancy" claim company-by-company rather than taking the original research's word for it. Jira:
+  confirmed, `jira.atlassian.com/browse/FE-5012` ("Deactivated JIRA users still count against license
+  seats") still resolves and matches. Pipedrive: confirmed via Pipedrive's own support docs plus a Pipedrive
+  staff reply in their community forum — a deactivated user's seat "remains active—and billable—unless it's
+  manually removed." Docketwise: confirmed via their support center — "A deactivated user still occupies a
+  user license. The only way to free that license is to delete the user." Kayako: confirmed the discrepancy
+  exists but as an internal *contradiction* rather than one clean statement — one Kayako Classic article
+  says disabled staff don't count against the seat limit, another says the account "will still be charged
+  continuously for the number of seats you have purchased" regardless. GitLab: the nuance runs the other
+  way from a flat restatement — GitLab's current docs say a deactivated user does *not* count toward
+  current billable seats, but does count toward the historical peak used for overage/true-up billing, so
+  the discrepancy is real but shows up at true-up time rather than as an immediately-occupied seat. Verdict:
+  no fabrication — all five companies do have a real, documented version of "deactivation doesn't cleanly
+  free what you'd expect it to," though GitLab's and Kayako's versions are more nuanced than the skill's
+  one-line summary suggests. Not drift serious enough to require an edit (the skill's own Step 2 already
+  frames this as "a well-documented, recurring SaaS complaint," not a claim about any one company's exact
+  mechanism), but noted here for the next audit pass to watch rather than re-verify from scratch. Also
+  re-verified the PatternFly/shadcn admin-table claim from `selectall-guard` (see below) turned up while
+  researching this — unrelated skill, checked opportunistically.
+- `restore-guard`: read in full — carries no named external citations (company names, issue numbers, specs)
+  to verify, only generic soft-delete/cascade engineering reasoning. Nothing to check against an external
+  source; no drift possible in the sense this audit checks for.
+- `selectall-guard`: re-verified the "PatternFly, shadcn, and most admin-table components ship the
+  pagination-aware select-all toggle for free" claim. PatternFly: confirmed directly — its current "bulk
+  selection" pattern (`v5-archive.patternfly.org/patterns/bulk-selection`) documents exactly this: a bulk
+  selector with "Select none," "Select page," and "Select all" (cross-page) options, with item-selected text
+  reflecting the cross-page total. shadcn: not independently confirmable as a single doc page (shadcn/ui is
+  a composable set of primitives over Radix + TanStack Table, not a single component with its own select-all
+  spec), but the broader claim holds via Elastic EUI's table-selection pattern and a Retool community thread
+  describing the same cross-page-selection problem space third-party widgets commonly ship for. No drift —
+  the core claim (PatternFly ships this) is directly confirmed; the shadcn mention is a reasonable
+  generalization, not a specific fabricated citation.
+- `reaccept-guard`: shipped only yesterday (2026-10-26) with its own fresh grounding pass already done at
+  ship time (Google Zero Touch Enrollment API's `latestTosAccepted` 403 field, a USPTO patent filing, and
+  independent practitioner guidance) — skipped re-verification this round since nothing has had time to go
+  stale; it's next in line for round 11 once some time has passed.
+
+No fixes needed in any of the five skills — every externally-checkable claim held up against current
+source text, and the one claim with real nuance (`seat-guard`'s five-company list) is still substantively
+accurate, just imprecise at the edges in a way the skill's own wording already allows for.
+
+Follow-up for the next run: no candidate parked from a confirmatory pass — the next run needs a fresh
+novelty sweep from scratch rather than assuming anything above is still open (all seven tried this round are
+now closed). One promising, not-yet-fully-researched thread surfaced while reading SRE/review skills during
+this round's searches, worth trying first: **distributed/per-instance rate-limit enforcement drift** — does
+a rate limit actually cap aggregate usage across a horizontally-scaled fleet, or does an in-memory
+per-instance counter quietly let N× the intended limit through because nothing coordinates across
+instances? Found only a single passing checklist line in `dancovello/golf-platform` →
+`.claude/skills/sre-review/SKILL.md` ("Review rate limiting config... is it per-instance or distributed?")
+and generic rate-limiter *build* skills (token-bucket/GCRA algorithm references) — no dedicated code-level
+audit skill with file:line findings and a BLOCK/CAUTION/SAFE verdict shape, the form this pack's skills
+take. Needs the same multi-variant confirmatory search `reaccept-guard` got before being trusted as novel,
+not assumed clear from one hit. If that also turns out saturated, the next fallback is drift-auditing
+`reaccept-guard` once round 11 is due, or trying a fresh sweep entirely outside this pack's current
+territory (its first 40 skills now cover an unusually wide swath of SaaS/distributed-systems correctness
+bugs — a genuinely fresh angle may need to come from outside that genre rather than one more adjacent
+variant of it).

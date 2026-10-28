@@ -3518,3 +3518,42 @@ not assumed clear from one hit. If that also turns out saturated, the next fallb
 territory (its first 40 skills now cover an unusually wide swath of SaaS/distributed-systems correctness
 bugs — a genuinely fresh angle may need to come from outside that genre rather than one more adjacent
 variant of it).
+
+## `throttle-guard` — SHIPPED (2026-10-28, verified novel)
+
+Picked up the 2026-10-27 note's parked lead — distributed/per-instance rate-limit enforcement drift —
+and ran it through the same confirmatory bar `reaccept-guard` got rather than trusting the single prior
+hit. Git hygiene check first: clean clone, local `main` already matched `origin/main`. `python
+tools/validate.py` passed (`OK: 40 skills valid and consistent with README.`) before this pass; no
+skill files were touched before the new one was added.
+
+Research: six query variants via `WebSearch` and `mcp__github__search_code` (`filename:SKILL.md` +
+"per-instance"/"rate limit", "horizontally"/"distributed rate limit", "per replica"/"per pod"/"per
+worker" + review, "N times the intended"/"exceed the intended limit", "BLOCK"/"CAUTION"/"SAFE" +
+"rate limit", plus direct fetches of the most plausible hits). Consistent finding across all of them:
+**build-side guidance for this exact mechanic is everywhere** — `j4flmao/agent-skills` →
+`skills/backend/universal/rate-limiting/SKILL.md` states the core fact almost verbatim ("In-process
+limiters multiply the effective limit by the instance count"; anti-pattern table: "Per-instance
+in-memory limits for paid quotas" → fix "Shared store or gateway") — but every hit checked is
+implementation/design guidance (how to build a rate limiter correctly, output artifact "middleware/gateway
+code or config"), never a dedicated **audit** skill that reviews *existing* code for this drift with
+file:line evidence and a BLOCK/CAUTION/SAFE verdict, the shape this pack's `-guard` skills take. Fetched
+`google/skills` → `google-cloud-waf-reliability/SKILL.md` directly on the chance a reliability-audit
+skill already covered it — confirmed it mentions rate limiting only once, in a generic validation
+checklist, with no per-instance/distributed-state angle at all. No existing skill reviews deployed code
+for: (1) an in-memory counter silently becoming a per-instance limit once a service scales to N
+instances, (2) a "shared" store whose check-then-increment is a non-atomic read-compare-write that
+reopens the same race one layer out, or (3) a limit enforced on one entry point that a second path
+(internal call, background worker, newer endpoint) never goes through. Closed as genuinely novel.
+
+Shipped `skills/throttle-guard/SKILL.md` + `examples/throttle-guard.md`, wired into both README tables
+and the Examples list; bumped the two stale "forty"/"thirty-nine" skill-count mentions in `README.md`'s
+intro and install tip to "forty-one" while touching the file for the new entry anyway (same drift class
+the 2026-09-20 note already fixed once — noting here in case it recurs and needs a structural fix rather
+than a one-off edit each time). `python tools/validate.py` now passes (`OK: 41 skills valid and
+consistent with README.`).
+
+Follow-up for the next run: no candidate parked from a confirmatory pass — the next run needs a fresh
+novelty sweep from scratch. `reaccept-guard` (shipped 2026-10-26) and `throttle-guard` (this entry) are
+both now due for a drift-audit fact-check pass once some time has passed, alongside whatever the next
+drift-audit round picks up from between them.

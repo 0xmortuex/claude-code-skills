@@ -3557,3 +3557,65 @@ Follow-up for the next run: no candidate parked from a confirmatory pass — the
 novelty sweep from scratch. `reaccept-guard` (shipped 2026-10-26) and `throttle-guard` (this entry) are
 both now due for a drift-audit fact-check pass once some time has passed, alongside whatever the next
 drift-audit round picks up from between them.
+
+## `quote-guard` — SHIPPED (2026-10-29, verified novel)
+
+Fresh novelty sweep from scratch, as the 2026-10-28 note required. Git hygiene first: local `main`
+was detached at the previous run's already-pushed `throttle-guard` commit (`8b8bc80` matched
+`origin/main`) — reattached `main` to it via `git checkout main && git reset --hard origin/main`,
+no data lost, nothing to re-push. `python tools/validate.py` passed (`OK: 41 skills valid and
+consistent with README.`) before this pass.
+
+Tried several angles before landing on one: a RAG/vector-embedding re-indexing staleness audit
+(dead — `WebSearch` found dedicated coverage: a "Freshness Framework"-style skill in
+`jamelna-apps/claude-dash` tracking file mtimes/git commits to choose incremental vs. full reindex,
+and a dedicated `adt-rag-drift` skill counting stale chunks and recommending rebuilds); an
+LLM structured-output/tool-call schema-validation-drift audit (not conclusively covered but also not
+clearly a "real recurring production incident" in this pack's grounding style — more a meta/tooling
+concern than an app-code correctness bug class, so set aside rather than force-grounded); and a
+double-booking/overlapping-reservation race audit, which on `mcp__github__search_code` for
+`filename:SKILL.md "double booking" OR "overlapping reservation"` turned up exactly one hit
+(`dilusha-c/supipi-guest-house` → a single checklist line in a one-off guest-house project's security
+audit, not a reusable dedicated skill) — but is the same check-then-act concurrency shape already
+closed as covered under the inventory-oversell and coupon-redemption race entries above (`hunt-race-
+condition`-style skills across `elementalsouls/Claude-BugHunter`, `uphiago/recon-skills`, and forks
+name exactly this race-condition class generically), so didn't chase it further.
+
+Landed on **checkout/cart price integrity between quote and capture**: does the amount a customer saw
+and agreed to match the amount actually captured, once anything (a catalog price edit, a promo window
+closing, a coupon re-validated differently, a tax/inventory recompute) gets a chance to land in the
+gap between them — a gap that's seconds in an instant checkout but hours or months for a pre-order,
+backorder, BNPL installment, or trial-to-paid conversion. Confirmatory search: `mcp__github__search_code`
+for `filename:SKILL.md "stale price" OR "price drift" checkout` (1 hit, an e-commerce "pricing-and-
+channels" skill in `tensology/decisionsai` whose content doesn't actually mention price drift or stale
+pricing when fetched directly — a loose keyword match, not real coverage) and `filename:SKILL.md
+"authorize" "capture" amount mismatch price` (825 hits, but every one checked is either a security/
+business-logic-tampering angle — `UnboundCompute/security-agent-skills` →
+`auditing-payment-callback-and-amount-integrity` audits attacker-forged payment *callbacks*, a trust-
+boundary problem, not a legitimate system silently re-pricing its own flow — or unrelated red-team
+"hunt-business-logic" skills that name "price manipulation" as an attacker-input class, not a
+quote-to-capture drift audit). No existing skill reviews a codebase's own checkout/capture logic for
+whether the captured amount still matches what the customer was shown, as the gap between quote and
+charge widens. Closed as genuinely novel.
+
+Grounded in two independently verified facts rather than invented plausibility: (1) *Kahn v. Walmart*
+(7th Cir., No. 23-1751, 2024) — the Seventh Circuit reversed a dismissal and held that a receipt
+showing the price actually charged does not, as a matter of law, cure the deception from an inaccurate
+displayed price, confirmed via the Wisconsin Law Journal's docket listing and Today's General Counsel's
+summary of Judge Hamilton's opinion; (2) Stripe's `PaymentIntents` capture API rejects an
+`amount_to_capture` greater than the amount originally authorized (confirmed via `docs.stripe.com/api/
+payment_intents/capture`), meaning a checkout flow that silently recomputes "today's real price" at
+capture time can't just capture the higher number without its own explicit re-authorization handling.
+
+Shipped `skills/quote-guard/SKILL.md` + `examples/quote-guard.md`, wired into both README tables and
+the Examples list; bumped the "forty-one"/"41-skill" mentions in `README.md`'s intro and install tip to
+"forty-two"/"42-skill" while touching the file for the new entry anyway. `python tools/validate.py`
+now passes (`OK: 42 skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidate parked from a confirmatory pass — the next run needs a fresh
+novelty sweep from scratch. The LLM structured-output/tool-call schema-drift thread set aside above is
+worth a deeper look before discarding outright — it may just need a sharper, more concrete framing
+(e.g. "does the app still validate a model's structured output against the current schema after a
+prompt/model swap, or did validation get silently loosened") rather than the vague form tried this
+round. `reaccept-guard` (2026-10-26), `throttle-guard` (2026-10-28), and `quote-guard` (this entry) are
+all now due for a drift-audit fact-check pass once some time has passed.

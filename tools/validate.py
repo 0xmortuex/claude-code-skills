@@ -33,6 +33,12 @@ And against the pack's convention that every skill has a worked example in
 * every such file is linked from ``README.md``'s Examples section
   (dangling links back to a nonexistent skill are flagged in both places).
 
+And the recurring prose-drift class noted twice in ``BACKLOG.md`` (2026-09-20,
+2026-10-28): ``README.md``'s intro and install-tip sentences state the pack's
+size in words ("forty-two") or digits ("42-skill"), which silently goes stale
+whenever a skill is added or removed because nothing re-derives it from the
+actual skill count. ``validate_skill_count_mentions`` catches both forms.
+
 No third-party dependencies -- the frontmatter is simple ``key: value``
 lines, parsed directly. Exit status is 0 when everything passes and 1
 otherwise, with one line per problem. Intended for local use and CI.
@@ -58,6 +64,31 @@ EXAMPLES_README_LINK = re.compile(r"\(([a-z0-9-]+)\.md\)")
 
 SKILLS_TABLE_HEADING = "## The skills"
 DECISION_TABLE_HEADING = "## Which skill do I want?"
+
+ONES_AND_TEENS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11,
+    "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+}
+TENS = {
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60,
+    "seventy": 70, "eighty": 80, "ninety": 90,
+}
+_NUMBER_WORD = rf"(?:(?:{'|'.join(TENS)})(?:-(?:{'|'.join(ONES_AND_TEENS)}))?|(?:{'|'.join(ONES_AND_TEENS)}))"
+# Only matched where it follows/precedes the exact phrasing the pack's two
+# known skill-count mentions use, so this can't misfire on an unrelated
+# number word ("one or two skills work best...") elsewhere in the prose.
+SKILL_COUNT_WORD = re.compile(
+    rf"\bcopying all ({_NUMBER_WORD}) at once\b|\b({_NUMBER_WORD}) that earn their place\b")
+SKILL_COUNT_DIGIT = re.compile(r"\b(\d+)-skill\b")
+
+
+def word_to_number(word: str) -> int:
+    tens, _, ones = word.partition("-")
+    if tens in TENS:
+        return TENS[tens] + (ONES_AND_TEENS[ones] if ones else 0)
+    return ONES_AND_TEENS[word]
 
 
 def extract_section(text: str, heading: str) -> str | None:
@@ -183,6 +214,27 @@ def validate_examples(skill_names: set[str], problems: list[str]) -> None:
                 f"README.md links 'examples/{dangling}.md' but no such file exists")
 
 
+def validate_skill_count_mentions(skill_count: int, problems: list[str]) -> None:
+    if not README.is_file():
+        return
+    text = README.read_text(encoding="utf-8")
+
+    for match in SKILL_COUNT_DIGIT.finditer(text):
+        mentioned = int(match.group(1))
+        if mentioned != skill_count:
+            problems.append(
+                f"README.md says '{match.group(0)}' but there are "
+                f"{skill_count} skills")
+
+    for match in SKILL_COUNT_WORD.finditer(text):
+        word = match.group(1) or match.group(2)
+        mentioned = word_to_number(word)
+        if mentioned != skill_count:
+            problems.append(
+                f"README.md says '{word}' in '{match.group(0)}' but there "
+                f"are {skill_count} skills")
+
+
 def main() -> int:
     if not SKILLS_DIR.is_dir():
         print(f"error: no skills directory at {SKILLS_DIR}", file=sys.stderr)
@@ -198,6 +250,7 @@ def main() -> int:
     skill_names = {p.name for p in skill_dirs}
     validate_readme(skill_names, problems)
     validate_examples(skill_names, problems)
+    validate_skill_count_mentions(len(skill_dirs), problems)
 
     if problems:
         for problem in problems:

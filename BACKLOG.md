@@ -3619,3 +3619,72 @@ worth a deeper look before discarding outright — it may just need a sharper, m
 prompt/model swap, or did validation get silently loosened") rather than the vague form tried this
 round. `reaccept-guard` (2026-10-26), `throttle-guard` (2026-10-28), and `quote-guard` (this entry) are
 all now due for a drift-audit fact-check pass once some time has passed.
+
+## Maintenance pass (2026-10-30): two candidates researched and rejected, shipped a validator check instead
+
+Git hygiene check first, and it mattered this time: the clone started with `main` detached two
+commits behind `origin/main` (`8b8bc80` throttle-guard, `3801f1e` quote-guard were already pushed to
+`origin/main` by the prior two runs, but the local `main` branch ref itself had never been moved
+forward — a stale ref, not lost work). Fixed with `git checkout main && git merge --ff-only
+origin/main`; nothing was re-pushed since `origin/main` already had both commits. `python
+tools/validate.py` passed (`OK: 42 skills valid and consistent with README.`) before this pass.
+
+Picked up the 2026-10-29 note's sharper framing of the LLM structured-output/tool-call schema-drift
+thread — REJECTED, saturated. `WebSearch` plus three `mcp__github__search_code` variants
+(`"structured output" schema drift validation`, `"tool call" schema mismatch validation silently`,
+`"model swap" OR "swapping models" output validation`, `"prompt change" OR "model upgrade"
+"validation" "silently" output`) all land on the same conclusion: this exact mechanic — pin golden
+inputs, validate structured output against schema before/after a model/prompt swap, gate on
+regression — is the explicit core of a dense cluster of `eval-driven-development` /
+`llm-eval-harness` / `ai-evaluation-patterns` skills (e.g. `jacob-balslev/skill-graph` →
+`eval-driven-development/SKILL.md`: "every model upgrade or vendor switch changes the system under
+test and must be re-gated against the private suite"; a prompt-engineering skill: "Pin production
+prompts to a specific model snapshot. Model upgrades silently shift behaviour, and your evals are the
+only signal."; `SamoTech/skills-tree` → `json-schema-validation/SKILL.md` names "Schema drift: LLM
+trained on old schema produces output matching old spec" as a named anti-pattern row with its own
+fix). Closed as covered — this is build-side guidance as densely covered as `throttle-guard`'s
+rate-limiting territory was before it found the audit-shaped gap, but no comparable audit-shaped gap
+exists here: the eval-harness skills already are the audit mechanism (gate every model/prompt change
+against a golden set), not just advice to build one.
+
+Tried one more angle while in adjacent territory: **idempotency-key-reuse-with-a-different-payload**
+(same key, different request body, server should 409 rather than silently serving the first response)
+— REJECTED, saturated, including on the audit side this pack requires. `addyosmani/agent-skills` →
+`api-and-interface-design/SKILL.md` and `agentsope/SkillAlchemy` → `agentsop-llm-tool-idempotency/
+SKILL.md` cover the build-side fix almost verbatim ("Same key, different body is a client bug, and
+must fail loudly"). Critically, the audit angle this pack's own bar requires is also already covered:
+`briiirussell/cybersecurity-skills` → `business-logic-testing/SKILL.md` names the exact test
+("Idempotency key scoped to the path, not the principal... Submit two different operations under one
+key") and `sickn33/agentic-awesome-skills` → `hunt-race-condition/SKILL.md` covers the same bypass
+technique — the same pattern that closed the coupon-redemption-race candidate in round 10 (a dedicated
+pentest/hunt skill already names the attack). Closed as covered.
+
+No new-skill candidate survived — two tried, two rejected, both for the same reason: skill-build
+guidance for the mechanic exists everywhere, and unlike `throttle-guard`'s gap, the dedicated
+audit-shaped version (gate-on-regression for the first; a named pentest technique for the second) also
+already exists. Rather than force a weak 43rd skill, picked up the recurring prose-drift class
+`throttle-guard` flagged on 2026-10-28 ("noting here in case it recurs and needs a structural fix
+rather than a one-off edit each time") and the earlier 2026-09-20 fix of the same class: `README.md`'s
+intro ("no 42-skill kitchen sink — forty-two that earn their place") and install tip ("copying all
+forty-two at once") state the pack's size in prose, in both digit and word form, and nothing re-derives
+either from the actual skill count — so it goes stale every time a skill is added or removed unless
+whoever ships that skill remembers to grep for it by hand, which has already failed to happen at least
+twice.
+
+Added `validate_skill_count_mentions` to `tools/validate.py`: a `SKILL_COUNT_DIGIT` regex for the
+`42-skill` form, a `SKILL_COUNT_WORD` regex plus a small `word_to_number` word-to-int helper (covering
+one through ninety-nine) for the `forty-two` form, both scoped tightly to the two phrasings
+("`N-skill`", "`copying all <word> at once`", "`<word> that earn their place`") that this drift class
+has actually used, so it can't misfire on an unrelated number word elsewhere in the prose (e.g. the
+install tip's own "start with one or two" skills advice). Verified it actually catches the drift, not
+just that it passes today: temporarily rewrote both mentions to "41"/"forty-one" in a scratch copy,
+confirmed `tools/validate.py` fails with a clear per-mention message naming the stale count, then
+restored the real `README.md` and reran clean (`OK: 42 skills valid and consistent with README.`). No
+skill files touched this round — this was a tooling-only change, following the same pattern as the
+2026-09-09 (`examples/` consistency) and 2026-09-15 (decision-table drift) tooling entries above.
+
+Follow-up for the next run: fresh novelty sweep from scratch — no candidate parked. `reaccept-guard`
+(2026-10-26), `throttle-guard` (2026-10-28), and `quote-guard` (2026-10-29) remain due for a drift-audit
+fact-check pass once more time has passed; four days (reaccept-guard) is still probably too soon to
+expect anything to have gone stale, so that pass is better spent once a couple of weeks separate it
+from ship time.

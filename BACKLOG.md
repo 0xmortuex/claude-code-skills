@@ -3688,3 +3688,69 @@ Follow-up for the next run: fresh novelty sweep from scratch — no candidate pa
 fact-check pass once more time has passed; four days (reaccept-guard) is still probably too soon to
 expect anything to have gone stale, so that pass is better spent once a couple of weeks separate it
 from ship time.
+
+## Fresh novelty sweep (2026-10-31): five candidates researched and rejected, shipped a README prose-drift fix
+
+`python tools/validate.py` passed (`OK: 42 skills valid and consistent with README.`) before this pass;
+git was already on `main`, in sync with `origin/main`, nothing stashed or stale.
+
+Five new-skill angles tried, all rejected as already covered elsewhere (checked via `WebSearch` and
+`mcp__github__search_code` on `filename:SKILL.md`, not just a single-skill spot check):
+
+1. **Multi-tenant row-level isolation audit (missing `tenant_id` filter on a tenant-owned table/query).**
+   REJECTED — a dense, direct cluster already exists: `hainrixz/claude-db` → `db-multitenancy` flags
+   exactly this (severity-rated missing/nullable tenant column, non-leading tenant_id index/PK), plus
+   independent hits in `omer-metin/skills-for-antigravity`, `Eibon7/roastr-ai`, and
+   `davila7/claude-code-templates`'s `saas-multi-tenant`. Not a thin keyword match — multiple
+   dedicated, specific skills.
+2. **Inbound webhook receiver audit (signature verification, duplicate/out-of-order delivery, replay).**
+   REJECTED — extremely saturated on both the build side and, critically, the audit side this pack's bar
+   requires: `affaan-m/ECC` → `production-audit` and its mirror `Fmarzochi/EGC` both ask "are webhook
+   signatures verified… is each webhook idempotent… are replay, duplicate, and out-of-order delivery
+   handled" verbatim as an audit checklist; `lroy-stack/ai-pod-store` → `audit-webhooks-idempotency` is a
+   dedicated audit skill with the same severity framing this pack uses (CRITICAL/FAIL/WARN/PASS); several
+   `*-security-audit` skills (`shopsys/shopsys`, `vulpy-io/vulpy-commerce-core`) name the identical
+   CWE-tagged checklist. This is the same shape that killed earlier candidates — real audit coverage
+   exists, not just build guidance.
+3. **Currency rounding / allocation-remainder audit (float money, naive `total/n` splits, tax/discount
+   allocation that doesn't sum to the total).** REJECTED — `adamentwistle/fable-skills` →
+   `numerical-care`, `Sir-chawakorn/sanook-cli` → `money-decimal-arithmetic`, and
+   `zakariaf/Flutter-Skills` → `value-objects-money-and-units` all state the exact rules (integer minor
+   units, round once at the boundary, largest-remainder allocation, `sum(parts) == total` assertion) as
+   both guidance and an explicit list of anti-patterns to catch reviewing existing code. A paid listing
+   (`agensi.io` → "Repair Money Rounding Bugs") targets this almost exactly as an audit-and-fix skill,
+   confirming it's a recognized-enough niche to already be commercialized.
+4. **Offset-pagination drift under concurrent inserts/deletes (skipped/duplicated rows while paging).**
+   REJECTED — the skipped-or-duplicated-under-concurrent-writes failure mode is named explicitly as the
+   core anti-pattern in `klod68/littlerae` → `pagination-cursor-offset`, `oborchers/fractional-cto` →
+   `response-design-and-pagination`, and generic REST-design skills, consistently paired with "use
+   cursor/keyset instead" as the fix — dense build-side coverage of the exact failure this pack would
+   have audited for.
+5. **Feature-flag bucketing consistency (inconsistent hash/salt causing a user to flip between
+   control/treatment across requests or services).** REJECTED — `cosmix/loom` → `loom-feature-flags`
+   covers per-flag salting and bucketing-unit choice explicitly; `greenblacked/AI` →
+   `release-strategy` states "ring assignment must be sticky… hash the user/tenant/session id, not the
+   request" as a named anti-pattern; `zeroes-ones/Skills` → `growth-engineer` has an explicit AA-test
+   audit step ("is it using consistent hashing? sticky across devices?") for exactly this regression.
+
+No new skill survived. Rather than force a weak 43rd, found and fixed a real, independently-verified gap
+instead: `README.md`'s intro paragraph carries a long "what survived the novelty filter" sentence
+describing every surviving skill in prose — but checking it mechanically (does each skill's distinguishing
+phrase from its own README table row actually appear in that paragraph) showed it stopped being updated
+after `restore-guard` (`7052336`): the five skills shipped after it — `seat-guard`, `selectall-guard`,
+`reaccept-guard`, `throttle-guard`, and `quote-guard` — were each added to the skills table and decision
+table (which `tools/validate.py` checks) but never folded into the intro's prose summary (which nothing
+mechanically checks). Fixed by appending matching clauses for all five, in the same "whether X actually Y
+instead of Z" style as the rest of the paragraph, sourced from each skill's own README row so the wording
+stays accurate. Verified every one of the 42 skills now has a matching phrase in the intro (not just the
+five added) via a quick per-skill substring check, not just that the five gaps closed. `python
+tools/validate.py` still passes (`OK: 42 skills valid and consistent with README.`) — this prose list
+isn't mechanically checked, so the drift wasn't caught by CI; a cheap per-skill-slug check isn't feasible
+since the paragraph deliberately describes skills by function, not by slug, so this needs a human/agent
+read every few rounds rather than a validator rule. No skill files touched this round.
+
+Follow-up for the next run: fresh novelty sweep from scratch — no candidate parked; the five rejected
+above are now documented so they aren't re-researched from zero. Worth periodically re-running the
+"does every skill's phrase appear in the intro paragraph" spot check by hand after a run of several
+new-skill ships, since nothing automated catches it. `reaccept-guard`, `throttle-guard`, and `quote-guard`
+are still the nearest due for a drift-audit fact-check pass once more time has passed.

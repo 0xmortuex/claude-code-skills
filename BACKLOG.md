@@ -3754,3 +3754,58 @@ above are now documented so they aren't re-researched from zero. Worth periodica
 "does every skill's phrase appear in the intro paragraph" spot check by hand after a run of several
 new-skill ships, since nothing automated catches it. `reaccept-guard`, `throttle-guard`, and `quote-guard`
 are still the nearest due for a drift-audit fact-check pass once more time has passed.
+
+## Novelty sweep + new skill (2026-11-01): recall-guard shipped
+
+Git hygiene check first: `main` was already at `origin/main` (`6740cce`), clean working tree, no stale
+ref this time. `python tools/validate.py` passed (`OK: 42 skills valid and consistent with README.`)
+before this pass.
+
+Tried one new-skill angle first — **support "login as" / admin impersonation session audit**
+(does impersonation require a separate elevated/time-boxed session, log actor+target+reason, and stay
+scoped so a support rep can't silently escalate or leak the target's private data) — REJECTED, covered.
+A `claudskills.com` → `auth-isolation` skill already treats uncontrolled support impersonation as a
+named failure mode (elevated sessions must expire quickly and be tied to actor/session/reason/scope,
+background jobs acting as a user must declare it). More decisively, `trannhatbuilder/evvo-vapt-ai` →
+`shield_engine/skills/support-override-and-backoffice-admin-abuse/SKILL.md` names the exact mechanic as
+a dedicated hunt step ("The 'Impersonation' (Login-As) Trap": token leaking into browser storage,
+impersonating up to a Super Admin, audit log attributing the action to the wrong actor) — the same kind
+of dedicated pentest/hunt-skill match that has closed several earlier candidates in this log (e.g. the
+idempotency-key-reuse rejection on 2026-10-30). Closed as covered, following that same precedent.
+
+**Shipped `recall-guard` — verified novel.** The angle: does a message edit-for-everyone/unsend/
+delete-for-everyone/recall feature actually reach every copy of the content it already made — a push
+payload already sitting in the OS's own notification store, a webhook/search-index/export mirror the
+retraction code never touches, a transport boundary (relayed email, a federated bridge) it can never
+reach at all — and does the recall action itself check the right actor and enforce its promised time
+window server-side rather than just in the client. Verified uncovered: `WebSearch` for an existing
+"unsend"/"message recall"/"delete for everyone" audit skill turned up only functional send/delete
+automation skills (Telegram/Feishu/Lark message-deletion tools, security-scanned for *their own*
+behavior, not for auditing a product's recall feature) — no dedicated review-this-feature skill.
+Targeted `gh api search/code` passes on `"unsend" "push notification" filename:SKILL.md`,
+`"message recall" OR "delete for everyone" "search index" filename:SKILL.md`, and `"edit message"
+"already delivered" filename:SKILL.md` returned no on-topic hits at all (7, 0, and 0 results,
+respectively, none matching the actual mechanic). In-pack: `push-guard` audits token lifecycle (is the
+token still valid/bound to the right account), not whether a payload already delivered through a valid
+token can be un-shown; `stale-guard` proves an ongoing cache read path can't serve wrong data, not
+whether a one-shot retraction action reaches every secondary copy; `erasure-guard` is account-deletion
+reach, not single-message retraction. None of the three cover this.
+
+Grounded in a real, named, dated vulnerability rather than a hypothetical: CVE-2026-28950, patched in
+iOS 26.4.2 / iPadOS 26.4.2 and iOS 18.7.8 / iPadOS 18.7.8 (confirmed via TidBITS, Bitdefender's
+HOTforSecurity, and multiple other outlets reporting the same patch and mechanism) — deleted and
+disappearing Signal message content was recoverable from the iPhone's own notification database months
+after the app had faithfully deleted it (and after the app itself had been uninstalled), because the OS
+had already cached a full preview in a store the app doesn't control. This is exactly the "can't be
+recalled, only avoided" failure mode `recall-guard`'s step 2 and step 4 ask the reviewer to separate out
+from the fixable "should be updated but isn't" gaps (search index, webhook mirrors).
+
+Shipped `skills/recall-guard/SKILL.md` + `examples/recall-guard.md`, wired into both README tables, the
+Examples list, and the intro paragraph's "what survived the novelty filter" summary sentence; bumped the
+"forty-two"/"42-skill" mentions in `README.md`'s intro and install tip to "forty-three"/"43-skill" in the
+same pass. `python tools/validate.py` now passes (`OK: 43 skills valid and consistent with README.`).
+
+Follow-up for the next run: no candidate parked from a confirmatory pass — fresh novelty sweep from
+scratch next time. `recall-guard` is now also on the drift-audit rotation alongside `reaccept-guard`
+(2026-10-26), `throttle-guard` (2026-10-28), and `quote-guard` (2026-10-29) for a fact-check pass once a
+couple of weeks have passed — none of the four are due yet.

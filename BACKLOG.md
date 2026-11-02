@@ -3809,3 +3809,80 @@ Follow-up for the next run: no candidate parked from a confirmatory pass — fre
 scratch next time. `recall-guard` is now also on the drift-audit rotation alongside `reaccept-guard`
 (2026-10-26), `throttle-guard` (2026-10-28), and `quote-guard` (2026-10-29) for a fact-check pass once a
 couple of weeks have passed — none of the four are due yet.
+
+## Maintenance pass (2026-11-02): three new candidates researched and rejected; Boundaries cross-reference pass on the 9 post-2026-10-06 skills
+
+Git hygiene check first, and it mattered: the clone started with `main` detached two commits
+(`6740cce`, `a04950d` — the `recall-guard` ship and its README-intro follow-up) ahead of where local
+`main` pointed, though both were already pushed to `origin/main` by the 2026-11-01 run — a stale local
+branch ref, not lost or unpushed work. Fixed with `git checkout main && git merge --ff-only a04950d`;
+`git push origin main` confirmed `origin/main` already had both commits ("Everything up-to-date"). Same
+stale-ref class the 2026-10-30 note already hit once. `python tools/validate.py` passed (`OK: 43 skills
+valid and consistent with README.`) before this pass; no skill files touched before the research below.
+
+Three new-skill angles tried, all rejected as already covered by a dedicated existing skill — checked via
+`WebSearch` and `gh api search/code` on `filename:SKILL.md`, with the closest hit fetched and read
+directly rather than trusted from title/snippet alone, per this pack's own bar:
+
+1. **JWT/session revocation-not-actually-revoking audit (does logging out or banning a user actually
+   stop an already-issued stateless JWT from authenticating until it expires, or is there no jti
+   blocklist/denylist checked on the hot path).** REJECTED, saturated. `bedkillerspacex-boop/
+   codex-skill-library` → `jwt-jti-blocklist-design/SKILL.md` is a dedicated skill on exactly this
+   mechanic (fetched and confirmed: "Stateless JWT cannot be revoked natively; a blocklist of `jti`...
+   restores logout/compromise response at the cost of state," with its own "When To Use" line for
+   "Access tokens with non-trivial TTL need explicit logout/revocation"). `sandeepmvl/rails-skills` →
+   `10-rails-security-baseline/SKILL.md` covers the same ground for Rails specifically. On the audit
+   side this pack's bar actually requires: `sickn33/agentic-awesome-skills` → `broken-authentication/
+   SKILL.md` and several `jwt-attacks`/`api-auth-and-jwt-abuse` pentest skills name "logout doesn't
+   invalidate the JWT" as a dedicated, named vulnerability class to hunt for — the same pattern that
+   closed the idempotency-key-reuse candidate on 2026-10-30 (a named pentest technique already exists).
+   Closed as covered on both the build and audit sides.
+2. **Employee-offboarding credential-revocation cascade audit (SSO deprovisioning turns off directory
+   access, but API keys, personal access tokens, OAuth grants to third-party services, and scheduled
+   jobs running as that user silently keep working).** REJECTED, saturated. `bedkillerspacex-boop/
+   codex-skill-library` → `python-scim-deprov/SKILL.md` is a direct, near-verbatim match (fetched and
+   confirmed: its own pitfalls table names "Soft delete but refresh tokens still valid; only hide user
+   in UI," its cascade checklist lists "Sessions, refresh tokens, API keys, personal access tokens...
+   Outbound OAuth tokens to third parties... Scheduled jobs acting as user," and it explicitly scopes
+   itself to "Auditing incomplete offboarding (ghost access)"). `cbrock84/headcount` →
+   `identity-lifecycle-administration/SKILL.md` covers the same ground from the IT-ops process side
+   ("API keys and tokens they created... the gap is almost always the systems identity management does
+   not reach... Hunt specifically for orphaned accounts... credentials that have not been used in
+   months but still work"). Closed as covered — this is the SCIM-deprovisioning-cascade audit this
+   candidate proposed, already shipped under that name.
+3. **Mobile in-app-purchase entitlement/refund-revocation audit (does a refunded or charged-back IAP
+   actually revoke the entitlement it granted, and does "restore purchases" on a new device actually
+   re-grant what StoreKit/Play Billing says the account owns).** REJECTED, saturated. `kensaurus/skills`
+   → `audit-monetization-iap/SKILL.md` is a dedicated read-only audit skill on exactly this (fetched and
+   confirmed: "Entitlements must match what users paid for: no unlock-without-pay, no paid-but-locked,
+   no double-charge, no lost purchase on reinstall," explicitly scoped to "receipt validation, restore,
+   lifecycle sync, grace periods, entitlements" for StoreKit 2/Play Billing/RevenueCat). `CharlesWiltgen/
+   Axiom` → `axiom-audit-iap/SKILL.md` (mirrored into at least two other repos) is a second independent
+   audit skill on the same mechanic, plus `dangnhh92/viber-harness` → `iap-entitlement/SKILL.md` and
+   `j4flmao/agent-skills` → `in-app-purchase/SKILL.md` on the build side. Closed as covered.
+
+No new skill survived — three tried, three rejected. Rather than force a weak 44th skill into
+already-saturated territory, ran the standing fallback the 2026-10-04/10-06 entries established: a
+**Boundaries cross-reference pass** on every skill shipped since the last one (2026-10-06, which covered
+all 34 skills current at that time). Nine skills have shipped since: `cipher-guard` (10-11),
+`rotation-guard` (10-21), `seat-guard` (10-22), `restore-guard` (10-23), `selectall-guard` (10-24),
+`reaccept-guard` (10-26), `throttle-guard` (10-28), `quote-guard` (10-29), and `recall-guard` (11-01).
+Read each one's `## Boundaries` section in full and checked two things per bullet: (1) every skill named
+in a "not `X`'s territory" bullet actually exists under that exact slug in `skills/`, and (2) the
+distinction drawn is still accurate against the referenced skill's current scope, not a stale
+description of what it used to cover.
+
+All clear — every cross-reference resolved to a real, correctly-described skill: `cipher-guard` →
+`secret-spill`, `security-sweep`; `rotation-guard` → `secret-spill`, `cipher-guard`; `seat-guard` →
+`proration-guard`; `restore-guard` → `erasure-guard`, `overwrite-guard`, `tombstone`; `selectall-guard`
+→ `job-warden`, `backfill-pilot`, `blast-guard`, `overwrite-guard`; `reaccept-guard` → `consent-guard`,
+`pref-guard`; `throttle-guard` → `backpressure-guard`, `storm-guard`; `quote-guard` → `proration-guard`;
+`recall-guard` → `stale-guard`, `push-guard`, `erasure-guard`. No dangling references, no distinctions
+that had gone stale. Nothing needed fixing.
+
+Follow-up for the next run: no candidate parked — fresh novelty sweep from scratch next time; all three
+tried this round are now closed and documented so they aren't re-researched from zero. `reaccept-guard`
+(2026-10-26), `throttle-guard` (2026-10-28), `quote-guard` (2026-10-29), and `recall-guard` (2026-11-01)
+remain the drift-audit fact-check queue once a couple of weeks have passed — still too soon for any of
+them. The next Boundaries cross-reference pass is due once another batch of skills ships past
+`recall-guard`.

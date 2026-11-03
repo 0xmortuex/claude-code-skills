@@ -3886,3 +3886,85 @@ tried this round are now closed and documented so they aren't re-researched from
 remain the drift-audit fact-check queue once a couple of weeks have passed — still too soon for any of
 them. The next Boundaries cross-reference pass is due once another batch of skills ships past
 `recall-guard`.
+
+## Research pass (2026-11-03): backlog fully checked off, no shippable item today — 3 new items added
+
+Git hygiene check first: clone started with `main` detached 3 commits (`6740cce`, `a04950d`, `746e724`)
+ahead of local `main`'s stale ref, all three already on `origin/main`. Fixed with `git checkout main &&
+git merge --ff-only origin/main` (fast-forward, nothing to push for this part). `python tools/validate.py`
+passed (`OK: 43 skills valid and consistent with README.`) before this pass. Confirmed every item above is
+`[x]` — zero unchecked items anywhere in this file (`grep -c '\[ \]' BACKLOG.md` → 0) — so per the daily-
+agent process, this round researches and logs new candidates rather than forcing a pick.
+
+Two new-skill angles tried, both rejected:
+
+1. **Feature-flag debt / stale-flag cleanup audit (flags left permanently on or off, dead flag branches
+   never removed, flag evaluation forking behavior nobody remembers the reason for).** REJECTED, covered
+   by a prominent official vendor. PostHog — not a random community repo, the actual PostHog product org —
+   ships this under two names: `PostHog/posthog` → `products/signals/skills/signals-scout-unused-features/
+   SKILL.md` (mirrored into `PostHog/posthog-foss`, `PostHog/ai-plugin`, `PostHog/skills`) and
+   `PostHog/posthog.com` → `contents/learn/self-driving/pocket-guide/flag-debt/SKILL.md`. Both are live,
+   maintained, and scoped to exactly this mechanic. Closed as covered — this is the `rollout-guard`
+   mirror-image idea (that skill audits flags being *added* before launch; this would have audited them
+   never being *removed* after), but the removal side is already a named, shipped skill elsewhere.
+2. **"Does an unsubscribe/opt-out action actually suppress every list/sender it should" audit.** REJECTED,
+   internal duplicate — not even a close call. `pref-guard`'s own description already states this exact
+   mechanic almost verbatim ("does every current and future send path check live preference state, does
+   provider-side unsubscribe/bounce data actually reach the app's suppression record"), down to the same
+   CAN-SPAM/RFC-8058 one-click-unsubscribe-webhook-silently-stopped-firing failure mode this candidate was
+   built around. No external research needed to kill this one — reading the pack's own skill table first
+   would have caught it; logging the miss so the next round checks in-pack coverage before spending
+   external-search budget.
+
+One promising lead found, **not yet shippable — needs the full novelty sweep before it can ship**:
+
+- [ ] **New-skill candidate: `clipboard-guard`? — sensitive-data clipboard exposure audit.** Does the app
+  write passwords, OTPs, card numbers, API keys, or session tokens to the OS clipboard (explicit "copy"
+  buttons, but also silent background reads/writes some apps do on every keystroke), and does it ever clear
+  what it put there or shorten the OS's own clipboard-history retention of it. Real, dated, named incidents
+  to ground it: the 2020 iOS 14 clipboard-access notification rollout publicly caught dozens of major apps
+  (TikTok, LinkedIn, Reddit, and others, widely reported at the time) silently reading the clipboard on
+  almost every keystroke, not just on paste; Android/Samsung cross-device clipboard sync has a documented
+  OTP/password leakage path once a second device shares the same clipboard history. Partial research only:
+  three targeted `gh api search/code` passes this round (`"clipboard" "sensitive" filename:SKILL.md`,
+  `"clipboard" "OTP" filename:SKILL.md`, `"clipboard" "password manager" "autoclear" filename:SKILL.md`)
+  found clipboard exposure mentioned only as one checklist bullet inside broad mobile-pentest skills
+  (`Masriyan/Claude-Code-CyberSecurity-Skill` → `17-mobile-security`, `jd-opensource/JoySafeter` →
+  `pentest-mobile-app`, both under MASVS-STORAGE) — not a dedicated audit skill the way `jwt-jti-blocklist-
+  design` or `audit-monetization-iap` killed earlier candidates. That's a promising novelty signal, but this
+  round did not run the full process this pack's bar requires (WebSearch across claudskills/mcpmarket/
+  lobehub/crossaitools/smithery, `obra/superpowers`, `anthropics/skills`, and the awesome-claude-code lists)
+  before concluding it's clear. **Next run: finish that sweep before writing `SKILL.md`; if it survives,
+  check it isn't better framed as a bullet added to `security-sweep` or `secret-spill` than a 44th standalone
+  skill** (this pack's own house style prefers folding a thin, single-bullet-sized finding into an existing
+  skill over a kitchen-sink new one — weigh that here).
+
+Two process/maintenance items found and logged, both real and self-contained enough to finish in one run:
+
+- [ ] **This file (`BACKLOG.md`) has outgrown a single read.** It's now 3888 lines / ~346 KB — confirmed
+  directly this round: `Read` on the whole file errored with "File content (345.3KB) exceeds maximum
+  allowed size (256KB)" and had to be worked around with `head`/`grep`/`tail` instead. Every future daily
+  run pays this tax just to find today's `## Note for the next run` section. Proposed fix: split off the
+  historical narrative into a separate `docs/backlog-archive.md` (or one file per quarter, e.g.
+  `docs/backlog-archive-2026-h2.md`), keeping in `BACKLOG.md` only: the top rules paragraph, any currently
+  unchecked `- [ ]` items, and the single most recent dated section (today's "Note for the next run"
+  equivalent) with a one-line pointer to the archive for full history. Do **not** delete or summarize-away
+  any research reasoning in the move — it's a cut-and-paste split, not a rewrite, so the novelty/drift-audit
+  trail (which earlier rounds have relied on to avoid re-researching dead ends) stays fully intact, just in
+  a second file. Verify after: `tools/validate.py` still passes, and every `grep`-able "REJECTED"/"SHIPPED"
+  claim a future round might search for is still found by searching across both files.
+- [ ] **Drift-audit queue has due dates only in prose, not as checkable items.** `reaccept-guard` (shipped
+  2026-10-26), `throttle-guard` (2026-10-28), `quote-guard` (2026-10-29), and `recall-guard` (2026-11-01)
+  are each meant to get a fact-check pass "once a couple of weeks have passed" — but that's only ever been
+  written as a prose reminder at the bottom of each day's section, never as a trackable item, which is why
+  this file has gone from 2026-07-24 to today with **zero** literal `- [ ]` lines anywhere until this round.
+  None of the four are due yet as of 2026-11-03 (earliest, `reaccept-guard`, turns 2 weeks old 2026-11-09).
+  Add real due-dated checkbox items when each one actually comes due (`reaccept-guard` ~2026-11-09,
+  `throttle-guard` ~2026-11-11, `quote-guard` ~2026-11-12, `recall-guard` ~2026-11-15) instead of carrying
+  the reminder forward as prose again.
+
+Follow-up for the next run: three real unchecked items now exist above for the first time in this file's
+history — pick among them per the normal value-to-size rule (the `BACKLOG.md` split is the most clearly
+finishable in one sitting; `clipboard-guard` needs real research time before it can ship; the drift-audit
+items aren't due yet). No skill shipped this round — this was a research-and-log pass, not an implementation
+one, per the daily-agent process for a fully-checked-off backlog.

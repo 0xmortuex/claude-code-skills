@@ -41,9 +41,10 @@ Two new-skill angles tried, both rejected:
    would have caught it; logging the miss so the next round checks in-pack coverage before spending
    external-search budget.
 
-One promising lead found, **not yet shippable — needs the full novelty sweep before it can ship**:
+One promising lead found, **shipped 2026-11-05 — see that day's section below for the full novelty
+sweep and what was built**:
 
-- [ ] **New-skill candidate: `clipboard-guard`? — sensitive-data clipboard exposure audit.** Does the app
+- [x] **New-skill candidate: `clipboard-guard`? — sensitive-data clipboard exposure audit.** Does the app
   write passwords, OTPs, card numbers, API keys, or session tokens to the OS clipboard (explicit "copy"
   buttons, but also silent background reads/writes some apps do on every keystroke), and does it ever clear
   what it put there or shorten the OS's own clipboard-history retention of it. Real, dated, named incidents
@@ -127,3 +128,64 @@ novelty sweep (WebSearch across claudskills/mcpmarket/lobehub/crossaitools/smith
 `anthropics/skills`, awesome-claude-code) before it can ship or get folded into `security-sweep`/
 `secret-spill`. If both of those are still not actionable next run, do a fresh novelty-research pass
 per the normal fully-checked-off-backlog process rather than inventing busywork.
+
+## Shipped `clipboard-guard` after finishing the novelty sweep (2026-11-05)
+
+Git hygiene first: the clone started with `HEAD` detached at `51823dd` (the actual tip of `main`), while
+the local `main` branch ref and this session's `origin/main` tracking ref were both stale at `7f56de5`
+(5 commits behind). `git fetch origin main` confirmed `origin/main` really is at `51823dd` with nothing
+to lose (`git log main..origin/main` showed those same 5 commits, `origin/main..main` showed nothing);
+fixed with `git checkout main && git merge --ff-only origin/main`. `python tools/validate.py` passed
+(`OK: 43 skills valid and consistent with README.`) before starting.
+
+Picked up the `clipboard-guard` lead logged 2026-11-03/04 and finished the novelty sweep it was waiting
+on before it could ship:
+
+- `gh api search/code` across four targeted queries (`"clipboard" "autoclear" filename:SKILL.md`,
+  `"clipboard-guard"`, `"clipboard history" "leak" filename:SKILL.md`, `"OTP" "clipboard" "retention"
+  filename:SKILL.md`) found only unrelated hits — UI component libraries, a literal `clipboard-guard.sh`
+  hotkey script, generic broad security-audit catch-alls — no dedicated "does the app leak sensitive data
+  via the clipboard" review skill.
+- `gh api search/code repo:anthropics/skills` (both a `clipboard` term search and a full `filename:SKILL.md`
+  listing) confirmed the official pack has no clipboard-related skill at all — its skills are
+  document/office/design-tool focused (pdf, docx, xlsx, pptx, canvas-design, etc.), a different topic area
+  entirely.
+- `gh api search/code org:obra` for `clipboard` across the whole `obra` org (superpowers, superpowers-skills,
+  superpowers-chrome, macMCP, dotfiles, etc.) turned up only unrelated utilities (a clipboard URL helper, a
+  Windows clipboard interop shim, a clipboard-management MCP tool) — no audit-style skill.
+- WebSearch (two queries, "standard" mode) across the community marketplaces (claudskills.com, skills.sh,
+  clawhub.ai, awesomeskills.dev, skillsdirectory.com, claudemarketplaces.com) turned up only third-party
+  *meta*-security scanners that audit whether a Claude *skill itself* is safe to install (data exfil,
+  prompt injection) — a completely different "is this skill malicious" concern, not an "audit my app's
+  clipboard handling" skill. One hit (a `clipmem` clipboard-history skill) is a feature, not an audit.
+- This confirms the 2026-11-03 finding stands: the closest real coverage anywhere is a single MASVS-STORAGE
+  checklist bullet inside broad mobile-pentest skills (`Masriyan/Claude-Code-CyberSecurity-Skill`,
+  `jd-opensource/JoySafeter`) — not a dedicated skill. Per the pack's own house style (fold a thin,
+  bullet-sized finding into an existing skill rather than add a 44th standalone one), weighed whether this
+  belongs in `security-sweep` or `secret-spill` instead: rejected folding it in — `security-sweep`'s
+  sensitive-data-exposure line is a generic one-liner inside a broad diff review and would stay a one-liner
+  there, and `secret-spill` is incident response for a credential *already* leaked into git/CI, a different
+  problem shape (remediation vs. pre-emptive audit of a live write/read path). The four-step
+  enumerate-write/read → check-clear-and-platform-flag → check-read-is-paste-gated → name-the-sync-boundary
+  structure has real depth, matching the bar other narrow `-guard` skills in this pack (`recall-guard`,
+  `push-guard`, `pref-guard`) were held to — so it earns its own skill.
+
+Grounded the skill in three real, dated mechanisms rather than a generic "don't leak secrets" angle: the
+2020 iOS 14 clipboard-access-notification rollout (publicly caught TikTok/LinkedIn/Reddit/others reading
+the pasteboard on nearly every keystroke or foreground event, not just on paste), Android/Samsung
+cross-device clipboard sync and Windows Cloud Clipboard (Win+V history, roams via a Microsoft account)
+both persisting a copied secret to a second device or a visible history list, and the real platform APIs
+that exist specifically to opt out of that (`UIPasteboard.expirationDate`/`localOnly` on iOS,
+`ClipDescription.EXTRA_IS_SENSITIVE` on Android) so the gap is named as fixable, not an unavoidable
+platform limitation.
+
+Added `skills/clipboard-guard/SKILL.md` and `examples/clipboard-guard.md`; wired into `README.md`'s skills
+table, decision table, Examples list, and intro "survived" summary; bumped the 43→44 skill-count mentions
+(prose word and the "copying all forty-three/forty-four" tip). `python tools/validate.py` →
+`OK: 44 skills valid and consistent with README.` Checked the one-directional cross-reference convention
+other recent `-guard` skills follow (`grep -n "recall-guard" skills/*/SKILL.md` shows no other skill
+mentions it back) and matched it — `clipboard-guard`'s own Boundaries section names `security-sweep` and
+`secret-spill`, neither of theirs needs to name it back.
+
+Follow-up for the next run: the drift-audit-due-dates item (logged 2026-11-03) still isn't due — earliest
+is `reaccept-guard` ~2026-11-09. No other unchecked items remain in this file as of this round.

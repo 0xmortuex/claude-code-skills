@@ -189,3 +189,70 @@ mentions it back) and matched it — `clipboard-guard`'s own Boundaries section 
 
 Follow-up for the next run: the drift-audit-due-dates item (logged 2026-11-03) still isn't due — earliest
 is `reaccept-guard` ~2026-11-09. No other unchecked items remain in this file as of this round.
+
+## Shipped `dormancy-guard` after a fresh novelty pass (2026-11-06)
+
+Git hygiene first: the clone started with `HEAD` detached at `8cda287` (the real tip of `main`), while the
+local `main` branch ref was stale at `7f56de5` (6 commits behind, matching `origin/main`). `git fetch origin
+main` confirmed `origin/main` is at `8cda287` with nothing to lose; fixed with `git checkout main && git
+merge --ff-only origin/main`. `python tools/validate.py` passed (`OK: 44 skills valid and consistent with
+README.`) before starting.
+
+The only unchecked item in this file — the drift-audit-due-dates item logged 2026-11-03 — still isn't
+actionable: `grep -c '\[ \]' BACKLOG.md` showed exactly one unchecked line, and its earliest due sub-item
+(`reaccept-guard`, ~2026-11-09) hasn't arrived yet (today is 2026-11-06). Per the daily-agent process for a
+backlog with nothing actionable, ran a fresh research pass for new-skill candidates instead of forcing a
+pick or inventing busywork.
+
+Three candidates researched this round:
+
+1. **Cross-tenant/multi-tenant data-isolation audit (shared-schema SaaS missing a `tenant_id` filter
+   somewhere in the query path).** REJECTED, saturated. `gh api search/code` for `"tenant_id"
+   "cross-tenant"` and `"row-level security" "tenant"` under `filename:SKILL.md` turned up a `saas-multi-
+   tenant` skill copy-pasted across dozens of repos/collections (clearly a popular shared template:
+   `sickn33/agentic-awesome-skills`, `FrancoStino/opencode-skills-collection`, `TheLobbi/claude`,
+   `marwan562/agents-skills`, `boisenoise/skills-collections`, `aibot88/sec_skill_store`, and ~15 more hits
+   in a single search page), plus dedicated ones under different names (`lopadova/AskMyDocs` →
+   `cross-tenant-isolation/SKILL.md`, `OpenAEV-Platform/openaev` → `review-multi-tenancy/SKILL.md`). Not a
+   close call — this mechanic already has multiple named, dedicated skills in wide circulation.
+2. **OAuth/JWT refresh-token rotation race (concurrent refresh requests triggering false-positive reuse-
+   detection and a spurious full-session logout).** REJECTED for now, but on a build/audit distinction
+   rather than clear saturation. Found real coverage (`lauren-framework/lauren-framework` →
+   `jwt-refresh-rotation/SKILL.md`, `bedkillerspacex-boop/codex-skill-library` → `jwt-refresh-token-
+   patterns/SKILL.md`, both fetched and read in full) — but both are *build* skills (how to implement
+   rotation/reuse-detection/family-revocation from scratch), not an *audit* of an existing implementation's
+   concurrent-refresh race specifically. Possibly still a real gap, but didn't find a strong enough grounding
+   (no named, dated incident the way `dormancy-guard` below has three) to justify the research time today;
+   logging the angle rather than dropping it — worth a proper pass if a future round has spare research
+   budget and no better lead.
+3. **Inactivity/dormancy-sweep blind to non-interactive activity (API keys, webhooks, OAuth apps, service
+   accounts) — shipped, see below.** `gh api search/code` for `"dormant account"`, `"inactivity" "last_login"
+   "service account"`, and `"account reaping" OR "license reclamation"` under `filename:SKILL.md` found zero
+   dedicated coverage (only tangential hits: IAM/RBAC review skills that mention dormancy as one bullet, a
+   Microsoft Entra guest/inactive-account audit skill that's platform-specific and read-only, not a general
+   app-level policy audit). Checked in-pack too: `grep` across `skills/*/SKILL.md` for "dormant", "inactiv",
+   "service account", "last_login" found only tangential mentions (`blast-guard`'s audience-query example
+   uses a `last_login` cohort for email sends — a different mechanism; `reaccept-guard` names "webhook/service
+   account" as a surface for ToS re-acceptance gates, not inactivity measurement; `seat-guard` audits seat
+   enforcement being too *loose*, the mirror-opposite of this skill's "reclamation too blind" angle). WebSearch
+   (two queries, "standard" mode) confirmed the problem is real with three concrete, dated anchors: Atlassian
+   community support explicitly confirms Jira Cloud's inactivity-based site suspension counts only interactive
+   login, not API traffic (`SUSPENDED_INACTIVITY` hitting automation accounts that were making calls the whole
+   time); a Broadcom/CloudHealth doc describes a deactivated account losing the API access it needs to keep
+   its own linked assets' status current, so those assets silently go stale; and a July 2025 fintech-vendor
+   (Maxsight) postmortem describes active institutional accounts having users deactivated and API keys removed
+   during routine inactivity-based offboarding, requiring incident response to restore.
+
+Added `skills/dormancy-guard/SKILL.md` and `examples/dormancy-guard.md`; wired into `README.md`'s skills
+table, decision table, Examples list, and intro "survived" summary; bumped the 44→45 skill-count mentions
+(prose word and the "copying all forty-four/forty-five" tip). Had to trim the first description draft from
+1173 to under the 1024-char validator ceiling. `python tools/validate.py` → `OK: 45 skills valid and
+consistent with README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "dormancy-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it — this
+skill's own Boundaries section names `seat-guard`, `reaccept-guard`, and `push-guard`; none of theirs needs
+to name it back.
+
+Follow-up for the next run: the drift-audit-due-dates item (2026-11-03) still isn't due — earliest is
+`reaccept-guard` ~2026-11-09. The refresh-token-rotation-race angle (candidate 2 above) is logged but not
+yet researched enough to ship or reject — worth a real grounding pass (named incidents, not just build-skill
+coverage) before deciding either way.

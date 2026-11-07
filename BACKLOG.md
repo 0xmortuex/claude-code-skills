@@ -256,3 +256,74 @@ Follow-up for the next run: the drift-audit-due-dates item (2026-11-03) still is
 `reaccept-guard` ~2026-11-09. The refresh-token-rotation-race angle (candidate 2 above) is logged but not
 yet researched enough to ship or reject — worth a real grounding pass (named incidents, not just build-skill
 coverage) before deciding either way.
+
+## Shipped `pagination-guard`; closed out the refresh-token-rotation-race lead as covered (2026-11-07)
+
+Git hygiene first: `git fetch origin main` showed local `main` and `origin/main` already identical at
+`e2c8e4c` — nothing to reconcile. `python tools/validate.py` passed (`OK: 45 skills valid and consistent
+with README.`) before starting. The only unchecked item in this file (drift-audit-due-dates, 2026-11-03)
+still isn't due — earliest is `reaccept-guard` ~2026-11-09 — so this round picked up the open research
+thread from 2026-11-06 instead of forcing a pick or inventing busywork.
+
+**Closed candidate 2 from 2026-11-06 (refresh-token concurrent-refresh race / false-positive reuse
+detection) — REJECTED, covered.** Last round found only *build* skills (implement rotation from scratch)
+and flagged it as possibly still a real audit-side gap pending a grounding pass. This round's grounding
+pass found a dedicated, generic *audit* skill that names the exact mechanic: `Lucas-Belucci-Bellini/
+All-Skills-for-the-claude-code` → `auth-refresh-token-replay-boundaries/SKILL.md` (mirrored twice in the
+same repo) — its workflow explicitly tests "parallel refresh races," its verification checklist literally
+reads "Parallel refresh behavior is deterministic and tested," and its positive trigger example is "Two
+browser requests refresh the same session at nearly the same time" — i.e. exactly this candidate, generically
+framed, not tied to one codebase. `vomatt/vomatt-web` → `.claude/skills/verify-refresh-rotation/SKILL.md`
+independently confirms the mechanic is real and worth a dedicated check (a from-scratch TLA+-style model
+checker proving concurrent page loads can't make the backend see a spent token and sign the user out) —
+repo-specific rather than generic, but corroborating evidence the failure mode is a known, named thing people
+build dedicated tooling for, not a novel angle. Between those two plus the two build-skills found last round,
+this mechanic has real, independent, dedicated coverage from more than one direction — closing it rather than
+carrying it forward again.
+
+**New candidate tried and also REJECTED, covered:** idempotency-key audit for payment/order/webhook endpoints
+(key-scoping bugs, TTL-driven double-execution, non-atomic check-then-insert of the idempotency record itself
+racing two concurrent retries). `gh api search/code` for `"idempotency" "double charge" filename:SKILL.md`
+found a dedicated `idempotency-audit` skill duplicated across four agent-tool variants in one repo
+(`1arley/volibear` → `.claude/`, `.codex/`, `.agents/`, `.opencode/skills/idempotency-audit/SKILL.md`) whose
+own text names this round's exact angle: "key verified before effect," request→request→request and
+request→response-lost→retry as the two test shapes, and payments/rewards/creation/webhooks/notifications/
+counters as the areas it's built for — plus independent coverage elsewhere (`j4flmao/agent-skills` →
+`idempotency`, `dykyi-roman/awesome-claude-code` → `check-idempotency`, `sigistry/marketplace` →
+`idempotency-patterns`, `knarayanareddy/Vibecode-like-a-dev` → `idempotency-and-retries`,
+`aws/agent-toolkit-for-aws` → `agents-pay`). Saturated from several independent directions — not a close
+call, rejected without needing a deeper read.
+
+**Shipped `pagination-guard`** after the above two rejections, on a third angle that held up under the same
+sweep: whether a multi-page listing/export/incremental-sync stays correct while the underlying rows are
+inserted/deleted/updated between page fetches, rather than only ever tested against a table that holds
+still. Two distinct bug shapes, both real and separately filed, not a hypothetical: an `ORDER BY` with no
+unique tiebreaker letting tied rows land on either side of a page boundary (Strapi `#18727`, GitLab `#1952`
+and `#37078` — all independently reproduce "item appears on two pages, another never appears," root-caused
+to a non-unique sort key), and offset (`LIMIT`/`OFFSET`) pagination where a delete/insert ahead of the
+current page shifts every later row and skips or re-shows one on the next fetch (`SeaQL/seaography #19`).
+Checked in-pack first: `selectall-guard` audits a bulk *action's* filter re-resolution once it starts
+writing, `export-guard` audits silent row-count caps/timeouts and spreadsheet ID-mangling, `stale-guard`
+audits cache invalidation — none of the three cover whether the underlying read-only pagination itself is
+correct under concurrent mutation, which is a different failure shape from all three. External sweep: `gh
+api search/code` across four queries (`"pagination" "tiebreaker"`, `"cursor pagination" "stable" "unique
+key"`, literal `pagination-guard`, `"deep pagination" audit`, all `filename:SKILL.md`) found many *build*
+skills ("how to design/implement pagination" — api-design, pagination-and-filtering, pagination-performance,
+etc., scattered across dozens of repos) but zero dedicated *audit* skill checking whether an existing
+implementation stays correct once concurrent writes happen during the scan; a literal `pagination-guard`
+name search returned no SKILL.md hits at all. Checked `anthropics/skills` and `org:obra` directly — neither
+has anything pagination-related. WebSearch (two "standard" queries) supplied the four named GitHub issues
+above as the real-incident grounding this pack's bar asks for.
+
+Added `skills/pagination-guard/SKILL.md` and `examples/pagination-guard.md`; wired into `README.md`'s skills
+table, decision table, Examples list, and intro "survived" summary; bumped the 45→46 skill-count mentions
+(prose word and the "copying all forty-five/forty-six" tip). First description draft was 1218 chars, over
+the 1024-char validator ceiling — trimmed twice to fit. `python tools/validate.py` → `OK: 46 skills valid
+and consistent with README.` Checked the one-directional cross-reference convention other recent skills
+follow (`grep -n "pagination-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it
+— this skill's own Boundaries section names `selectall-guard`, `export-guard`, and `stale-guard`; none of
+theirs needs to name it back.
+
+Follow-up for the next run: the drift-audit-due-dates item (2026-11-03) still isn't due — earliest is
+`reaccept-guard` ~2026-11-09, so it should finally be actionable in ~2 days. No other unchecked items or
+open research leads remain in this file as of this round.

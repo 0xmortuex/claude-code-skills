@@ -327,3 +327,73 @@ theirs needs to name it back.
 Follow-up for the next run: the drift-audit-due-dates item (2026-11-03) still isn't due — earliest is
 `reaccept-guard` ~2026-11-09, so it should finally be actionable in ~2 days. No other unchecked items or
 open research leads remain in this file as of this round.
+
+## Shipped `failover-guard` after a fresh novelty pass (2026-11-08)
+
+Git hygiene first: the clone's `HEAD` was detached at `2374d08` (`pagination-guard`, the real tip of
+`main`) while the session's cached `origin/main` tracking ref was stale one commit behind at `e2c8e4c` —
+`git fetch origin main` showed the ref update to `2374d08` with nothing actually unpushed (a prior round's
+commit had already landed on the real remote; the local clone's ref cache was just stale), confirmed with
+`git log origin/main..HEAD` / `..main` both empty after `git checkout -B main 2374d08`. `python
+tools/validate.py` passed (`OK: 46 skills valid and consistent with README.`) before starting. The only
+unchecked item in this file (drift-audit-due-dates, 2026-11-03) still isn't due — today is 2026-11-08,
+earliest is `reaccept-guard` ~2026-11-09 — so this round ran a fresh novelty-research pass instead of
+forcing a pick or inventing busywork, per the daily-agent process for a backlog with nothing actionable.
+
+Delegated the research to a subagent to keep the (large) search output out of the main context; it
+checked three candidates:
+
+1. **Async malware/virus-scan race on uploads** (file served/downloadable/processed while a background
+   scan is still pending, with no fail-open/fail-closed decision and no re-check if the verdict comes back
+   positive after the file was already downloaded). REJECTED, saturated. `gh api search/code` for
+   `"virus scan" "race"`, `"quarantine" "upload" "scan"`, `"malware scan" "upload"`, `"async" "virus"
+   "quarantine"` (all `filename:SKILL.md`) found a dedicated `file-upload-virus-scanning` skill duplicated
+   across many independent repos/collections, plus independently named siblings (`file-upload-virus-scan-
+   hook`, a `file-upload-security` family across half a dozen more repos). Fetched the Salesforce-targeted
+   copy directly — it already names this candidate's exact mechanic (a `Scan_Pending` window, async preview
+   generation exposing infected files before the scan completes, the fail-open/fail-closed timeout decision,
+   scheduled rescanning for new signatures). Not a close call.
+2. **Inbound webhook duplicate-delivery/replay/out-of-order audit**, as a narrower thing than `job-warden`'s
+   existing generic "non-idempotent handler under at-least-once delivery" coverage. REJECTED, saturated —
+   one of the most commonly templated skill topics found this session: `"webhook" "event id" "idempotency"`,
+   `"webhook" "out of order"`, `"webhook" "replay" "timestamp"`, `"webhook signature verification" "retry"`
+   (all `filename:SKILL.md`) each returned 1,300–7,600 hits with dedicated skills on point
+   (`payment-webhook-idempotency`, `webhook-handler-patterns`, `webhook-handling`, `add-webhook-handler`,
+   plus dozens of per-vendor `-webhooks-events` skills for Stripe/Twilio/Adobe/Ramp/etc.).
+3. **`failover-guard` — shipped.** Audits whether an automatic database primary failover can silently lose
+   a write already acknowledged to the caller as durable: async/semi-sync replication lag between the last-
+   acknowledged write and the promoted replica's actual position; a split-brain window where the old primary
+   keeps accepting writes after a new one is promoted elsewhere because fencing never reached the very node a
+   partition isolated, producing two divergent write histories; and no caller-visible signal that either
+   happened — the app just resumes serving the new primary as if nothing was at risk. External sweep
+   (`"split-brain" "promoted" "acknowledged"`, `"failover" "write loss"`, `"synchronous replication"
+   "acknowledged" "lost"`, all `filename:SKILL.md`, plus `repo:anthropics/skills` and `org:obra`, both empty)
+   found only build/ops skills (HA-topology setup, DBRE-persona skills, a DDIA-book chapter skill) — fetched
+   the closest-looking one (`bookforge-ai/bookforge-skills` → `replication-failure-analyzer`) directly via
+   its raw URL and confirmed it's a symptom-driven incident-diagnosis skill spanning three broad failure
+   classes (leader failover, replication lag, quorum edge cases), not a proactive audit of whether an
+   existing app's write-acknowledgment contract specifically survives failover — a real but different framing
+   from this candidate's narrower, code-review-shaped angle. In-pack: only `residency-guard` mentions
+   "failover" at all, and strictly as "does the failover *target* satisfy the geographic/residency boundary"
+   — a compliance question, not this skill's durability question; confirmed via `grep` directly, no overlap.
+   Grounded in GitHub's October 21, 2018 public postmortem (a ~43-second network partition during routine
+   maintenance caused Orchestrator to promote a West Coast MySQL replica while the original East Coast
+   primary, unreachable to the orchestrator but not actually dead, kept committing writes locally for several
+   more seconds before anything stopped it — two divergent datasets reconciled over more than a day) as the
+   canonical named/dated case for exactly this mechanic, rather than generic "replication can lag" advice.
+
+Added `skills/failover-guard/SKILL.md` and `examples/failover-guard.md`; wired into `README.md`'s skills
+table, decision table, Examples list, and intro "survived" summary; bumped the 46→47 skill-count mentions
+(prose word and the "copying all forty-six/forty-seven" tip). First description draft was 1174 chars, over
+the 1024-char validator ceiling — trimmed once to fit. `python tools/validate.py` → `OK: 47 skills valid
+and consistent with README.` Checked the one-directional cross-reference convention other recent skills
+follow (`grep -n "failover-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it —
+this skill's own Boundaries section names `migration-guard`, `skew-check`, and `residency-guard`; none of
+theirs needs to name it back.
+
+Follow-up for the next run: the drift-audit-due-dates item (2026-11-03) is now due — `reaccept-guard`
+turns 2 weeks old 2026-11-09 (tomorrow). Finally run that fact-check pass next: confirm `reaccept-guard`'s
+grounding (ToS/EULA re-acceptance gate coverage of old mobile builds/direct API integrations) still holds,
+or note what's drifted. `throttle-guard` (~2026-11-11), `quote-guard` (~2026-11-12), and `recall-guard`
+(~2026-11-15) come due after that — pick them up as each date arrives rather than carrying this forward as
+prose again.

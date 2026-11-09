@@ -74,15 +74,17 @@ Two process/maintenance items found and logged, both real and self-contained eno
   into `docs/backlog-archive-2026-q3.md` (2026-07-24 to 2026-09-30, 176KB) and
   `docs/backlog-archive-2026-q4.md` (2026-10-01 to 2026-11-02, 178KB) — see that day's section below for
   the full writeup.
-- [ ] **Drift-audit queue has due dates only in prose, not as checkable items.** `reaccept-guard` (shipped
+- [x] **Drift-audit queue has due dates only in prose, not as checkable items.** `reaccept-guard` (shipped
   2026-10-26), `throttle-guard` (2026-10-28), `quote-guard` (2026-10-29), and `recall-guard` (2026-11-01)
   are each meant to get a fact-check pass "once a couple of weeks have passed" — but that's only ever been
   written as a prose reminder at the bottom of each day's section, never as a trackable item, which is why
   this file has gone from 2026-07-24 to today with **zero** literal `- [ ]` lines anywhere until this round.
-  None of the four are due yet as of 2026-11-03 (earliest, `reaccept-guard`, turns 2 weeks old 2026-11-09).
-  Add real due-dated checkbox items when each one actually comes due (`reaccept-guard` ~2026-11-09,
-  `throttle-guard` ~2026-11-11, `quote-guard` ~2026-11-12, `recall-guard` ~2026-11-15) instead of carrying
-  the reminder forward as prose again.
+  **Converted 2026-11-09**: real due-dated checkbox items now exist below for each remaining skill instead
+  of carrying this forward as prose — `reaccept-guard`'s own item is checked off the same day, see that
+  section.
+- [ ] **Drift-audit due: `throttle-guard`** (shipped 2026-10-28) — fact-check its grounding ~2026-11-11.
+- [ ] **Drift-audit due: `quote-guard`** (shipped 2026-10-29) — fact-check its grounding ~2026-11-12.
+- [ ] **Drift-audit due: `recall-guard`** (shipped 2026-11-01) — fact-check its grounding ~2026-11-15.
 
 Follow-up for the next run: three real unchecked items now exist above for the first time in this file's
 history — pick among them per the normal value-to-size rule (the `BACKLOG.md` split is the most clearly
@@ -397,3 +399,51 @@ grounding (ToS/EULA re-acceptance gate coverage of old mobile builds/direct API 
 or note what's drifted. `throttle-guard` (~2026-11-11), `quote-guard` (~2026-11-12), and `recall-guard`
 (~2026-11-15) come due after that — pick them up as each date arrives rather than carrying this forward as
 prose again.
+
+## Drift-audit: `reaccept-guard` fact-check, due-dates item converted to real checkboxes (2026-11-09)
+
+Git hygiene first: clone's `HEAD` was detached at `b76f633` (`failover-guard`, the real tip of `main`)
+while the local `main` branch ref was stale 2 commits behind at `e2c8e4c`. `git fetch origin main`
+confirmed `origin/main` is really at `b76f633` with nothing unpushed; fixed with `git checkout main &&
+git merge --ff-only origin/main`. `python tools/validate.py` passed (`OK: 47 skills valid and consistent
+with README.`) before starting, with no skill files touched by the sync.
+
+`reaccept-guard` turned 2 weeks old today, making it the first item in the drift-audit queue logged
+2026-11-03 to actually come due. Ran the fact-check pass rather than shipping a new skill this round —
+no other item was more clearly finishable, and this file's own prior rounds kept deferring this exact
+check.
+
+**Fact-check result: grounding still holds, nothing drifted.**
+
+- `reaccept-guard`'s shipped grounding (archived 2026-10-26 entry) rests on two legs: (1) Google's Zero
+  Touch Enrollment customer API returning a 403 with a `TosError`/`latestTosAccepted: false` body for
+  stale-ToS API requests, as a real, named example of *server-side, per-request* policy-version
+  enforcement independent of any client UI. Re-fetched the live reference page
+  (`developers.google.com/zero-touch/reference/customer/rest/v1/TosError`) via WebSearch today — it still
+  describes exactly this: a 403 keyed off `latestTosAccepted: false`, fixable only by accepting the terms
+  in the zero-touch portal, not by retrying the API call. Unchanged. (2) The claim in the skill body that
+  "app-store review lag (minimum days, sometimes weeks)" leaves a real population on pre-bump mobile
+  builds. A 2026-dated WebSearch on current App Store / Play Store review timelines found the claim, if
+  anything, understated for iOS right now: Apple's own stated target is 90% of submissions in under 24–48
+  hours, but multiple 2026 sources (gigage per mjtsai.com's March 2026 "Mac App Store Review Times
+  Increasing" post, and vendor write-ups through mid-2026) describe routine updates stretching to 7–14
+  days and new-app review up to 30+ days during slow periods; Google Play updates clear faster (hours),
+  but a new developer account or closed-testing requirement still adds real days. Net: the skill's
+  "minimum days, sometimes weeks" framing for stale-build persistence is still accurate, not drifted.
+- No change needed to `skills/reaccept-guard/SKILL.md` — the audit confirms the existing text rather than
+  surfacing anything to fix. Documenting that explicitly here (rather than silently doing nothing) is the
+  point of having a drift-audit queue at all: a "still holds" verdict is itself the useful output of this
+  check, distinct from never having checked.
+
+**Converted the due-dates-only-in-prose item into real per-skill checkboxes**, per the standing follow-up
+this file has carried since 2026-11-03: checked off that meta-item above, and added three new unchecked
+`- [ ]` items — `throttle-guard` (~2026-11-11), `quote-guard` (~2026-11-12), `recall-guard`
+(~2026-11-15) — so each future drift-audit is a trackable line instead of a prose reminder someone has to
+remember to re-derive from dates buried in old sections.
+
+`python tools/validate.py` → `OK: 47 skills valid and consistent with README.` (unchanged — this round
+touched no skill files, only `BACKLOG.md`).
+
+Follow-up for the next run: `throttle-guard`'s drift-audit comes due ~2026-11-11 (in ~2 days) — probably
+still too soon; if so, run a fresh novelty-research pass instead of forcing either a drift-audit or a new
+skill before its date arrives.

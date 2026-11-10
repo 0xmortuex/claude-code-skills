@@ -82,7 +82,8 @@ Two process/maintenance items found and logged, both real and self-contained eno
   **Converted 2026-11-09**: real due-dated checkbox items now exist below for each remaining skill instead
   of carrying this forward as prose — `reaccept-guard`'s own item is checked off the same day, see that
   section.
-- [ ] **Drift-audit due: `throttle-guard`** (shipped 2026-10-28) — fact-check its grounding ~2026-11-11.
+- [x] **Drift-audit due: `throttle-guard`** (shipped 2026-10-28) — fact-check its grounding ~2026-11-11.
+  Done one day early, 2026-11-10 — see that day's section below.
 - [ ] **Drift-audit due: `quote-guard`** (shipped 2026-10-29) — fact-check its grounding ~2026-11-12.
 - [ ] **Drift-audit due: `recall-guard`** (shipped 2026-11-01) — fact-check its grounding ~2026-11-15.
 
@@ -447,3 +448,74 @@ touched no skill files, only `BACKLOG.md`).
 Follow-up for the next run: `throttle-guard`'s drift-audit comes due ~2026-11-11 (in ~2 days) — probably
 still too soon; if so, run a fresh novelty-research pass instead of forcing either a drift-audit or a new
 skill before its date arrives.
+
+## Fresh novelty pass (6 candidates, all rejected) + `throttle-guard` drift-audit done a day early (2026-11-10)
+
+Git hygiene first: clone's `HEAD` was detached at `9d81626` (the real tip of `main`, already carrying
+`pagination-guard`, `failover-guard`, and the `reaccept-guard` drift-audit) while the local `main` branch
+ref was stale 3 commits behind at `e2c8e4c`. `git fetch origin main` confirmed `origin/main` really is at
+`9d81626` with nothing unpushed (`git log origin/main..HEAD` empty); fixed with `git checkout main && git
+merge --ff-only origin/main`. `python tools/validate.py` passed (`OK: 47 skills valid and consistent with
+README.`) before this round, with no skill files touched by the sync.
+
+`throttle-guard`'s drift-audit comes due ~2026-11-11 — one day from today — which the prior round flagged
+as "probably still too soon." Ran a fresh novelty-research pass first (delegated to a subagent to keep
+the search output out of context), per that same note's fallback instruction. Six candidates were tried
+and **all six rejected as saturated**, none clearing this pack's novelty bar:
+
+1. **CSV/formula-injection in exports** — already named in-pack: `skills/security-sweep/SKILL.md:27`
+   covers it directly (CVE-2026-45263, leading-quote-prefix fix). Not a gap at all.
+2. **Idle-transaction-holding-a-lock-across-a-network-call / long-held-transaction lock contention** —
+   saturated by dedicated ops/tuning skills (`isdaniel/pgtuner_mcp` → `pg-lock-diagnosis`,
+   `pg-connection-analysis`; `SkillMedev/skills` → `connection-pool-tuner`; `jeremylongshore/
+   tons-of-skills-marketplace` → `monitoring-database-transactions`; `jiayaoqijia/cryptoskill` →
+   `set-query-and-lock-timeouts`).
+3. **Outbox pattern / dual-write atomicity (DB commit + event publish)** — saturated by name
+   (`anurag-azure/skills` → `outbox-pattern`, `curiositech/windags-skills` →
+   `outbox-pattern-implementation`, plus a dozen+ broader event-driven-architecture skills).
+4. **Observability-pipeline PII/secret scrubbing (Sentry et al. not redacting sensitive fields)** —
+   saturated, including by the official vendor: `getsentry/sentry-for-ai` →
+   `skills-legacy/sentry-elixir-sdk`; also `aibot88/sec_skill_store` → dedicated `sentry-data-handling`,
+   `sentry-security-basics`, `sentry-policy-guardrails`.
+5. **Stale authenticated page via bfcache after logout on a shared device** — saturated from the
+   security side: `RedHatProductSecurity/prodsec-skills` → `session-management-cookies` and a direct
+   OWASP-WSTG-mapped `cookie-attacks` (`wstg-athn-06`) skill. bfcache itself is otherwise only a
+   *performance* topic elsewhere, but the security angle this candidate needed is already named there.
+6. **Mobile screenshot/task-switcher leakage via missing `FLAG_SECURE`** — saturated: named explicitly
+   across multiple *dedicated* mobile-security skills (`0x0pointer/skills` → `android-security`/
+   `ios-security`; `GoldenWing-360/claude-security-skills` → `android-security`; `Amey-Thakur/AI-SKILLS`
+   → `mobile-app-security`; `CyberStrikeus/CyberStrike` → MITRE ATT&CK `T1513_screen-capture`) — unlike
+   `clipboard-guard`'s thin-checklist-bullet gap, this one has real dedicated coverage, not just a
+   one-liner in a broad catalog.
+
+With nothing shippable from that sweep, ran the `throttle-guard` drift-audit a day early instead of
+leaving the round empty — low-risk, genuinely useful, and nothing in the backlog rules requires waiting
+for the exact date rather than treating it as an earliest-due marker.
+
+**Drift-audit result: grounding still holds, nothing drifted.**
+
+`throttle-guard`'s novelty claim (shipped 2026-10-28) was never a single named incident — it rests on
+"build-side guidance for in-memory/per-instance rate limiting is everywhere, but no dedicated *audit*
+skill reviews existing code for the drift" (per-instance counter under scale-out, non-atomic
+check-then-increment on a shared store, a second path that bypasses the shared counter entirely). Re-ran
+four fresh `gh api search/code` queries today (`"rate limit" "per instance" "audit" filename:SKILL.md`,
+`"distributed rate limit" "check-then-increment" filename:SKILL.md`, `"rate limit" "fleet-wide"
+filename:SKILL.md`, plus a literal `"throttle-guard"` name check) — all hits are either unrelated (other
+projects' own `throttle-guard` scripts/configs with no relation to rate-limit auditing) or, like the
+original sweep found, pure *design/implementation* skills: fetched `LineLuLan/line-harness` →
+`codex/skills/api-rate-design/SKILL.md` directly to confirm, and its frontmatter is explicit —
+`category: backend`, outputs `"Rate limiting algorithm implementations"`, triggers `"rate limit design"`/
+`"token bucket"` — a build skill, not an audit skill. No dedicated audit skill for this mechanic has
+appeared since 2026-10-28; the gap this skill fills is still real. The underlying technical claims
+(`INCR`/`EXPIRE` atomicity, Kubernetes `replicas > 1` meaning independent processes, most client
+rate-limit libraries failing open by default) are stable platform/library facts, not the kind of thing
+that drifts month to month, and nothing found today contradicts them. No change needed to
+`skills/throttle-guard/SKILL.md`.
+
+`python tools/validate.py` → `OK: 47 skills valid and consistent with README.` (unchanged — this round
+touched no skill files, only `BACKLOG.md`).
+
+Follow-up for the next run: `quote-guard`'s drift-audit comes due ~2026-11-12 (in ~2 days) — probably
+still too soon; `recall-guard`'s comes due ~2026-11-15. If neither is actionable yet, run a fresh
+novelty-research pass rather than forcing a pick or inventing busywork — six rejected angles already
+logged above so the next round doesn't re-spend search budget on them.

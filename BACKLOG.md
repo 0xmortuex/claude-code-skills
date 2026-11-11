@@ -84,7 +84,8 @@ Two process/maintenance items found and logged, both real and self-contained eno
   section.
 - [x] **Drift-audit due: `throttle-guard`** (shipped 2026-10-28) — fact-check its grounding ~2026-11-11.
   Done one day early, 2026-11-10 — see that day's section below.
-- [ ] **Drift-audit due: `quote-guard`** (shipped 2026-10-29) — fact-check its grounding ~2026-11-12.
+- [x] **Drift-audit due: `quote-guard`** (shipped 2026-10-29) — fact-check its grounding ~2026-11-12.
+  Done one day early, 2026-11-11 — see that day's section below.
 - [ ] **Drift-audit due: `recall-guard`** (shipped 2026-11-01) — fact-check its grounding ~2026-11-15.
 
 Follow-up for the next run: three real unchecked items now exist above for the first time in this file's
@@ -519,3 +520,52 @@ Follow-up for the next run: `quote-guard`'s drift-audit comes due ~2026-11-12 (i
 still too soon; `recall-guard`'s comes due ~2026-11-15. If neither is actionable yet, run a fresh
 novelty-research pass rather than forcing a pick or inventing busywork — six rejected angles already
 logged above so the next round doesn't re-spend search budget on them.
+
+## Drift-audit: `quote-guard` fact-check, done a day early (2026-11-11)
+
+Git hygiene first: clone's `HEAD` was detached at `84bb57b` (the real tip of `main`, already carrying
+`pagination-guard`, `failover-guard`, the `reaccept-guard` drift-audit, and the `throttle-guard`
+drift-audit) while the local `main` branch ref was stale 4 commits behind at `e2c8e4c`. `git fetch
+origin main` confirmed `origin/main` really is at `84bb57b` with nothing unpushed; fixed with `git
+checkout main && git merge --ff-only origin/main`. `python tools/validate.py` passed (`OK: 47 skills
+valid and consistent with README.`) before this round, with no skill files touched by the sync.
+
+`quote-guard`'s drift-audit comes due ~2026-11-12 — one day from today. Same situation the prior round
+was in with `throttle-guard` (also one day early), and that round's own note didn't rule out doing it
+early again, so ran the fact-check now rather than re-running a full novelty-research sweep the day
+after six candidates were already rejected — re-spending that search budget today was unlikely to turn
+up a seventh.
+
+**Fact-check result: grounding still holds, with one real nuance worth noting but not acting on.**
+
+- `quote-guard`'s shipped grounding (archived 2026-10-29 entry) rests on two legs: (1) *Kahn v. Walmart,
+  Inc.*, 7th Cir. No. 23-1751 — re-checked via WebSearch today against Justia's opinion summary and
+  Bloomberg Law's coverage. Confirmed as decided July 3, 2024 (Chief Judge Sykes, Circuit Judges
+  Hamilton and Lee), reversing the district court's dismissal, with the panel explicitly rejecting the
+  theory that a receipt showing the price actually charged dispels the deception caused by a different
+  price shown earlier ("consumers should not be required to audit their purchases to ensure they
+  received the advertised prices"). Matches the skill's citation and claim exactly — unchanged, still
+  good law as of today (no indication of further appeal or vacatur in any result). (2) Stripe's
+  `PaymentIntents` capture API rejecting an `amount_to_capture` greater than the originally authorized
+  amount — re-checked via WebSearch today against Stripe's own capture and overcapture docs. Confirmed
+  as still the *default* behavior: capturing without an amount takes the full authorized amount, and
+  `amount_to_capture` can go lower but not higher, under ordinary capture.
+- **Nuance found, not a contradiction:** Stripe now has a separate opt-in "overcapture" feature for
+  certain eligible card payments, which raises the ceiling to a `maximum_amount_capturable` field above
+  the original authorization (via an issuer-granted allowance), and a distinct "incremental
+  authorization" mechanism that explicitly raises the authorized amount itself before capture. Neither
+  changes the skill's core claim for the *default*, unmodified capture path the skill is auditing
+  against — a merchant has to deliberately opt into overcapture or request an incremental authorization;
+  code that hasn't done either still gets a hard API rejection on an over-authorization capture attempt,
+  exactly as the skill says. Also confirmed overcapture explicitly does not apply to partially-authorized
+  transactions, so it doesn't create a silent-overcharge path there either. No change made to
+  `skills/quote-guard/SKILL.md` — the audit confirms the existing text rather than surfacing a drift to
+  fix; noting the nuance here is the point of a drift-audit queue (so the next person checking doesn't
+  have to re-derive it), not grounds to edit a skill whose central claim is unaffected.
+
+`python tools/validate.py` → `OK: 47 skills valid and consistent with README.` (unchanged — this round
+touched no skill files, only `BACKLOG.md`).
+
+Follow-up for the next run: `recall-guard`'s drift-audit comes due ~2026-11-15 (in ~4 days) — still too
+soon. If nothing else is actionable, run a fresh novelty-research pass rather than forcing a pick or
+inventing busywork; the six candidates rejected 2026-11-10 don't need re-checking again so soon.

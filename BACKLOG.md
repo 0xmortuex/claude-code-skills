@@ -12,6 +12,69 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `digest-guard` after a fresh novelty pass (2026-11-12)
+
+Git hygiene first: clone's `HEAD` was detached at `63ead0d` (the real tip of `main`, already
+carrying the `quote-guard` drift-audit) while the local `main` branch ref was stale 5 commits
+behind at `e2c8e4c`. `git fetch origin main` confirmed `origin/main` really is at `63ead0d` with
+nothing unpushed; fixed with `git checkout main && git merge --ff-only origin/main`.
+`python tools/validate.py` passed (`OK: 47 skills valid and consistent with README.`) before this
+round, with no skill files touched by the sync.
+
+The only unchecked item in this file — `recall-guard`'s drift-audit, due ~2026-11-15 — is still
+3 days out, same "too soon" situation the last several rounds hit with `throttle-guard`/
+`quote-guard`. Per the standing follow-up, ran a fresh novelty-research pass instead (delegated to
+a subagent to keep the search output out of context).
+
+Tried the most promising-looking lead first: **admin "login as user" / support impersonation
+session audit** (does impersonation write a distinct audit entry, time-bound the session, restrict
+what it can do, and surface it to the real user). **REJECTED — already closed, twice.** This exact
+candidate is in `docs/backlog-archive-2026-q4.md` under two separate rounds: `AS-FOSS/aegis-skills`
+→ `skills/code/authz-access-control/SKILL.md` has a dedicated "Delegation & Impersonation" section
+naming scope-limits/time-boxing, an immutable actor+target+reason audit log, termination on
+password change, and no-identity-dropping token minting — nearly verbatim this lead. Also
+`0disoft/mustflow` → `session-management-review/SKILL.md`, `bedkillerspacex-boop/codex-skill-library`
+→ `account-takeover-methodology/SKILL.md`, `claudskills.com` → `auth-isolation`, and
+`trannhatbuilder/evvo-vapt-ai` → `shield_engine/skills/support-override-and-backoffice-admin-abuse/
+SKILL.md` (a dedicated "Impersonation (Login-As) Trap" hunt step). No new sub-mechanic found to
+justify a third look.
+
+**Backup candidate cleared the bar: scheduled report / dashboard subscription stale-permission
+audit.** The mechanic: does a scheduled/recurring report, dashboard subscription, or saved-query
+digest re-check the recipient's and owner's *current* access before every send, instead of
+permanently serving data under the permission snapshot taken when the schedule was created.
+`gh api search/code` across four targeted queries ("scheduled report"+permission, "dashboard
+subscription", "row-level security"+scheduled, "stale permission"+scheduled) found no dedicated
+hit — only noise (Salesforce report-building skills) and two near-misses checked directly and
+ruled out: `claudskills.com/skills/reports-and-dashboards` (generic Salesforce report build/audit,
+not this mechanic) and `clawhub.ai`'s "scheduled-reports" family (agent-automation-safety audits —
+approve sources/schedule/destination, cron persistence, API-key storage — a different concern).
+
+Grounded in two real, verified mechanisms (re-verified independently via WebSearch, not just taken
+from the research subagent's report): **Metabase CVE-2023-23629** — a sandboxed/restricted user
+could add themselves as a recipient of another user's existing dashboard subscription and receive
+the creator's unfiltered data by email (fixed in 0.43.7.1/0.44.6.1/0.45.2.1 and the 1.x
+equivalents, advisory GHSA-ch8f-hhq9-7gv5); the related **CVE-2023-23628** let a sandboxed user see
+the recipient list of someone else's subscription (GHSA-492f-qxr3-9rrv). And **Splunk's own
+documentation** (`docs.splunk.com`, Report/Managereportpermissions): scheduled reports and alerts
+only ever run as the owner, and changing an existing schedule's permissions applies only to
+*future* runs — jobs already queued keep running on the old grant until someone manually
+intervenes through the job manager. Checked this doesn't overlap any in-pack skill: `trail-guard`
+audits whether mutations get logged at all (not schedule output correctness), `pref-guard` audits
+notification opt-outs (not content access), `export-guard` audits one-off export completeness (not
+a recurring schedule's access over its running lifetime), and `seat-guard`/`residency-guard` are
+unrelated axes (license counts, data location).
+
+Added `skills/digest-guard/SKILL.md` and `examples/digest-guard.md`; wired into `README.md`'s
+skills table, decision table, intro "survived" sentence, and Examples list, and `examples/
+README.md`; bumped the 47→48 skill-count mentions (prose word and the "copying all forty-
+seven/forty-eight" tip). `python tools/validate.py` → `OK: 48 skills valid and consistent with
+README.`
+
+Follow-up for the next run: `recall-guard`'s drift-audit is now due in ~3 days (~2026-11-15) — if
+still too soon, the admin-impersonation rejection above doesn't need re-checking again, but a fresh
+novelty pass on new territory is fine.
+
 ## Research pass (2026-11-03): backlog fully checked off, no shippable item today — 3 new items added
 
 Git hygiene check first: clone started with `main` detached 3 commits (`6740cce`, `a04950d`, `746e724`)

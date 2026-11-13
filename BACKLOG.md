@@ -12,6 +12,81 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `email-guard` after a fresh novelty pass (2026-11-13)
+
+Git hygiene first: `git fetch origin main` showed local `main` and `origin/main` already identical at
+`cb51363` — nothing to reconcile. `python tools/validate.py` passed (`OK: 48 skills valid and consistent
+with README.`) before this round.
+
+The only unchecked item in this file — `recall-guard`'s drift-audit — comes due ~2026-11-15, two days out.
+Every prior drift-audit in this queue was run at most one day early (`throttle-guard`, `quote-guard`); two
+days is a longer lead than that precedent, so left it for a future round and ran a fresh novelty-research
+pass instead (delegated to a subagent to keep the search output out of context).
+
+Six candidates were tried this round, four rejected as saturated and re-verified independently rather than
+taken on the subagent's word alone:
+
+- **Presigned/signed-URL revocation lifecycle** — REJECTED. `fozagtx/BuildOS-workflow` →
+  `skills/presigned-urls-security/SKILL.md` already covers this almost verbatim (scope, TTL, "individual
+  URLs cannot be revoked," blast-radius via key rotation).
+- **Inventory oversell / stock-reservation race** — REJECTED. `ggrace519/claude-code-dev-studio` →
+  `skills/ecom-inventory/SKILL.md` covers atomic decrement vs. read-then-write, reservation TTLs, and the
+  exact "tests never run two concurrent checkouts against the last unit" pitfall. Also
+  `finsilabs/awesome-ecommerce-skills` → `.../inventory-tracking/SKILL.md`.
+- **CCPA/GPC "Do Not Sell" opt-out signal handling** — REJECTED, saturated by several dedicated
+  `global-privacy-control`/`cpra-opt-out-signals` skills (`mukul975/Privacy-Data-Protection-Skills`,
+  `ThomasMoreAI/legal-skills-open`, `aibot88/sec_skill_store`, `bhubbard/skills`).
+- **Search-index ACL lag / tenant leak via stale indexing** — REJECTED. `0disoft/mustflow` →
+  `search-index-integrity-review/SKILL.md` explicitly lists tenant leak, stale delete, and visibility-lag
+  as symptoms it already audits.
+- **Zip Slip (archive path traversal) and ReDoS** — REJECTED, both heavily saturated with dedicated skills
+  across many repos.
+- **Subdomain takeover / dangling DNS** — REJECTED, saturated with dozens of dedicated offensive-recon
+  skills.
+
+A seventh angle (WebSocket/SSE heartbeat interval shorter than an intermediary's idle timeout, producing a
+silent "zombie" connection neither side detects as closed) came back flagged novel-but-adjacent rather than
+a clean reject: real and grounded (AWS ALB's default 60s idle timeout silently dropping WS connections with
+no FIN/RST; websocket.org's heartbeat guide naming ping/pong deadlines as the only reliable detection), but
+this pack already has three WS/SSE-adjacent skills (`resync-guard`, `storm-guard`, `backpressure-guard`),
+and `backpressure-guard` already name-checks a heartbeat that detects a dead-but-still-open socket as a
+mitigation it looks for. Logging it rather than shipping a fourth skill in that cluster today — worth a
+closer look only if a future round confirms it's a genuinely distinct check, not scope-splitting.
+
+**Shipped `email-guard`**, the one candidate that cleared the bar outright: whether a self-service "change
+my email" account-settings flow can be used by a hijacked session (stolen cookie, XSS, unattended device)
+to make the hijack permanent — no re-authentication required beyond an existing session, no notification
+to the *old* address when the change happens, and the new address going live before it confirms it's
+reachable by anyone but whoever typed it. `gh api search/code` (`"email change" "old email" "notified"
+"account takeover" filename:SKILL.md"`, `"email change verification race hijack" filename:SKILL.md`) found
+only generic OSINT/bug-bounty catch-alls, no dedicated skill; nothing in `anthropics/skills` or `org:obra`;
+nothing in-pack (`grep -i "email.change" skills/*/SKILL.md` hits only `sunset-guard`'s unrelated "email
+blast" mention). Not on this pack's rejected list (checked against the admin-impersonation and
+reaccept-guard/rotation-guard angles directly — different actor, different object, no overlap).
+
+Grounded independently (re-verified via WebSearch today, not just taken from the research subagent's
+report) in two real, dated, vendor-confirmed cases: **CVE-2018-19580** (GitLab ≤11.3.11/11.4.8/11.5.1,
+tracked as `gitlab-org/gitlab-ce#39809`) — changing a user's email sent no notification to the *old*
+address, fixed in 11.5.1 and the matching 11.4.x/11.3.x point releases; and **GHSA-x39m-3393-3qp4**
+(Flowise) — an unverified new email address became the account's live login/recovery address outright, an
+unverified change *being* the takeover. The OWASP Authentication Cheat Sheet's standard fix (require
+current password/MFA before the change, notify both old and new addresses, hold the change until the new
+one confirms) is the structure the skill's three steps follow.
+
+Added `skills/email-guard/SKILL.md` and `examples/email-guard.md`; wired into `README.md`'s skills table,
+decision table, Examples list, and intro "survived" sentence, and `examples/README.md`; bumped the 48→49
+skill-count mentions (prose word and the "copying all forty-eight/forty-nine" tip). `python
+tools/validate.py` → `OK: 49 skills valid and consistent with README.` Checked the one-directional
+cross-reference convention other recent skills follow (`grep -n "email-guard" skills/*/SKILL.md` outside
+its own file returns nothing) and matched it — this skill's own Boundaries section names `reaccept-guard`,
+`rotation-guard`, and `push-guard`; none of theirs needs to name it back.
+
+Follow-up for the next run: `recall-guard`'s drift-audit is now due in ~2 days (~2026-11-15) — per the
+one-day-early precedent this should land next round or the one after. The WS/SSE heartbeat-vs-idle-timeout
+angle (flagged novel-but-adjacent above) is logged but not resolved either way — worth a dedicated pass to
+decide if it's genuinely distinct from `backpressure-guard`'s existing heartbeat mention before it ships or
+gets rejected as scope-splitting.
+
 ## Shipped `digest-guard` after a fresh novelty pass (2026-11-12)
 
 Git hygiene first: clone's `HEAD` was detached at `63ead0d` (the real tip of `main`, already

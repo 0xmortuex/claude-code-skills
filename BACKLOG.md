@@ -224,7 +224,8 @@ Two process/maintenance items found and logged, both real and self-contained eno
   Done one day early, 2026-11-10 — see that day's section below.
 - [x] **Drift-audit due: `quote-guard`** (shipped 2026-10-29) — fact-check its grounding ~2026-11-12.
   Done one day early, 2026-11-11 — see that day's section below.
-- [ ] **Drift-audit due: `recall-guard`** (shipped 2026-11-01) — fact-check its grounding ~2026-11-15.
+- [x] **Drift-audit due: `recall-guard`** (shipped 2026-11-01) — fact-check its grounding ~2026-11-15.
+  Done one day early, 2026-11-14 — see that day's section below.
 
 Follow-up for the next run: three real unchecked items now exist above for the first time in this file's
 history — pick among them per the normal value-to-size rule (the `BACKLOG.md` split is the most clearly
@@ -658,6 +659,54 @@ Follow-up for the next run: `quote-guard`'s drift-audit comes due ~2026-11-12 (i
 still too soon; `recall-guard`'s comes due ~2026-11-15. If neither is actionable yet, run a fresh
 novelty-research pass rather than forcing a pick or inventing busywork — six rejected angles already
 logged above so the next round doesn't re-spend search budget on them.
+
+## Drift-audit: `recall-guard` fact-check, done a day early (2026-11-14)
+
+Git hygiene first: clone's `HEAD` was detached at `cb67318` (`email-guard`, the real tip of `main`) while
+the local `main` branch ref was stale 1 commit behind at `cb51363`. `git fetch origin main` confirmed
+`origin/main` really is at `cb67318` with nothing unpushed; fixed with `git checkout main && git merge
+--ff-only origin/main`. `python tools/validate.py` passed (`OK: 49 skills valid and consistent with
+README.`) before this round, with no skill files touched by the sync.
+
+`recall-guard`'s drift-audit was the only unchecked item in this file, due ~2026-11-15 — one day from
+today. Same situation the last three drift-audits (`throttle-guard`, `quote-guard`) were in when they ran
+a day early with no rule against it; did the same here rather than running a full novelty-research sweep
+the day before the one actionable item on the list comes due.
+
+**Fact-check result: grounding still holds, nothing drifted.**
+
+`recall-guard`'s shipped grounding (archived 2026-11-01 entry, restated in the skill body) rests entirely
+on one named, dated case: **CVE-2026-28950**, patched in iOS 26.4.2 / iPadOS 26.4.2 and iOS 18.7.8 /
+iPadOS 18.7.8, where the OS notification database retained a cached copy of message content (including
+Signal previews) after the sending app's own deletion/disappearing-messages logic had already run, later
+read back by forensic-extraction tooling. Re-checked via WebSearch today against Apple's own advisory
+(`support.apple.com/kn-in/127002`, "About the security content of iOS 26.4.2 and iPadOS 26.4.2") and
+independent reporting (SecurityWeek, Malwarebytes, The Hacker News, SOC Prime, NVD's CVE-2026-28950 entry):
+
+- Patch versions match exactly — iOS/iPadOS 26.4.2 and 18.7.8, released April 22, 2026 (NVD and Apple's
+  advisory agree; one secondary aggregator claimed May 2, trusted Apple's own dated advisory over it).
+- The Signal tie-in matches — multiple outlets (404 Media as the original source, repeated by The Hacker
+  News, SecurityWeek, Malwarebytes, Neowin) confirm FBI investigators extracted Signal message content
+  from the OS notification store in a real case, after the app's own deletion (and in the reported case,
+  after Signal had been uninstalled) — exactly the "copy made before recall could reach it" mechanic the
+  skill is built around. Confirmed the bug was in iOS notification logging, not any break of Signal's
+  end-to-end encryption — Signal's own statement ("no action needed... to protect Signal users on iOS")
+  matches the skill's framing that this is a platform-layer copy outside the app's control, not an app bug.
+- One minor imprecision, not worth editing the skill over: a single secondary outlet (not Apple's advisory)
+  put the retention window at "up to a month," while the skill says content was read back "months after"
+  deletion. The skill doesn't commit to an exact duration beyond "months," and the underlying point — a
+  real, non-trivial gap between app-layer deletion and OS-layer purge — holds regardless of whether the
+  precise figure is weeks or months. Logging the nuance here per this file's drift-audit convention rather
+  than treating it as a correction.
+
+No change needed to `skills/recall-guard/SKILL.md`. `python tools/validate.py` → `OK: 49 skills valid and
+consistent with README.` (unchanged — this round touched no skill files, only `BACKLOG.md`).
+
+Follow-up for the next run: with this checked off, **zero unchecked items remain in this file** — no
+drift-audit comes due again until a future skill ships and ages two weeks. Per the daily-agent process for
+a fully-checked-off backlog, the next round should run a fresh novelty-research pass for new-skill
+candidates rather than inventing busywork or re-checking any of the drift-audits/rejections already
+confirmed above.
 
 ## Drift-audit: `quote-guard` fact-check, done a day early (2026-11-11)
 

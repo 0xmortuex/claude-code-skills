@@ -12,6 +12,106 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Research pass (2026-11-15): backlog fully checked off, no shippable item today — 3 new items added
+
+Git hygiene first: clone started with `HEAD` detached at `4255f1a` (the real tip of `main`, the
+`recall-guard` drift-audit commit) while the local `main` branch ref was stale 2 commits behind at
+`cb51363`. `git fetch origin main` confirmed `origin/main` really is at `4255f1a` with nothing
+unpushed; fixed with `git checkout main && git merge --ff-only origin/main` (fast-forward, no
+conflict). `python tools/validate.py` passed (`OK: 49 skills valid and consistent with README.`)
+before this round. Confirmed zero unchecked items anywhere in this file (`grep -n '^- \[ \]'
+BACKLOG.md` → no matches), and the next drift-audit (per yesterday's note) doesn't come due until a
+future skill ages two weeks — so per the daily-agent process for a fully-checked-off backlog, this
+round researches and logs new candidates (delegated to a subagent to keep the search output out of
+context) rather than forcing a pick or inventing busywork.
+
+Three candidates cleared the bar this round — real, dated, independently-grounded, and confirmed
+not already covered in-pack or by a prominent external skill (`gh api search/code` plus WebSearch
+for each, re-verified rather than taken on the subagent's word alone):
+
+- [ ] **New-skill candidate: `recycle-guard`? — recycled phone number still trusted for SMS 2FA /
+  account recovery.** An app binds SMS-based 2FA or account-recovery to a phone number at signup
+  and never re-verifies ownership later. Carriers recycle dormant numbers to new subscribers, who
+  can then receive the previous owner's OTP/recovery codes and take over the account — especially
+  potent when the previous owner's password is already in a breach dump, since the attacker only
+  needs the number back. Grounded in Lee & Narayanan (Princeton), *"Security and Privacy Risks of
+  Number Recycling at Mobile Carriers,"* IEEE eCrime 2021: 259 sampled recycled numbers from
+  T-Mobile/Verizon, 83% tied to an existing Amazon/AOL/Facebook/Google/PayPal/Yahoo account, 100
+  tied to leaked credentials elsewhere, and carrier reverse-lookup UIs with no query limits making
+  targeting trivial (primary source `recyclednumbers.cs.princeton.edu`; corroborated by The Hacker
+  News's 2021 coverage). Novelty check: `gh api search/code` (`"recycled phone number"`, `"phone
+  number recycling"`, `"SMS 2FA" "reassigned"`, `"phone number" "reassigned" "2FA"`
+  filename:SKILL.md) found zero on-point hits — only unrelated identity-graph and generic Twilio
+  skills. No in-pack overlap: `dormancy-guard`, `email-guard`, and `push-guard` each audit a
+  different artifact (inactivity sweeps, email-change flows, device tokens), none touch phone-number
+  ownership drift.
+- [ ] **New-skill candidate: `revoke-guard`? — real-time collaboration permission revocation doesn't
+  close the live WebSocket session.** An app correctly revokes a user's document/resource access at
+  the HTTP/REST layer, but an already-open WebSocket/Socket.IO collaboration session (or a role
+  cached inside that session's connection pool) keeps delivering live edits/data, because the
+  realtime layer only checks authorization at connect time rather than continuously or on
+  revocation. Grounded in three independent, dated CVEs sharing the same CWE-613 root cause: a Docs
+  product's CVE-2026-92800 (<5.4.1, CVSS 7.6 — revoking a parent doc didn't close existing WS
+  connections to its sub-documents; VulnCheck advisory); Open WebUI's GHSA-45m8-cpm2-3v65 /
+  CVE-2026-44553 (Yjs collaborative-doc handlers checked a cached role in the Socket.IO session pool
+  instead of the DB, so a de-adminned user kept admin rights over the live socket as long as
+  heartbeats kept it alive); and Outline's CVE-2025-68663 (<1.1.0 — suspended users could keep or
+  establish WS connections and kept receiving updates). Novelty check: `gh api search/code`
+  (`"websocket" "permission" "revoked" "disconnect"`, `"revoke" "websocket" "still connected"`,
+  `"stale session" "collaboration" "access revoked"`) found no dedicated audit skill — the closest
+  hit (`Ambiguous-Interactive/signal-fish-server` → `websocket-session-security`) was fetched and
+  read in full and covers CSWSH/replay/full-logout-closes-sockets for a game server, not
+  per-resource permission-change propagation to an already-open socket. In-pack, `resync-guard`
+  (missed-message resync), `backpressure-guard` (slow-consumer fan-out), `storm-guard` (reconnect
+  storms), and `overwrite-guard` (optimistic-lock version checks) each mention "collaborative
+  editing" only as an example payload type — none address authorization revocation on a live
+  connection, confirmed by reading the actual matching lines, not just grep presence.
+- [ ] **New-skill candidate: `subscription-guard`? — GraphQL subscriptions bypass the authorization
+  layer that protects queries/mutations.** GraphQL subscriptions run over a separate
+  WebSocket transport/execution path from HTTP queries and mutations; auth middleware, decorators,
+  or framework-level checks wired for the HTTP path can silently not apply to the subscription
+  handshake or resolver context, letting a user receive via a live subscription a field or row they
+  can't query directly. Grounded in three independent, dated 2026 CVEs: Strawberry GraphQL's
+  CVE-2026-35523 (GHSA-vpwc-v33q-mq89 — auth could be skipped entirely on WS subscriptions via the
+  legacy `graphql-ws` subprotocol, bypassing the `on_ws_connect` auth hook; fixed in 0.312.3); Parse
+  Server's CVE-2026-32594 (the subscription WS endpoint skipped the Express middleware chain
+  enforcing auth/introspection/complexity limits); and the Neo4j GraphQL library's CVE-2026-5423
+  (`graphql-ws` forwarded WS `connectionParams` straight into the resolver context even with
+  authorization enabled, bypassing the intended check). Novelty check: `gh api search/code`
+  (`"GraphQL subscription" "authorization" "bypass"`, `"subscription" "resolver" "auth" "context"
+  GraphQL`) found only generic GraphQL build skills and broad offensive pentest checklists — no
+  dedicated audit skill for this specific authz-layer-split mechanic. In-pack, `grep -l -i graphql
+  skills/*/SKILL.md` hits (`overwrite-guard`, `pagination-guard`, `reaccept-guard`, `sunset-guard`,
+  `throttle-guard`, `trail-guard`) each mention GraphQL only incidentally as one API surface among
+  several, not this mechanic.
+
+Leads tried and rejected this round, logged so a future round doesn't re-spend search budget on
+them: Kubernetes admission-webhook `failurePolicy: Ignore` fail-open (real, but every dedicated
+k8s-security/Gatekeeper/Kyverno skill already names it generically); Apollo GraphQL APQ cache
+poisoning (covered by `bedkillerspacex-boop/codex-skill-library` →
+`graphql-apollo-persisted/SKILL.md`); chargeback/dispute evidence-deadline tracking (saturated with
+multiple dedicated `stripe-dispute`/`chargeback-*` skills); Chrome MV3 service-worker ephemeral-state
+loss (covered verbatim as Mandatory Rule #7 in `GoogleChrome/modern-web-guidance`'s
+`chrome-extensions/SKILL.md`); Flyway/Liquibase checksum-mismatch drift (covered in depth by
+`selvarajmurugesan90/ops-engineering-skills` → `database-schema-migration-with-liquibase-and-flyway/
+SKILL.md`); "Sign in with Apple" email-only-on-first-authorization causing duplicate accounts (real
+pain, but only anecdotal forum/issue reports, no CVE/vendor-advisory grounding); biometric
+re-enrollment not invalidating a cached auth bypass (saturated across a dozen+ dedicated iOS/Swift
+security skills); webhook SSRF via DNS rebinding / registration-time-only validation (already a named
+`security-sweep` example category, and covered externally by dedicated SSRF-defense skills); MFA
+backup-code reuse / non-atomic invalidation (two good 2026 CVEs found — Parse Server
+CVE-2026-31875, Filament CVE-2026-48505 — but already a named checklist item in
+`xalgorix/xalgorix` → `bypassing-two-factor-and-otp/SKILL.md`); and client-side DNS-TTL caching
+outliving a cutover (a dedicated ops-procedure skill covers the infra side; the app-runtime angle
+sits too close to `failover-guard`'s existing DNS/VIP-cutover material to justify a new skill today
+— parked as borderline, not a clean reject).
+
+Follow-up for the next run: three real unchecked candidates now exist above — pick whichever one's
+research holds up best under a second look and is ready to write (none have had `SKILL.md` drafted
+yet, so expect to spend some of the next round finishing due diligence before shipping, same as
+`clipboard-guard` took two rounds). No skill shipped this round — this was a research-and-log pass,
+not an implementation one, per the daily-agent process for a fully-checked-off backlog.
+
 ## Shipped `email-guard` after a fresh novelty pass (2026-11-13)
 
 Git hygiene first: `git fetch origin main` showed local `main` and `origin/main` already identical at

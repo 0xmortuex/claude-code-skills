@@ -12,6 +12,50 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `revoke-guard` from yesterday's research-pass candidates (2026-11-16)
+
+Git hygiene first: clone's `HEAD` was detached at `836ad0d` (the real tip of `main`, yesterday's
+novelty-pass commit) while the local `main` branch ref was stale 4 commits behind at `cb51363`.
+`git fetch origin main` confirmed `origin/main` really is at `836ad0d` with nothing unpushed;
+fixed with `git checkout main && git merge --ff-only origin/main` (fast-forward, no conflict).
+`python tools/validate.py` passed (`OK: 49 skills valid and consistent with README.`) before this
+round.
+
+Picked `revoke-guard` (real-time collaboration permission revocation doesn't close the live
+WebSocket/Socket.IO session) from the three unchecked candidates logged yesterday — it had the
+strongest independent grounding of the three (three separate, dated 2026 CVEs sharing the same
+CWE-613 root cause across three different products/frameworks, not just one source) and fit
+cleanly into the pack's existing realtime-collaboration cluster (`resync-guard`,
+`backpressure-guard`, `storm-guard`, `overwrite-guard`) without overlapping any of them — each of
+those audits a different axis (missed-message replay, slow-consumer fan-out, mass-reconnect
+survival, concurrent-edit version checks), none audits whether a connection's *authorization*
+itself stays current while it's open.
+
+Re-ran the novelty check independently before writing anything (not just trusting yesterday's
+research subagent): `gh api search/code` for `"websocket" "permission" "revoked" "disconnect"
+filename:SKILL.md`, `"revoke" "websocket" "still connected" filename:SKILL.md`, and `"stale
+session" "collaboration" "access revoked" filename:SKILL.md` — all three came back with only
+generic/unrelated hits (broad realtime-systems or websocket-setup skills, one offensive
+CSWSH/replay skill already checked and ruled out yesterday); no dedicated audit skill for this
+specific "authorization checked once at connect, never again" mechanic. Left `recycle-guard`
+(recycled phone number / SMS 2FA) and `subscription-guard` (GraphQL subscriptions bypass HTTP-path
+auth) unchecked below for a future round — both still look real and ungrounded-elsewhere, just
+didn't have as many independent sources backing them as `revoke-guard`'s three CVEs.
+
+Added `skills/revoke-guard/SKILL.md` and `examples/revoke-guard.md`; wired into `README.md`'s
+skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`; bumped the 49→50 skill-count mentions (prose word and the "copying all
+forty-nine/fifty" tip). `python tools/validate.py` → `OK: 50 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "revoke-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it —
+this skill's own Boundaries section names `storm-guard`, `backpressure-guard`, `resync-guard`, and
+`overwrite-guard`; none of theirs needs to name it back.
+
+Follow-up for the next run: `recycle-guard` and `subscription-guard` are still open candidates
+below, neither has a `SKILL.md` drafted yet — pick whichever one's research holds up best under a
+second look. `recall-guard`'s drift-audit fact-check already ran (2026-11-15, logged in the
+section below) and found nothing wrong, so no drift-audit is currently due.
+
 ## Research pass (2026-11-15): backlog fully checked off, no shippable item today — 3 new items added
 
 Git hygiene first: clone started with `HEAD` detached at `4255f1a` (the real tip of `main`, the
@@ -45,7 +89,7 @@ for each, re-verified rather than taken on the subagent's word alone):
   skills. No in-pack overlap: `dormancy-guard`, `email-guard`, and `push-guard` each audit a
   different artifact (inactivity sweeps, email-change flows, device tokens), none touch phone-number
   ownership drift.
-- [ ] **New-skill candidate: `revoke-guard`? — real-time collaboration permission revocation doesn't
+- [x] **New-skill candidate: `revoke-guard`? — real-time collaboration permission revocation doesn't
   close the live WebSocket session.** An app correctly revokes a user's document/resource access at
   the HTTP/REST layer, but an already-open WebSocket/Socket.IO collaboration session (or a role
   cached inside that session's connection pool) keeps delivering live edits/data, because the

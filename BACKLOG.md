@@ -12,6 +12,69 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `subscription-guard` from the two open candidates (2026-11-17)
+
+Git hygiene first: clone's `HEAD` was detached at `32d8bc3` (the real tip of `main`, yesterday's
+`revoke-guard` commit) while the local `main` branch ref was stale 4 commits behind. `git fetch
+origin main` confirmed `origin/main` really is at `32d8bc3` with nothing unpushed; fixed with
+`git checkout main && git merge --ff-only origin/main` (fast-forward, no conflict).
+`python tools/validate.py` passed (`OK: 50 skills valid and consistent with README.`) before this
+round.
+
+Two unchecked candidates were open from 2026-11-15: `recycle-guard` (recycled phone number still
+trusted for SMS 2FA/recovery) and `subscription-guard` (GraphQL subscriptions bypassing the
+authorization layer HTTP queries/mutations go through). Delegated an independent re-verification
+of both to a subagent (kept the search/WebSearch output out of context) rather than trust the
+2026-11-15 research pass's own summary — specifically flagged `subscription-guard`'s three CVE
+numbers for extra scrutiny, since "2026-dated CVEs for GraphQL libraries" looked like a plausible
+hallucination shape to check hard before committing to either candidate.
+
+Both held up under re-verification. `recycle-guard`'s grounding (Lee & Narayanan, IEEE eCrime
+2021, recyclednumbers.cs.princeton.edu) checked out as solid, with one minor imprecision worth
+fixing before it ships: the "83% tied to an existing Amazon/AOL/Facebook/Google/PayPal/Yahoo
+account" framing conflates two different sub-stats in the paper (83% = vulnerable to
+hijack-or-PII-indexing generally; tying to those six specific services is a separate, smaller
+number that Krebs and The Hacker News even report differently from each other, at 171 vs. a
+different figure) — not fabricated, just needs tighter attribution when written up.
+`subscription-guard`'s three CVEs (Strawberry GraphQL CVE-2026-35523/GHSA-vpwc-v33q-mq89, Parse
+Server CVE-2026-32594/GHSA-p2x3-8689-cwpg, Neo4j GraphQL library CVE-2026-5423/GHSA-fcpg-3fw5-vc65)
+all verified real via NVD/GHSA/vendor advisories and matched the claimed mechanic closely (one
+precision note: Neo4j's actual defect is an unverified JWT signature on `connectionParams`, not
+literally "forwarded into resolver context" — same bypass class, worded slightly loosely in the
+original candidate). Novelty and in-pack-overlap re-checks (`gh api search/code`, grep across
+`skills/*/SKILL.md` and both archive files) independently confirmed both candidates' 2026-11-15
+findings: no dedicated audit skill for either mechanic anywhere searched, and no in-pack overlap
+(GraphQL mentioned only incidentally by `overwrite-guard`/`pagination-guard`/`reaccept-guard`/
+`sunset-guard`/`throttle-guard`/`trail-guard`; phone/SMS/2FA mentioned only incidentally by
+`blast-guard`/`clipboard-guard`/`export-guard`/`pref-guard`/`residency-guard`).
+
+Picked `subscription-guard` over `recycle-guard`: three independent CVEs across three unrelated
+frameworks/ecosystems (Python/Strawberry, Node/Parse Server, Neo4j's GraphQL library) is a
+stronger recurring-pattern signal than `recycle-guard`'s single (if excellent) 2021 academic paper,
+and the mechanic maps more directly onto a code-reviewable "does the WS/subscription auth path
+wire into the same check as the HTTP path" audit — closer to this pack's existing code-review
+shape than `recycle-guard`'s more product-policy-shaped "re-verify phone ownership periodically"
+angle. Kept `recycle-guard` as the next open candidate below rather than dropping it; its stat
+attribution needs a light fix when it's written up but the grounding itself is sound.
+
+Added `skills/subscription-guard/SKILL.md` and `examples/subscription-guard.md`; wired into
+`README.md`'s skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`. Bumped the 50→51 skill-count mentions (prose word and the "copying all
+fifty/fifty-one" tip). `python tools/validate.py` → `OK: 51 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "subscription-guard" skills/*/SKILL.md` outside its own file returns nothing) and
+matched it — this skill's own Boundaries section names `overwrite-guard`, `pagination-guard`,
+`reaccept-guard`, `sunset-guard`, `throttle-guard`, `trail-guard`, and `revoke-guard`; none of
+theirs needs to name it back.
+
+Follow-up for the next run: `recycle-guard` is the one remaining open candidate below — real,
+grounded, not yet drafted as a `SKILL.md`. When it's written up, state its headline stat as "83%
+of sampled recycled numbers were vulnerable to account hijack or PII exposure" rather than tying
+that figure to the six named services specifically (that's the imprecision this round's
+re-verification caught). No drift-audit is currently due: `email-guard` (2026-11-13) comes due
+~2026-11-27, `digest-guard` (2026-11-12) ~2026-11-26, `revoke-guard` (2026-11-16) ~2026-11-30 —
+all more than a week out.
+
 ## Shipped `revoke-guard` from yesterday's research-pass candidates (2026-11-16)
 
 Git hygiene first: clone's `HEAD` was detached at `836ad0d` (the real tip of `main`, yesterday's
@@ -110,7 +173,7 @@ for each, re-verified rather than taken on the subagent's word alone):
   storms), and `overwrite-guard` (optimistic-lock version checks) each mention "collaborative
   editing" only as an example payload type — none address authorization revocation on a live
   connection, confirmed by reading the actual matching lines, not just grep presence.
-- [ ] **New-skill candidate: `subscription-guard`? — GraphQL subscriptions bypass the authorization
+- [x] **New-skill candidate: `subscription-guard`? — GraphQL subscriptions bypass the authorization
   layer that protects queries/mutations.** GraphQL subscriptions run over a separate
   WebSocket transport/execution path from HTTP queries and mutations; auth middleware, decorators,
   or framework-level checks wired for the HTTP path can silently not apply to the subscription

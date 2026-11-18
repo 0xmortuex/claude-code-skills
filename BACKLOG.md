@@ -12,6 +12,55 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `recycle-guard`, the last open candidate from 2026-11-15 (2026-11-18)
+
+Git hygiene first: `git status`/`git log --oneline -10` showed `main` already at `bf29e10`
+(yesterday's `subscription-guard` commit) with a clean working tree and nothing to fast-forward —
+no detached-HEAD or stale-branch issue this round. `python tools/validate.py` passed (`OK: 51
+skills valid and consistent with README.`) before this round.
+
+`recycle-guard` was the only unchecked backlog item (confirmed via `grep -n '^- \[ \]'
+BACKLOG.md`), carried over from the 2026-11-15 research pass and already independently
+re-verified once (2026-11-17's `subscription-guard` round, which chose the other candidate but
+left this one's grounding and novelty check unchallenged). Ran one more independent novelty check
+before writing anything rather than trusting the two-and-three-day-old passes alone: `gh api
+search/code` for `"recycled phone number"`, `"phone number recycling"`, and `"SMS 2FA"
+"reassigned"` (all `filename:SKILL.md`) turned up only an `identity-graph-operator` skill (a
+generic marketing/ad identity-resolution tool, not a security audit) and a generic
+`offensive-business-logic` red-team checklist repeated across many mirrors — neither is a dedicated
+audit of this mechanic. Read `skills/dormancy-guard/SKILL.md`, `skills/email-guard/SKILL.md`, and
+`skills/push-guard/SKILL.md` in full: `email-guard` explicitly carves out carrier-side SIM swapping
+as out of its scope ("doesn't extend to telecom-side SIM swapping or carrier account takeover...
+the phone network the OTP rides over"), which is adjacent to but distinct from `recycle-guard`'s
+mechanic (a carrier *legitimately* reassigning a dormant number to a new subscriber, no fraud
+involved on the carrier's side) — confirming the boundary rather than finding overlap. Pack-wide
+`grep -li 'phone\|SMS\|recycl' skills/*/SKILL.md` turned up nothing else on point.
+
+Also caught and fixed, while writing up the candidate, the stat-attribution imprecision the
+2026-11-17 re-verification round had already flagged but not yet corrected in this file: the
+original candidate text tied Lee & Narayanan's 83% figure to six specific services
+(Amazon/AOL/Facebook/Google/PayPal/Yahoo), which conflates two different sub-stats in the paper.
+Corrected in place above to "83% vulnerable to account hijack or PII exposure" (the general stat)
+plus the separate "100 of 259 tied to breach-dump credentials" stat, matching how Krebs and The
+Hacker News report it independently rather than the original's merged framing. The `SKILL.md` and
+example below use the corrected framing throughout.
+
+Added `skills/recycle-guard/SKILL.md` and `examples/recycle-guard.md`; wired into `README.md`'s
+skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`. Bumped the 51→52 skill-count mentions (prose word and the "copying all
+fifty-one/fifty-two" tip). `python tools/validate.py` → `OK: 52 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "recycle-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it —
+this skill's own Boundaries section names `dormancy-guard`, `email-guard`, and `push-guard`; none
+of theirs needs to name it back.
+
+Follow-up for the next run: the backlog is now fully checked off again (last unchecked item was
+this one) — per process, next round should do a fresh novelty/research pass rather than invent
+busywork, unless a drift-audit comes due first. Next drift-audit due dates: `digest-guard`
+(2026-11-12) ~2026-11-26, `email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16)
+~2026-11-30, `subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18)
+~2026-12-02 — none due yet.
+
 ## Shipped `subscription-guard` from the two open candidates (2026-11-17)
 
 Git hygiene first: clone's `HEAD` was detached at `32d8bc3` (the real tip of `main`, yesterday's
@@ -136,22 +185,22 @@ Three candidates cleared the bar this round — real, dated, independently-groun
 not already covered in-pack or by a prominent external skill (`gh api search/code` plus WebSearch
 for each, re-verified rather than taken on the subagent's word alone):
 
-- [ ] **New-skill candidate: `recycle-guard`? — recycled phone number still trusted for SMS 2FA /
+- [x] **New-skill candidate: `recycle-guard`? — recycled phone number still trusted for SMS 2FA /
   account recovery.** An app binds SMS-based 2FA or account-recovery to a phone number at signup
   and never re-verifies ownership later. Carriers recycle dormant numbers to new subscribers, who
   can then receive the previous owner's OTP/recovery codes and take over the account — especially
   potent when the previous owner's password is already in a breach dump, since the attacker only
   needs the number back. Grounded in Lee & Narayanan (Princeton), *"Security and Privacy Risks of
   Number Recycling at Mobile Carriers,"* IEEE eCrime 2021: 259 sampled recycled numbers from
-  T-Mobile/Verizon, 83% tied to an existing Amazon/AOL/Facebook/Google/PayPal/Yahoo account, 100
-  tied to leaked credentials elsewhere, and carrier reverse-lookup UIs with no query limits making
-  targeting trivial (primary source `recyclednumbers.cs.princeton.edu`; corroborated by The Hacker
-  News's 2021 coverage). Novelty check: `gh api search/code` (`"recycled phone number"`, `"phone
-  number recycling"`, `"SMS 2FA" "reassigned"`, `"phone number" "reassigned" "2FA"`
-  filename:SKILL.md) found zero on-point hits — only unrelated identity-graph and generic Twilio
-  skills. No in-pack overlap: `dormancy-guard`, `email-guard`, and `push-guard` each audit a
-  different artifact (inactivity sweeps, email-change flows, device tokens), none touch phone-number
-  ownership drift.
+  T-Mobile/Verizon, 83% vulnerable to account hijack or PII exposure through at least one online
+  service still bound to the number, 100 of the 259 independently tied to credentials already
+  circulating in breach dumps, and carrier reverse-lookup UIs with no query limits making targeting
+  trivial (primary source `recyclednumbers.cs.princeton.edu`; corroborated by The Hacker News's 2021
+  coverage). Novelty check: `gh api search/code` (`"recycled phone number"`, `"phone number
+  recycling"`, `"SMS 2FA" "reassigned"` filename:SKILL.md) found zero on-point hits — only unrelated
+  identity-graph-operator and offensive-business-logic skills. No in-pack overlap: `dormancy-guard`,
+  `email-guard`, and `push-guard` each audit a different artifact (inactivity sweeps, email-change
+  flows, device tokens), none touch phone-number ownership drift.
 - [x] **New-skill candidate: `revoke-guard`? — real-time collaboration permission revocation doesn't
   close the live WebSocket session.** An app correctly revokes a user's document/resource access at
   the HTTP/REST layer, but an already-open WebSocket/Socket.IO collaboration session (or a role

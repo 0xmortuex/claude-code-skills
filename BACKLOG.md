@@ -12,6 +12,128 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Research pass (2026-11-19): backlog fully checked off, no shippable item today — 3 new items added
+
+Git hygiene first: clone's `HEAD` was already on branch `main`, detached at `99d9d7e` (the
+`recycle-guard` commit) but one commit behind `origin/main`. `git fetch origin` confirmed
+`origin/main` was identical at `99d9d7e` with nothing unpushed; fixed with `git checkout main &&
+git pull --ff-only` (clean fast-forward, no conflict). `python tools/validate.py` passed (`OK: 52
+skills valid and consistent with README.`) before this round. Confirmed zero unchecked items
+anywhere in this file (`grep -n '^- \[ \]' BACKLOG.md` → no matches) and the earliest drift-audit
+(`digest-guard`, due ~2026-11-26) is still a week out — so per the daily-agent process for a fully
+checked-off backlog, this round researches and logs new candidates (delegated to a subagent to
+keep the search/WebSearch output out of context) rather than forcing a pick or inventing busywork.
+
+Candidates tried and rejected this round (reasons logged so a future round doesn't re-spend search
+budget): SAML/OIDC single-logout not propagating to relying parties and SCIM deprovisioning not
+revoking live sessions/tokens — both saturated, `UnboundCompute/security-agent-skills` →
+`auditing-sso-logout-and-session-revocation/SKILL.md` and `auditing-scim-provisioning-trust/
+SKILL.md` cover each verbatim (read in full, not just grepped); GraphQL query batching/aliasing
+bypassing rate limits — saturated, a dedicated `graphql-batching-attacks` skill is duplicated
+across several offensive-security repos; coupon/promo-code redemption race conditions —
+saturated, one of the most heavily templated topics in the "race-condition hunting" offensive-skill
+space; "remember me" cookie surviving a password reset — real (CVE-2021-41268 Symfony) but
+saturated by multiple dedicated skills; PDF/document redaction leaving selectable underlying text —
+saturated by a dedicated `redaction-reviewer` skill mirrored across several legal-AI repos; OAuth
+mobile custom-URL-scheme/redirect-URI hijacking — saturated by many dedicated offensive OAuth-hunt
+skills; Supabase/Postgres RLS bypass via a service-role key in background jobs — extremely
+saturated (a dozen+ dedicated `rls-*`/`supabase-security-*` skills); GDPR erasure undone by a
+backup/DR restore reintroducing deleted users — in-pack overlap, `erasure-guard`'s own Step 3
+already names this exactly; instant payout against a pending/disputable balance followed by a
+chargeback creating an unrecoverable negative balance, and Stripe Connect destination-charge
+refunds not reversing the platform application fee — both real-sounding but rejected for
+insufficient grounding (no verified named incident or CVE/advisory matching the specific mechanic,
+only routine vendor risk/API docs); location-sharing not stopping after expiry/block/unfriend —
+insufficiently grounded (only conflicting user-forum anecdotes about Apple Find My, no CVE or
+vendor-confirmed bug).
+
+Three candidates cleared the bar — real, dated, independently re-verified (not just taken on the
+research subagent's word: re-ran WebSearch myself against the two riskiest-looking 2026-dated CVE
+numbers plus the named 2025 incident below before writing anything) and confirmed not already
+covered in-pack or by a prominent external skill:
+
+- [ ] **New-skill candidate: `payout-guard`? — payout/direct-deposit destination change treated as
+  an ordinary profile edit instead of a sensitive financial action.** A payroll, vendor-payment, or
+  marketplace-payout system's "update my bank account" flow is gated only by an active session —
+  no step-up re-auth on *this specific action*, no hold/cooling-off period before the new
+  destination starts receiving money, and no out-of-band notification to the employee/vendor when
+  it changes. An attacker who compromises a session (phished credentials + MFA bypass via
+  adversary-in-the-middle, not a stolen password) redirects future payouts to an account they
+  control. Grounded in: **FBI IC3 PSA I-091019-PSA** ("Business Email Compromise: The $26 Billion
+  Scam," Sept 2019) — 1,053 complaints of this exact payroll-diversion pattern Jan 2018–June 2019,
+  ~$8.3M in losses, direct-deposit change requests up over 800% in that window; and Microsoft's
+  Oct 2025 "Storm-2657"/"Payroll Pirate" writeup (re-verified independently via WebSearch today,
+  not just the subagent's summary — confirmed real and matching: AiTM-phished SSO credentials used
+  to log into Workday and change payment-election details, concealed with inbox rules hiding
+  Workday's own notification emails; corroborated independently by The Register, BleepingComputer,
+  The Hacker News, ITPro). Novelty check: `gh api search/code` (`"payroll diversion"`, `"direct
+  deposit" "change" "bank account" "verify"`, `"banking details" "change" "hold period"` — zero
+  hits on the last one — all `filename:SKILL.md`) found only state-specific payroll-compliance
+  build skills and generic phishing-simulation skills, never a dedicated audit of this flow's
+  hijack-resistance. In-pack overlap checked against `email-guard` (shares the "settings-change →
+  takeover vector → step-up/notify-old-channel/hold" shape, but a different artifact — payout
+  destination vs. login email — and a different attacker path — AiTM-phished SSO vs.
+  stolen-session/XSS); also checked `recycle-guard`, `rotation-guard`, `push-guard`, `seat-guard` —
+  none touch a payout/bank-detail-change flow. Flag for whoever writes this up: lean hard on the
+  distinct artifact and distinct grounding in the SKILL.md, since the shape-overlap with
+  `email-guard` is real enough that a reviewer could ask why this isn't just a bullet there.
+- [ ] **New-skill candidate: `mention-guard`? — a notification/mention/permalink-preview pipeline
+  runs through its own code path and leaks a restricted resource's existence or content to a user
+  who can't access it directly.** A notification-sender (e.g. @-mention alerts, "someone commented"
+  emails) never checks whether the *recipient* can see the *subject* before notifying them, or a
+  cached link/permalink preview isn't invalidated when the viewer's permission to the underlying
+  resource is later revoked. Grounded in four independent CVEs across three unrelated products:
+  **CVE-2017-9505** (Confluence) — watch/comment notifications didn't check recipient permission on
+  the page; **CVE-2023-22488** (Flarum) — notification-sending doesn't check the subject is visible
+  to the receiver before sending; **CVE-2026-1629** (Mattermost, MMSA-2026-00580, CVSS 4.3,
+  published 2026-03-16, fixed in 10.11.11 — re-verified independently via WebSearch today: real,
+  matches claim exactly) — cached permalink previews keep exposing private-channel content after
+  the viewer loses channel access, until the cache expires or is reset; **CVE-2023-2792**
+  (Mattermost, earlier/related) — ephemeral messages' content leaked back through permalink
+  previews. Novelty check: `gh api search/code` (`"mention" "notification" "permission" "leak"`,
+  `"@mention" "restricted" "content" "notification"`, `"permalink preview" "permission" "cache"`,
+  two more variations, all `filename:SKILL.md`) found zero dedicated hits — only unrelated
+  multi-agent/LLM-tooling skills and broad OSINT catch-alls. In-pack overlap checked against
+  `revoke-guard` (live WS collaboration session authorization — continuous connections, a different
+  transport than a one-shot notification/preview send), `digest-guard` (recurring scheduled-report
+  stale permissions, not an ad-hoc mention/preview), `pref-guard` (notification *opt-out*
+  preferences, not content authorization), `subscription-guard` (GraphQL subscription transport
+  split); none audit whether the notification/mention/preview pipeline itself re-checks or caches
+  around the resource's access control. Best-grounded and cleanest-novelty of the three candidates
+  this round.
+- [ ] **New-skill candidate: `disconnect-guard`? — a user-facing "disconnect this integration /
+  revoke this app's access" action doesn't actually invalidate the OAuth tokens already issued, or
+  doesn't stop an already-registered webhook from continuing to deliver.** Revocation is a UI/DB
+  flag that was never wired into the token-validation or event-delivery code path, so a
+  disconnected integration keeps working until its token happens to expire on its own. Grounded in:
+  **CVE-2026-49277** (Rocket.Chat, CWE-613, GHSA-39hg-492f-3c4f, published 2026-06-24 — re-verified
+  independently via WebSearch today: real, matches claim — deactivating a user doesn't revoke
+  their OAuth access/refresh tokens; a deactivated user can keep using the access token and mint
+  new ones from the refresh token; fixed in 8.5.0/8.4.2/8.3.4/8.2.4/8.1.5/8.0.6/7.13.8/7.10.12); and
+  **CVE-2026-53830** (OpenClaw, GHSA-275c-xpvc-jgfw, fixed 2026.4.22) — old Slack/Zalo webhook
+  secrets stay accepted after a secrets-reload/rotation operation; corroborated by non-CVE
+  developer-forum reports of the identical gap at Zoom, Dropbox, and Twitch. Novelty check: `gh api
+  search/code` across several OAuth-revoke/webhook-persistence phrasings found no dedicated audit
+  skill for this exact combination. **Flagged lower-confidence than the other two**: both grounding
+  CVEs share the same CWE-613 root cause already cited for this pack's own `revoke-guard`, and the
+  "does revocation/rotation actually propagate everywhere" shape is already covered from two other
+  angles in-pack (`rotation-guard` for ops credentials, `revoke-guard` for live WS sessions) — this
+  pack has previously declined a 4th skill in an adjacent cluster (the WS/SSE heartbeat angle,
+  2026-11-13) as likely scope-splitting. Novel and real externally, but whoever picks this up next
+  should weigh hard whether "user-initiated third-party integration disconnect" is a genuinely
+  distinct artifact or just a third slice of the same mechanic under a new name before drafting a
+  `SKILL.md`.
+
+Follow-up for the next run: three real unchecked candidates now exist above — `mention-guard` looks
+readiest to ship (cleanest novelty signal, four independent CVEs, least in-pack-overlap ambiguity);
+`payout-guard` is close behind but its SKILL.md needs to clearly distinguish itself from
+`email-guard`'s shape; `disconnect-guard` needs a harder look at whether it's scope-splitting
+`revoke-guard`/`rotation-guard` before it ships or gets rejected. No skill shipped this round — this
+was a research-and-log pass, not an implementation one, per the daily-agent process for a fully
+checked-off backlog. No drift-audit is due yet: `digest-guard` (2026-11-12) ~2026-11-26,
+`email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16) ~2026-11-30, `subscription-guard`
+(2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18) ~2026-12-02.
+
 ## Shipped `recycle-guard`, the last open candidate from 2026-11-15 (2026-11-18)
 
 Git hygiene first: `git status`/`git log --oneline -10` showed `main` already at `bf29e10`

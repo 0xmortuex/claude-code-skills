@@ -12,6 +12,56 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `mention-guard`, the readiest of yesterday's three candidates (2026-11-20)
+
+Git hygiene first: clone's `HEAD` was detached at `b31c964` (the real tip of `main`, yesterday's
+novelty-pass commit) while the local `main` branch ref was stale 2 commits behind at `bf29e10`.
+`git fetch origin main` confirmed `origin/main` really is at `b31c964` with nothing unpushed;
+fixed with `git checkout main && git merge --ff-only b31c964` (fast-forward, no conflict).
+`python tools/validate.py` passed (`OK: 52 skills valid and consistent with README.`) before this
+round.
+
+Three unchecked candidates were open from 2026-11-19: `payout-guard`, `mention-guard`, and
+`disconnect-guard`. Yesterday's own follow-up note flagged `mention-guard` as readiest — cleanest
+novelty signal, four independent CVEs, least in-pack-overlap ambiguity — so re-verified that one
+specifically rather than re-opening all three from scratch. Delegated the re-verification to a
+subagent (kept the WebSearch/`gh api search/code` output out of context) with explicit instructions
+to treat the 2026-dated `CVE-2026-1629` as the highest-risk-of-hallucination claim and check it
+hardest, per this pack's standing practice after `subscription-guard`'s round flagged the same
+pattern.
+
+All four CVEs held up as REAL-AND-MATCHES against NVD/GHSA/vendor-advisory primary sources, not
+just loose shape-matches: Confluence CVE-2017-9505 (CONFSERVER-52560, fixed 6.2.1), Flarum
+CVE-2023-22488 (GHSA-8gcg-vwmw-rxj4, fixed core 1.6.3), Mattermost CVE-2023-2792 (MMSA-2023-00161,
+ephemeral-message content leaking through permalink previews), and Mattermost CVE-2026-1629
+(MMSA-2026-00580, confirmed via NVD + Red Hat Bugzilla #2448239, published 2026-03-16, fixed
+10.11.11/11.4.0 — genuinely real despite the 2026 date, not a repeat of a prior round's hallucination
+scare). Fresh novelty check (five `gh api search/code` queries, top-20 results pulled per query since
+GitHub code search doesn't reliably AND multi-phrase queries) found no dedicated audit skill for the
+mechanic — only unrelated Discord-bot/Slack-integration/compliance/generic-agent-tooling
+`SKILL.md` hits.
+
+Picked `mention-guard` over the other two per yesterday's own assessment: `payout-guard` still needs
+its SKILL.md to work harder to distinguish from `email-guard`'s shape, and `disconnect-guard` is
+flagged lower-confidence pending a harder look at whether it's scope-splitting
+`revoke-guard`/`rotation-guard`. Left both open below rather than deciding them today.
+
+Added `skills/mention-guard/SKILL.md` and `examples/mention-guard.md`; wired into `README.md`'s
+skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`. Bumped the 52→53 skill-count mentions (prose word and the "copying all
+fifty-two/fifty-three" tip). `python tools/validate.py` → `OK: 53 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "mention-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it —
+this skill's own Boundaries section names `revoke-guard`, `digest-guard`, `pref-guard`, and
+`subscription-guard`; none of theirs needs to name it back.
+
+Follow-up for the next run: `payout-guard` and `disconnect-guard` are still open candidates below,
+neither drafted yet. `disconnect-guard` in particular needs a hard call on whether it's a genuinely
+distinct artifact from `revoke-guard`/`rotation-guard` or just a third slice of the same CWE-613
+mechanic before it ships or gets rejected. No drift-audit is due yet: `digest-guard` (2026-11-12)
+~2026-11-26, `email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16) ~2026-11-30,
+`subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18) ~2026-12-02.
+
 ## Research pass (2026-11-19): backlog fully checked off, no shippable item today — 3 new items added
 
 Git hygiene first: clone's `HEAD` was already on branch `main`, detached at `99d9d7e` (the
@@ -77,7 +127,7 @@ covered in-pack or by a prominent external skill:
   none touch a payout/bank-detail-change flow. Flag for whoever writes this up: lean hard on the
   distinct artifact and distinct grounding in the SKILL.md, since the shape-overlap with
   `email-guard` is real enough that a reviewer could ask why this isn't just a bullet there.
-- [ ] **New-skill candidate: `mention-guard`? — a notification/mention/permalink-preview pipeline
+- [x] **New-skill candidate: `mention-guard`? — a notification/mention/permalink-preview pipeline
   runs through its own code path and leaks a restricted resource's existence or content to a user
   who can't access it directly.** A notification-sender (e.g. @-mention alerts, "someone commented"
   emails) never checks whether the *recipient* can see the *subject* before notifying them, or a
@@ -124,15 +174,12 @@ covered in-pack or by a prominent external skill:
   distinct artifact or just a third slice of the same mechanic under a new name before drafting a
   `SKILL.md`.
 
-Follow-up for the next run: three real unchecked candidates now exist above — `mention-guard` looks
-readiest to ship (cleanest novelty signal, four independent CVEs, least in-pack-overlap ambiguity);
-`payout-guard` is close behind but its SKILL.md needs to clearly distinguish itself from
-`email-guard`'s shape; `disconnect-guard` needs a harder look at whether it's scope-splitting
-`revoke-guard`/`rotation-guard` before it ships or gets rejected. No skill shipped this round — this
-was a research-and-log pass, not an implementation one, per the daily-agent process for a fully
-checked-off backlog. No drift-audit is due yet: `digest-guard` (2026-11-12) ~2026-11-26,
-`email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16) ~2026-11-30, `subscription-guard`
-(2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18) ~2026-12-02.
+Follow-up for the next run: `mention-guard` shipped 2026-11-20 (see that day's section above) —
+`payout-guard` and `disconnect-guard` are still open below, neither drafted yet. No skill shipped
+*this* round — this was a research-and-log pass, not an implementation one, per the daily-agent
+process for a fully checked-off backlog. No drift-audit is due yet: `digest-guard` (2026-11-12)
+~2026-11-26, `email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16) ~2026-11-30,
+`subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18) ~2026-12-02.
 
 ## Shipped `recycle-guard`, the last open candidate from 2026-11-15 (2026-11-18)
 

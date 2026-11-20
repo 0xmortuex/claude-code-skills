@@ -57,6 +57,7 @@ you can see what "good" looks like before you try a skill on your own repo.
 - [revoke-guard.md](revoke-guard.md)
 - [subscription-guard.md](subscription-guard.md)
 - [recycle-guard.md](recycle-guard.md)
+- [mention-guard.md](mention-guard.md)
 
 Want to add one for another skill? Keep it short (a realistic trigger message,
 then the key beats of the response — not a full essay) and make sure it

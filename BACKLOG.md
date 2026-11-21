@@ -12,6 +12,68 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `payout-guard`, the readier of the two open candidates (2026-11-21)
+
+Git hygiene first: clone's `HEAD` was detached at `939476d` (the real tip of `main`, yesterday's
+`mention-guard` commit) while the local `main` branch ref was stale 3 commits behind at `bf29e10`.
+`git fetch origin main` confirmed `origin/main` really is at `939476d` with nothing unpushed;
+fixed with `git checkout main && git merge --ff-only origin/main` (fast-forward, no conflict).
+`python tools/validate.py` passed (`OK: 53 skills valid and consistent with README.`) before this
+round. No drift-audit is due yet (earliest is `digest-guard`, ~2026-11-26, 5 days out), so this
+round picked from the two open backlog candidates rather than re-checking a shipped skill.
+
+Two unchecked candidates were open from 2026-11-19/20: `payout-guard` and `disconnect-guard`.
+Picked `payout-guard` as the readier one, per the standing assessment in this file: it has two
+independent, well-grounded sources (an FBI IC3 PSA with hard numbers, and a named, multiply-
+corroborated 2025 Microsoft campaign) versus `disconnect-guard`'s self-flagged lower confidence
+and open question of whether it's a genuinely distinct artifact from `revoke-guard`/`rotation-guard`
+or a third slice of the same CWE-613 mechanic — that call is still better made with a fresh look
+than carried over by assumption, so left it open rather than forcing it today.
+
+Delegated independent re-verification to a subagent (kept the WebSearch/`gh api search/code`
+output out of context) rather than trust the 2026-11-19 research pass's own numbers at face value,
+per this pack's standing practice. Both grounding sources held up exactly as claimed: FBI IC3 PSA
+I-091019-PSA's 1,053 complaints / $8,323,354 losses / 815% direct-deposit-request increase (Jan
+2018–June 2019) confirmed accurate against ic3.gov; Microsoft's "Storm-2657"/"Payroll Pirate"
+campaign (Oct 2025) confirmed real and matching — AiTM-phished/no-MFA SSO credentials into Workday,
+attacker enrolls their own MFA device, changes payment-election details, hides Workday's own
+notification email behind an inbox rule set up in the same compromised session — corroborated by
+The Register, The Hacker News, BleepingComputer, TechRadar, ITPro, CPO Magazine, and SC World.
+Novelty re-check (five `gh api search/code` phrasings, `filename:SKILL.md`) found no dedicated
+audit skill for this mechanic anywhere, only payroll-prep/tax-compliance build skills and unrelated
+generic offensive-hunt skills. In-pack overlap re-check (read `email-guard`, `rotation-guard`,
+`push-guard` in full; pack-wide grep for payout/direct-deposit/bank-account/payroll) found only one
+incidental, unrelated hit (`clipboard-guard` lists "bank account number" as an example sensitive
+clipboard value) — no skill already audits this flow.
+
+Confirmed the distinct-artifact question the backlog flagged as the main risk: `email-guard`
+shares the step-up/notify-old-channel/hold *shape*, but its safety net assumes the old-address
+mailbox is a priori independent of whatever hijacked the session (a stolen cookie or XSS pop isn't
+also a mailbox compromise). `payout-guard`'s realistic attacker path — a phished SSO session — often
+*is* already standing inside the mailbox a naive port of that same notification would use, which is
+exactly the Storm-2657 campaign's own move (hiding Workday's notice via an inbox rule under the
+same compromised identity). Wrote the SKILL.md's Step 2 and Boundaries section to make that
+distinction explicit rather than silently reusing `email-guard`'s framing, since that's the part a
+reviewer would most likely push back on.
+
+Added `skills/payout-guard/SKILL.md` and `examples/payout-guard.md`; wired into `README.md`'s
+skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`. Bumped the 53→54 skill-count mentions (prose word and the "copying all
+fifty-three/fifty-four" tip). `python tools/validate.py` → `OK: 54 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "payout-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched it —
+this skill's own Boundaries section names `email-guard` and `rotation-guard`; neither of theirs
+needs to name it back.
+
+Follow-up for the next run: `disconnect-guard` is still the one open candidate below, not yet
+drafted — it still needs the hard call on whether "user-initiated third-party integration
+disconnect not actually revoking tokens/webhooks" is a genuinely distinct artifact from
+`revoke-guard`/`rotation-guard` or a third slice of the same CWE-613 mechanic, flagged
+lower-confidence since 2026-11-19 and not yet resolved by any round since. No drift-audit is due
+yet: `digest-guard` (2026-11-12) ~2026-11-26, `email-guard` (2026-11-13) ~2026-11-27, `revoke-guard`
+(2026-11-16) ~2026-11-30, `subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard`
+(2026-11-18) ~2026-12-02, `mention-guard` (2026-11-20) ~2026-12-04.
+
 ## Shipped `mention-guard`, the readiest of yesterday's three candidates (2026-11-20)
 
 Git hygiene first: clone's `HEAD` was detached at `b31c964` (the real tip of `main`, yesterday's
@@ -102,7 +164,7 @@ research subagent's word: re-ran WebSearch myself against the two riskiest-looki
 numbers plus the named 2025 incident below before writing anything) and confirmed not already
 covered in-pack or by a prominent external skill:
 
-- [ ] **New-skill candidate: `payout-guard`? — payout/direct-deposit destination change treated as
+- [x] **New-skill candidate: `payout-guard`? — payout/direct-deposit destination change treated as
   an ordinary profile edit instead of a sensitive financial action.** A payroll, vendor-payment, or
   marketplace-payout system's "update my bank account" flow is gated only by an active session —
   no step-up re-auth on *this specific action*, no hold/cooling-off period before the new

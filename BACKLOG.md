@@ -12,6 +12,75 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `disconnect-guard`, the last open candidate and the hard call it needed (2026-11-22)
+
+Git hygiene first: clone's `HEAD` was detached at `c7cafe5` (the real tip of `main`, yesterday's
+`payout-guard` commit) while the local `main` branch ref was stale 4 commits behind at `bf29e10`.
+`git fetch origin main` confirmed `origin/main` really is at `c7cafe5` with nothing unpushed;
+fixed with `git fetch origin main && git branch -f main origin/main && git checkout main`
+(fast-forward, no conflict). `python tools/validate.py` passed (`OK: 54 skills valid and
+consistent with README.`) before this round.
+
+`disconnect-guard` was the only unchecked backlog item (confirmed via `grep -n '^- \[ \]'
+BACKLOG.md`) — the one left open since 2026-11-19, flagged lower-confidence specifically because
+it needed a hard call on whether "user-initiated third-party integration disconnect not actually
+revoking tokens/webhooks" is a genuinely distinct artifact from this pack's own `revoke-guard` and
+`rotation-guard`, or a third slice of the same CWE-613 mechanic under a new name. No drift-audit
+was due yet (earliest is `digest-guard`, ~2026-11-26, 4 days out), so this round could spend its
+full budget on that one open candidate rather than splitting it against a drift-audit.
+
+Delegated independent re-verification and the distinctness call itself to a subagent (kept the
+WebSearch/`gh api search/code` output out of context), with explicit instructions to read
+`revoke-guard` and `rotation-guard` in full before judging overlap, not just grep for shared
+vocabulary. Both grounding CVEs held up exactly as the 2026-11-19 candidate stated: Rocket.Chat's
+CVE-2026-49277 (GHSA-39hg-492f-3c4f, CWE-613) — deactivating a user never revoked their already-
+issued OAuth access/refresh tokens, so the deactivated account could keep using the live access
+token and mint fresh ones from the refresh token until the tokens' own unrelated expiry, fixed in
+8.5.0/8.4.2/8.3.4/8.2.4/8.1.5/8.0.6/7.13.8/7.10.12; and OpenClaw's CVE-2026-53830
+(GHSA-275c-xpvc-jgfw) — a `secrets.reload` operation wrote a new Slack/Zalo webhook secret to the
+store, but the webhook-signature-verification path kept accepting requests signed with the old
+one. The non-CVE Zoom/Dropbox/Twitch forum reports from the original candidate were explicitly
+*not* re-verified and are treated as uncorroborated color, not load-bearing grounding — the two
+CVEs alone carry the candidate. Fresh novelty check (five `gh api search/code` phrasings,
+`filename:SKILL.md`) found only integration-*setup* skills (OAuth connect flows for Zoom/Google/
+monday), one unrelated multi-tenancy build skill, and a personal end-user security-hygiene
+how-to (`JiayiV/question_mixing`, a checklist for a *person* to click "Revoke" in their own
+account settings) — pulled and read the two closest hits directly, neither audits whether a
+backend's disconnect action actually propagates to token-validation or webhook-delivery code.
+Archive grep (`docs/backlog-archive-2026-q3.md`, `docs/backlog-archive-2026-q4.md`) found no prior
+round had considered this exact mechanic.
+
+Resolved the distinctness question the backlog flagged as the main risk, by reading both
+existing skills' own text rather than assuming from the shared CWE: `revoke-guard`'s own
+Boundaries section explicitly disclaims this exact territory ("doesn't cover HTTP/REST session or
+token revocation... this skill exists for the case where [the realtime layer] doesn't" re-validate
+via the same store) — it *assumes* the token-revocation path already works and only audits
+whether a live WebSocket connection re-checks it continuously. `disconnect-guard` audits precisely
+the thing `revoke-guard` takes for granted: whether disconnect's write reaches the validator,
+refresh exchange, or webhook verifier at all. `rotation-guard` is a different artifact entirely —
+rotating *your own* operational credential to a *new* value across consumers, with a propagation/
+overlap-window design question that doesn't exist here: `disconnect-guard`'s action is a
+*permanent* revocation with no new value and no overlap window to size, only a kill switch to
+confirm is wired to anything. Wrote the SKILL.md's Boundaries section to state both distinctions
+explicitly rather than leave them implicit, since that's exactly the objection a reviewer would
+raise first.
+
+Added `skills/disconnect-guard/SKILL.md` and `examples/disconnect-guard.md`; wired into
+`README.md`'s skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`. Bumped the 54→55 skill-count mentions (prose word and the "copying all
+fifty-four/fifty-five" tip). `python tools/validate.py` → `OK: 55 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "disconnect-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched
+it — this skill's own Boundaries section names `revoke-guard` and `rotation-guard`; neither of
+theirs needs to name it back.
+
+Follow-up for the next run: the backlog is now fully checked off again (this was the last open
+candidate) — per process, next round should do a fresh novelty/research pass rather than invent
+busywork, unless a drift-audit comes due first. Next drift-audit due dates: `digest-guard`
+(2026-11-12) ~2026-11-26, `email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16)
+~2026-11-30, `subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18)
+~2026-12-02, `mention-guard` (2026-11-20) ~2026-12-04, `payout-guard` (2026-11-21) ~2026-12-05.
+
 ## Shipped `payout-guard`, the readier of the two open candidates (2026-11-21)
 
 Git hygiene first: clone's `HEAD` was detached at `939476d` (the real tip of `main`, yesterday's
@@ -213,7 +282,7 @@ covered in-pack or by a prominent external skill:
   split); none audit whether the notification/mention/preview pipeline itself re-checks or caches
   around the resource's access control. Best-grounded and cleanest-novelty of the three candidates
   this round.
-- [ ] **New-skill candidate: `disconnect-guard`? — a user-facing "disconnect this integration /
+- [x] **New-skill candidate: `disconnect-guard`? — a user-facing "disconnect this integration /
   revoke this app's access" action doesn't actually invalidate the OAuth tokens already issued, or
   doesn't stop an already-registered webhook from continuing to deliver.** Revocation is a UI/DB
   flag that was never wired into the token-validation or event-delivery code path, so a

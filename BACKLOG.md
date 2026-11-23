@@ -12,6 +12,143 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Research pass (2026-11-23): backlog fully checked off, no shippable item today — 2 new items added
+
+Git hygiene first: clone's `HEAD` was detached at `214875d` (the real tip of `main`, yesterday's
+`disconnect-guard` commit) while the local `main` branch ref was stale 5 commits behind at
+`bf29e10`. `git fetch origin main` confirmed `origin/main` really is at `214875d` with nothing
+unpushed; fixed with `git checkout main && git merge --ff-only origin/main` (fast-forward, no
+conflict). `python tools/validate.py` passed (`OK: 55 skills valid and consistent with README.`)
+before this round. Confirmed zero unchecked items anywhere in this file (`grep -n '^- \[ \]'
+BACKLOG.md` → no matches) and no drift-audit is due yet: the earliest, `digest-guard`
+(2026-11-12), comes due ~2026-11-26, 3 days out, longer than this queue's one-day-early
+precedent — so per the daily-agent process for a fully checked-off backlog with no drift-audit
+due, this round researches and logs new candidates (delegated to a subagent to keep the
+WebSearch/`gh api search/code` output out of context) rather than forcing a pick or inventing
+busywork.
+
+The subagent checked the roughly 80 already-rejected/saturated topics accumulated across this
+file and both archives before brainstorming, to avoid re-spending search budget. Of six candidate
+mechanics taken through full grounding/novelty/in-pack-overlap checks, four were rejected
+(one — OTP/magic-link single-use enforcement — turned out to be an exact re-hash of an item
+already closed in `docs/backlog-archive-2026-q4.md`) and only two cleared the bar. Reporting two
+honestly rather than padding to a round number, per this pack's own "quality over count" rule.
+Independently re-verified the three riskiest-looking claims myself via WebSearch (not just taken
+on the subagent's word) before writing anything, since 2026-dated CVEs are this pack's
+known-highest hallucination-risk pattern: **CVE-2026-0012** (Android, `ExpandableNotificationRow
+.java`'s `setHideSensitive`, fixed in the March 2026 Android Security Bulletin) — confirmed
+real and matching via NVD plus Tenable/SentinelOne/Wiz entries; **CVE-2026-28965** (Apple
+iOS/iPadOS, fixed in 26.5) — confirmed real and matching via NVD and Apple's own advisory at
+`support.apple.com/127110`; **CVE-2024-1764** (Devolutions Server JIT elevation module, DEVO-2024-0002)
+— confirmed real and matching via NVD, published 2024-03-05, CWE-269 improper privilege
+management, elevated rights persisting past their own expiration under specific circumstances.
+
+- [x] **New-skill candidate: `lockscreen-guard`? — a notification type a codebase sends doesn't
+  participate in the OS's lock-screen sensitive-content redaction mechanism, so it shows full
+  content on a locked device regardless of the user's "hide sensitive notifications" setting.**
+  An app correctly redacts its *first* notification type (Android's `VISIBILITY_PRIVATE` +
+  `setPublicVersion()`, or iOS's notification-content-extension/restricted-content gating) — then
+  a second, third, or Nth notification type gets added later by someone who copies an older,
+  unredacted send call, or never learned the redaction API exists, and it ships showing full
+  message/content on the lock screen to anyone with physical access, independent of the device's
+  own privacy setting. Grounded in six independently-dated CVEs spanning 2014–2026 across both
+  major platforms — the strongest recurrence signal found this round, confirming this isn't a
+  one-off but a mechanic that keeps reappearing because redaction has to be wired per-notification
+  -type and nothing forces that: **CVE-2020-0092** and **CVE-2026-0012** (Android, both in
+  `ExpandableNotificationRow.java`'s `setHideSensitive`, the latter re-verified above, affects
+  Android 14/15/16, fixed March 2026 bulletin); **CVE-2025-22421** (Android, notification content
+  descriptions exposed on lock screen bypassing visibility controls); **CVE-2026-28965** (Apple
+  iOS/iPadOS, re-verified above, fixed 26.5, 2026-05-11); **CVE-2014-4356** (iOS <8, text-message
+  lock-screen preview ignored the configured setting); **CVE-2015-7000** (iOS <9.1 Notification
+  Center mishandled "Show on Lock Screen" setting changes, notification could still show after the
+  setting was turned off). Novelty check: `gh api search/code` across five phrasings (`"lock
+  screen" "notification" "sensitive"`, `"setPublicVersion" OR "VISIBILITY_PRIVATE"`, `"notification"
+  "redact" "lock screen"`, `"hide sensitive" "notification"`, `"lockscreen" "preview" "notification"`,
+  all `filename:SKILL.md`) found no dedicated audit skill — only build/reference skills showing the
+  redaction API as one snippet. Fetched and read in full: `diegosouzapw/awesome-omni-skill` →
+  `skills/development/android-notification-builder/SKILL.md` (a general Android-notification-
+  building reference skill; redaction appears once under a "Security" best-practices section, its
+  own example notifications don't set visibility, no audit checklist) and `Abdo453/HunterAI`'s
+  mirror of the OWASP Mobile Application Security Cheat Sheet (does not mention notification
+  lock-screen redaction at all — it covers the adjacent-but-distinct case of lock-screen *widgets*
+  exposing data, confirming the gap is real enough that even a ~50-item mobile-security checklist
+  missed the notification case). In-pack overlap checked by reading the actual text of every
+  plausibly-related skill, not just grepping for a shared word: `push-guard`'s own Boundaries
+  section explicitly disclaims this exact territory — *"Doesn't cover push payload encryption,
+  lock-screen content redaction, or notification-permission-prompt UX — those are client-security
+  or UX concerns, not token-lifecycle ones"*; `mention-guard` audits a different question (does the
+  *recipient* have authorization to see the *subject* at all — cross-user) from this candidate's
+  (does the *authorized* recipient's own *locked device* leak content to someone with physical
+  access — same recipient, local-exposure); `pref-guard` is opt-out preferences, not content
+  visibility; `clipboard-guard` is clipboard-specific; `recall-guard` mentions "lock-screen preview"
+  once only as a given constraint on recall, not an audit of whether the preview should have shown
+  full content in the first place.
+- [x] **New-skill candidate: `elevate-guard`? — a time-boxed/just-in-time elevated-privilege grant
+  (break-glass admin access, a PAM "temporary admin" session, a time-bound PIM role activation) is
+  checked for existence at authorization time but never re-checked against its own stated expiry,
+  and the scheduled job responsible for auto-revoking it at the deadline isn't confirmed to actually
+  run — so a UI countdown showing "0:00 remaining" has no effect on the authorization check behind
+  it.** Grounded in **CVE-2024-1764** (Devolutions Server ≤2023.3.14.0, DEVO-2024-0002, re-verified
+  above via NVD) — *"a user can continue using the elevated privilege even after the expiration
+  under specific circumstances"*, an exact match in a real, named PAM product; corroborated by a
+  second, independently-sourced case in a different vendor combination: AWS's own Security Blog
+  post on implementing JIT privileged access with Microsoft Entra PIM and AWS IAM Identity Center
+  documents, as AWS's own admitted limitation, *"active sessions are not terminated when the Entra
+  PIM activation maximum duration has been reached"* — the identical shape in a completely
+  different, named integration. Novelty check: `gh api search/code` for the JIT-elevation-expiry
+  phrasings found no dedicated audit skill — only generic IAM/PAM how-to-set-up content and vendor
+  blog/FAQ commentary (Wiz, Cloud Security Alliance, the `nhimg.org` network) making the same
+  observation in prose, never as a code-reviewable checklist skill. **Flagging this one at moderate
+  confidence rather than a clean recommend**: `revoke-guard`, `rotation-guard`, and `disconnect-guard`
+  are three already-shipped skills in the same general "something is supposed to stop working at a
+  deadline/signal but the enforcement point isn't wired" family (all CWE-613-adjacent), and this
+  pack has previously declined a fourth skill in an earlier, narrower cluster (the WS/SSE heartbeat
+  angle, 2026-11-13) as likely scope-splitting — `disconnect-guard` itself needed a deliberate "hard
+  call" before shipping as the *third* skill in that family. This candidate's object (a
+  self-expiring privilege *grant*, enforced by a time comparison plus a scheduled revocation job) is
+  genuinely different from all three existing skills' objects (a live WebSocket session's cached
+  role; an operational credential rotated to a new value across consumers; a user-revoked
+  third-party OAuth token/webhook) — but a reviewer's first question will be "why isn't this a
+  bullet in `rotation-guard` or `disconnect-guard` instead of a fifth skill in this family," and
+  that argument needs to be made explicitly and well in the `SKILL.md`'s Boundaries section, not
+  assumed. Whoever picks this up next should weigh that distinctness question deliberately, the
+  same way the `disconnect-guard` round did, rather than draft it on autopilot.
+
+Candidates tried and rejected this round, logged so a future round doesn't re-spend search budget:
+OTP/magic-link single-use enforcement and revocation races — **already closed**, not a fresh
+rejection: `docs/backlog-archive-2026-q4.md` already shows this exact category ("OTP/email-link
+single-use and rate-limit correctness") researched and rejected as saturated in a prior round,
+naming `himself65/auth-spec`, `tyroneross/build-loop`, and `diegosouzapw/awesome-omni-skills`'
+dedicated coverage of single-use/invalidate-on-resend/rate-limit invariants, magic links named
+explicitly; usage-based/metered billing double-counted via non-idempotent webhook retries —
+REJECTED, insufficient grounding (only unsourced developer-blog postmortems and vendor guidance, no
+verified named incident/CVE/advisory, unlike this pack's existing billing skills which rest on a
+court case or an FBI PSA); admin-editable/deletable audit log defeating its own immutability
+promise — REJECTED, insufficient grounding (the closest CVE, Axis Camera Station Pro CVE-2024-7696,
+is a log-*creation*-path tampering bug, not an admin bypassing an already-written log's
+immutability; everything else was vendor marketing, not a dated incident); step-up/reauthentication
+token reused across different sensitive actions without being scoped to the specific action —
+REJECTED, insufficient grounding (one GHSA about a different bypass, one vendor's own documented
+deliberate design trade-off, not an exploited bug); bulk export leaking another user's/tenant's
+data via insufficiently-scoped joins — REJECTED, already routed elsewhere by this pack's own text
+(`export-guard`'s Boundaries section explicitly assigns exactly this question to `security-sweep`);
+time-limited share-link expiry enforced only at creation/display time, not the serving endpoint —
+pulled back after initial check (real CVEs exist — Filebrowser CVE-2026-35604/CVE-2026-82237,
+Vikunja CVE-2026-35594 — but it's the same CWE-613 "revocation state never reaches the validator"
+shape already shipped three times in-pack, with weaker distinctness than `elevate-guard` above for
+higher scope-splitting risk).
+
+Follow-up for the next run: two real unchecked candidates now exist above — `lockscreen-guard`
+(strong, six independent CVEs across both mobile platforms, cleanest novelty signal) and
+`elevate-guard` (moderate confidence, needs the same kind of deliberate distinctness argument
+against `revoke-guard`/`rotation-guard`/`disconnect-guard` that `disconnect-guard` itself needed
+before it ships or gets rejected as a fourth slice of that family). No skill shipped this round —
+research-and-log only, per the daily-agent process for a fully checked-off backlog. Next
+drift-audit due dates: `digest-guard` (2026-11-12) ~2026-11-26, `email-guard` (2026-11-13)
+~2026-11-27, `revoke-guard` (2026-11-16) ~2026-11-30, `subscription-guard` (2026-11-17)
+~2026-12-01, `recycle-guard` (2026-11-18) ~2026-12-02, `mention-guard` (2026-11-20) ~2026-12-04,
+`payout-guard` (2026-11-21) ~2026-12-05, `disconnect-guard` (2026-11-22) ~2026-12-06.
+
 ## Shipped `disconnect-guard`, the last open candidate and the hard call it needed (2026-11-22)
 
 Git hygiene first: clone's `HEAD` was detached at `c7cafe5` (the real tip of `main`, yesterday's

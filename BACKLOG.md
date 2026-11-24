@@ -12,6 +12,81 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `lockscreen-guard`, the readier of yesterday's two candidates (2026-11-24)
+
+Git hygiene first: `git status`/`git log --oneline -10` showed `main` already at `ef3a390`
+(yesterday's novelty-pass commit) with a clean working tree and nothing to fast-forward — no
+detached-HEAD or stale-branch issue this round. `python tools/validate.py` passed (`OK: 55 skills
+valid and consistent with README.`) before this round. No drift-audit is due yet: the earliest,
+`digest-guard` (2026-11-12), comes due ~2026-11-26, still 2 days out — so this round picked from
+yesterday's two open candidates rather than a drift-audit.
+
+Two unchecked candidates were open from 2026-11-23: `lockscreen-guard` (clean grounding/novelty,
+no distinctness risk) and `elevate-guard` (moderate confidence, explicitly flagged as needing a
+deliberate distinctness argument against `revoke-guard`/`rotation-guard`/`disconnect-guard` before
+it ships). Picked `lockscreen-guard` as the readier one, per yesterday's own follow-up note —
+`elevate-guard` still needs that hard call made deliberately rather than on autopilot, and this
+round's budget was better spent re-verifying and drafting the cleaner candidate than forcing the
+harder one. Left `elevate-guard` open below rather than deciding it today.
+
+Re-verified rather than trusting yesterday's research pass at face value. Re-checked the two
+riskiest-looking claims independently via WebSearch: **CVE-2026-0012** confirmed real and matching
+via Tenable/SentinelOne/VulDB/INCIBE mirrors (Android 14/15/16, `ExpandableNotificationRow.java`'s
+`setHideSensitive`, a logic error that can leak contact names on the lock screen, CWE-284 improper
+access control, fixed in the March 2026 Android Security Bulletin — correcting one detail from
+yesterday's note, which didn't specify the CWE: it's improper access control, not CWE-613); and
+**CVE-2026-28965** confirmed real and matching via NVD's own description ("a privacy issue was
+addressed with improved checks... fixed in iOS 26.5 and iPadOS 26.5," an unauthenticated local user
+can view restricted content that should only be accessible after unlocking the device — exact
+match for the claimed mechanic) and Apple's own advisory page at `support.apple.com/127110`.
+
+Ran one more independent novelty check before writing anything, specifically re-probing with
+tighter `gh api search/code` phrasings than yesterday's broad ones (yesterday's `"lock screen"
+"notification" "sensitive"` query returned 334 unfiltered hits — GitHub code search doesn't AND
+multi-phrase queries reliably, so a wide query alone isn't a clean novelty signal). The tighter
+`"VISIBILITY_PRIVATE" OR "setPublicVersion" filename:SKILL.md` query (5 hits) confirmed yesterday's
+finding: all five are mirrors of the same general `android-notification-builder` reference skill,
+redaction shown once as an example snippet, no audit checklist. A separate, broader phrasing
+(`"lock screen" "redact" notification filename:SKILL.md`) surfaced something yesterday's pass
+missed and worth recording honestly rather than silently matching the prior "zero dedicated hits"
+framing: `pruthuraut/BB-skill` ships `ios-notification-audit` and `android-notification-audit`,
+two auto-generated pentest checklists (50 rows each, explicitly machine-generated from a template —
+"This skill is generated from the \[...\] checklist source... Edit the source and rerun \[...\],
+not this file") that do each contain a few generic rows naming lock-screen content exposure
+("Test if push notifications contain sensitive data visible on lock screen," "Verify if
+notification content does not leak information via preview text"). Fetched and read both
+checklists' full tables directly (not just the SKILL.md) before judging: every row across both
+50-item lists repeats the identical tool description verbatim regardless of topic (VPN handling,
+Focus mode, biometric confirmation, and lock-screen exposure all cite the same boilerplate
+"`ios_static.py` ...; lock-screen review on the test device" string) — this is a bulk-generated
+mass pentest checklist mill, not a reasoned audit methodology, and none of its rows name or address
+this candidate's actual root cause (a *specific* notification type bypassing redaction because it
+was built by copying an older, unredacted call site while a different type in the same codebase
+stays correctly redacted). Judgment call: this doesn't block shipping — a single generic checklist
+bullet among 50 templated, identically-worded rows isn't "already covered" in the sense this pack's
+bar cares about — but it's recorded honestly here rather than repeating yesterday's cleaner "zero
+hits" framing, since a future round re-checking this candidate's novelty should know these two
+exist and why they didn't change the call.
+
+Added `skills/lockscreen-guard/SKILL.md` and `examples/lockscreen-guard.md`; wired into
+`README.md`'s skills table, decision table, Examples list, and intro "survived" sentence, and
+`examples/README.md`. Bumped the 55→56 skill-count mentions (prose word and the "copying all
+fifty-five/fifty-six" tip). `python tools/validate.py` → `OK: 56 skills valid and consistent with
+README.` Checked the one-directional cross-reference convention other recent skills follow
+(`grep -n "lockscreen-guard" skills/*/SKILL.md` outside its own file returns nothing) and matched
+it — this skill's own Boundaries section names `push-guard`, `recall-guard`, `pref-guard`, and
+`clipboard-guard`; none of theirs needs to name it back.
+
+Follow-up for the next run: `elevate-guard` is the one remaining open candidate below, not yet
+drafted — it still needs the hard call on whether a self-expiring JIT/break-glass privilege grant
+with an unenforced auto-revocation job is a genuinely distinct artifact from `revoke-guard`,
+`rotation-guard`, and `disconnect-guard`, or a fourth slice of the same CWE-613-adjacent family,
+flagged moderate-confidence since 2026-11-23. No drift-audit is due yet: `digest-guard`
+(2026-11-12) ~2026-11-26, `email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16)
+~2026-11-30, `subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18)
+~2026-12-02, `mention-guard` (2026-11-20) ~2026-12-04, `payout-guard` (2026-11-21) ~2026-12-05,
+`disconnect-guard` (2026-11-22) ~2026-12-06.
+
 ## Research pass (2026-11-23): backlog fully checked off, no shippable item today — 2 new items added
 
 Git hygiene first: clone's `HEAD` was detached at `214875d` (the real tip of `main`, yesterday's

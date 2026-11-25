@@ -12,6 +12,78 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Shipped `elevate-guard`, resolving the distinctness call left open since 2026-11-23 (2026-11-25)
+
+Git hygiene first: `HEAD` was detached one commit ahead of the local `main` branch ref, at `7c83405`
+(yesterday's `lockscreen-guard` commit) — but `git fetch origin main` showed `origin/main` was
+already at `7c83405` too, so the commit itself had been pushed fine; only the local `main` ref was
+stale. Fixed with `git checkout main && git merge --ff-only 7c83405` (clean fast-forward, no
+conflict, nothing to push for that step). `python tools/validate.py` passed (`OK: 56 skills valid
+and consistent with README.`) before this round. Confirmed via `grep -n '^- \[ \]' BACKLOG.md` that
+zero items use the unchecked-box marker — this pack's checkbox marks "cleared the research bar," not
+"shipped," so the real signal is prose: `elevate-guard` was the one candidate still described as "not
+yet drafted" (see 2026-11-23's and 2026-11-24's follow-up notes), carried since 2026-11-23 specifically
+because it needed a deliberate distinctness call against `revoke-guard`/`rotation-guard`/
+`disconnect-guard` before drafting rather than an assumed one. No drift-audit is due yet: the earliest,
+`digest-guard` (2026-11-12), comes due ~2026-11-26, still 1 day out.
+
+Delegated independent re-verification of both grounding claims and a fresh novelty check to a
+subagent (kept the WebSearch/`gh api search/code` output out of context), explicitly withholding the
+ship/reject call from it so the distinctness judgment stayed mine rather than inherited. Both
+grounding sources held up as REAL-AND-MATCHES, not just loose shape-matches: **CVE-2024-1764**
+(Devolutions Server ≤2023.3.14.0, DEVO-2024-0002, CWE-269 improper privilege management, published
+2024-03-05) — NVD's own description: the JIT elevation module could "allow a user to keep elevated
+privileges after they expire, under specific circumstances," confirmed verbatim against NVD (severity
+sources disagree slightly, Tenable CVSS 8.8 vs. PT Security 7.6, which doesn't affect the mechanic
+match). And AWS's own Security Blog post on implementing JIT privileged access via Microsoft Entra
+PIM + AWS IAM Identity Center — the subagent surfaced the exact sentence via WebSearch (couldn't
+`WebFetch` aws.amazon.com directly, host not in this session's network allowlist): "active sessions
+are not terminated when the Entra PIM activation maximum duration has been reached," an exact quote
+match, not a paraphrase. Fresh novelty check (`gh api search/code`, five phrasings) found no dedicated
+audit skill: only JIT/PIM/break-glass *build/setup* skills (confirmed by reading
+`implementing-just-in-time-access-provisioning` in full — explicitly framed around designing and
+deploying JIT, not auditing an existing deployment) and bulk-generated generic IAM/PAM checklists.
+Read two of the closest checklist hits (`UnitOneAI/SecuritySkills` → `privileged-access` and
+`iam-review`) in full, not just their snippets: each contains one generic row naming the symptom
+("no automatic revocation — elevated access persists after timeout") but neither asks whether expiry
+is enforced at the authorization-check layer or demands evidence the revocation job actually runs —
+the same "a templated checklist names the symptom generically, doesn't address the mechanic" pattern
+`lockscreen-guard`'s round already judged as not blocking a ship, applied consistently here.
+
+Resolved the distinctness call myself (the one thing withheld from the subagent) by reading
+`revoke-guard`, `rotation-guard`, and `disconnect-guard`'s full `SKILL.md` text, not just their shared
+CWE-613-adjacent vocabulary: `revoke-guard` audits an *already-open, continuous* WebSocket session's
+authorization staying current while connected — its object is a live connection, and the trigger is
+someone else's revoking action. `disconnect-guard` audits a *permanent*, user-initiated revocation of
+a third-party OAuth grant with no expiry designed into it at all — the only question is whether the
+kill switch is wired to anything. `rotation-guard` audits propagating an operational credential to a
+*new value* across consumers with a sized overlap window — there's no new value here and nothing to
+propagate. `elevate-guard`'s object is none of these: a grant that is designed to end *on its own*, by
+a clock, checked on ordinary (often stateless, per-request) authorization calls rather than a
+persistent connection, with no revoke click and no new value — only a deadline and a job that has to
+notice it. Also checked `seat-guard`, the one other skill using "just-in-time" in-pack: its JIT refers
+to SSO *account provisioning* on first login, an unrelated meaning with no overlap. Wrote this
+reasoning directly into the `SKILL.md`'s Boundaries section rather than leaving it implicit, matching
+the precedent `disconnect-guard`'s round set for exactly this kind of objection.
+
+Added `skills/elevate-guard/SKILL.md` and `examples/elevate-guard.md`; wired into `README.md`'s
+skills table, decision table, Examples list, and intro "survived" sentence, and `examples/README.md`.
+Bumped the 56→57 skill-count mentions (prose word and the "copying all fifty-six/fifty-seven" tip).
+`python tools/validate.py` → `OK: 57 skills valid and consistent with README.` Checked the
+one-directional cross-reference convention other recent skills follow (`grep -n "elevate-guard"
+skills/*/SKILL.md` outside its own file returns nothing) and matched it — this skill's own Boundaries
+section names `revoke-guard`, `disconnect-guard`, and `rotation-guard`; none of theirs needs to name
+it back.
+
+Follow-up for the next run: the backlog has no other real open candidate right now — this was the
+last one carried from the 2026-11-23 research pass. Per process, next round should do a fresh
+novelty/research pass rather than invent busywork, unless a drift-audit comes due first. Next
+drift-audit due dates: `digest-guard` (2026-11-12) ~2026-11-26 (1 day out — likely due next round),
+`email-guard` (2026-11-13) ~2026-11-27, `revoke-guard` (2026-11-16) ~2026-11-30, `subscription-guard`
+(2026-11-17) ~2026-12-01, `recycle-guard` (2026-11-18) ~2026-12-02, `mention-guard` (2026-11-20)
+~2026-12-04, `payout-guard` (2026-11-21) ~2026-12-05, `disconnect-guard` (2026-11-22) ~2026-12-06,
+`lockscreen-guard` (2026-11-24) ~2026-12-08.
+
 ## Shipped `lockscreen-guard`, the readier of yesterday's two candidates (2026-11-24)
 
 Git hygiene first: `git status`/`git log --oneline -10` showed `main` already at `ef3a390`

@@ -1,0 +1,48 @@
+---
+name: elevate-guard
+description: Audits whether a time-boxed/just-in-time elevated-privilege grant (break-glass admin access, a PAM "temporary admin" session, a time-bound PIM role activation) actually gets re-checked against its own stored expiry on every authorization decision, and whether the scheduled job responsible for auto-revoking it at the deadline is confirmed to run and succeed — instead of a UI countdown reaching "0:00 remaining" while the cached role or session claim behind it keeps authorizing exactly as before. Use when adding or reviewing break-glass/emergency-access admin grants, a PIM/JIT role-activation flow, or any "temporary elevated permission" feature, or when asked "does our elevated access actually expire", "is the auto-revoke job for temporary admin confirmed to run", "can someone keep using a break-glass grant after its countdown hits zero", or "audit our just-in-time privilege elevation".
+---
+
+# elevate-guard
+
+A time-boxed privilege grant makes a promise no ordinary permission makes: not just "you may," but "you may, *until this specific moment*." Everything else about authorization in most codebases is checked by asking "does this role/grant exist" — true or false, no clock involved. Bolt a deadline onto that model and the deadline only does anything if two separate things both hold: every authorization check that consults the grant re-reads its expiry fresh, rather than trusting a role claim baked into a session or JWT at grant time; and the scheduled job that's supposed to flip the grant back to inert at the deadline actually fires and actually succeeds, rather than being assumed to work because it's configured to. Most break-glass and JIT-elevation features get built by extending the existing "does this role exist" check with a new row in a grants table — which answers "is there a grant" correctly forever, but never re-asks "is it still inside its own window," because nothing about a boolean-shaped check naturally asks a time-shaped question.
+
+This isn't a hypothetical gap in an otherwise-sound pattern — it's a documented failure mode in at least two unrelated, named products. Devolutions Server's CVE-2024-1764 (DEVO-2024-0002, CWE-269 improper privilege management, published 2024-03-05): the product's own JIT elevation module could "allow a user to keep elevated privileges after they expire, under specific circumstances" — in a product whose entire feature is time-boxed privilege elevation. And AWS's own Security Blog, writing up a reference architecture for JIT privileged access built on Microsoft Entra PIM plus AWS IAM Identity Center, documents as a known limitation that "active sessions are not terminated when the Entra PIM activation maximum duration has been reached" — the identical shape, in a completely different vendor pairing, acknowledged by the cloud provider itself rather than discovered by a researcher. Two independent sources is a real pattern, not a one-off: a self-expiring grant needs the expiry enforced somewhere, and "somewhere" keeps turning out to be nowhere.
+
+## Step 1: find what the authorization check actually reads when a grant is active
+
+Locate every code path that decides whether an action is allowed *because* of the elevated grant (not the baseline role) and trace exactly what it reads:
+
+- Does the check re-read the grant's `expires_at` (or equivalent) from its source of truth on every request, or does it read a role/claim that was computed once — baked into a JWT at grant-issuance time, cached in a session object, denormalized onto the user row — and never refreshed until something else forces a re-login or re-fetch?
+- If the grant is represented as a session or JWT claim, does that token's *own* expiry match the grant's stated window, or does the token (and therefore the elevated claim inside it) legitimately outlive the grant — e.g., a session that doesn't expire for eight hours holding a grant that was only supposed to last twenty minutes?
+- Is there a UI countdown or "time remaining" display sourced from the same `expires_at` the backend check uses, or is the UI timer decorative — computed client-side from whatever timestamp the grant started, with no guarantee the server enforces the same number?
+
+## Step 2: find the job that's supposed to end it, and whether it's confirmed to run
+
+The expiry check in step 1 only matters if nothing races past it before the grant is torn down — or, for an architecture that relies on an explicit revocation step rather than a live expiry check on every request, this is the step that actually has to fire:
+
+- Is there a scheduled job, cron, or TTL-based mechanism (a database row with a TTL index, a queued delayed task, a PIM provider's own deactivation webhook) responsible for flipping the grant to inactive, revoking a derived session, or invalidating a cached claim at the deadline — and is it confirmed to actually execute on schedule, not just configured to?
+- If revocation depends on an external identity provider's own enforcement (Entra PIM, Okta, a PAM vendor) rather than this codebase's own job, is that provider's deactivation confirmed to propagate into *this* application's session/token state — the exact AWS-documented gap above, where the IdP's own activation ends but the application-side session it spawned doesn't notice?
+- What happens to a grant mid-use when its job fails silently (an exception swallowed, a queue worker down, a missed cron tick)? Is there any alerting or reconciliation sweep that would catch a grant that's past its `expires_at` but still marked active, or does nothing notice until someone goes looking?
+- Is there a path where the user (or an admin) *extends* or re-activates a grant, and if so, does that path go through the same expiry-setting logic as the original grant, or can it silently produce a grant with no expiry at all?
+
+## Step 3: weigh what the gap actually exposes
+
+Where steps 1-2 found a real gap, the severity question is what the grant was *for*:
+
+- A break-glass/emergency-access grant exists specifically for incident response — it's supposed to be the most tightly time-boxed privilege in the system precisely because it's the broadest. A gap here deserves more weight than the same gap on a lower-privilege temporary grant.
+- Is the elevated action itself logged with enough detail (actor, grant ID, what was done) to reconstruct what happened during an improperly-extended window, or does an overrun grant's activity look identical to a legitimate one in the audit trail?
+- Does the overrun have a practical ceiling (the underlying session token expires on its own within some bounded, verified time) or is it effectively unbounded (a long-lived session or a JWT with a long TTL holding the stale elevated claim)?
+
+## Report
+
+Lead with which half failed, since the fix differs for each: BLOCK when the authorization check itself never re-reads the grant's expiry — it trusts a cached claim or role that was correct only at issuance time, so the UI's "time remaining" is cosmetic. BLOCK equally for a revocation job/mechanism that exists on paper but was never confirmed to actually run, fire on schedule, or propagate from an external IdP's own deactivation into this app's session state. CAUTION when the shape is right but unverified — a TTL mechanism exists but its execution has no monitoring or reconciliation sweep, or a derived session's own expiry is close enough to the grant's window that an overrun would be short but still unproven. SAFE only with evidence: the authorization check re-reads live expiry on every use (not a cached claim), and either a confirmed-running revocation mechanism or a session/token lifetime provably bounded at or below the grant's own window.
+
+## Boundaries
+
+- Not `revoke-guard`'s territory — that skill audits whether an *already-open, continuous* WebSocket/Socket.IO connection re-checks authorization while it stays connected, for an ordinary permission revoked by someone else's action. This skill audits a *self-expiring* grant checked on ordinary (often stateless, request-by-request) authorization calls, where the "someone else's action" is a clock, not an admin click.
+- Not `disconnect-guard`'s territory — that skill audits a *permanent*, user-initiated revocation of a third-party integration's OAuth tokens/webhooks, with no expiry built into the grant at all; the only question there is whether the kill switch is wired to anything. This skill's grant is designed to end on its own, and the question is whether anything enforces the deadline it was issued with.
+- Not `rotation-guard`'s territory — that skill audits propagating an operational credential to a *new value* across consumers, with an overlap window sized against real consumer lifetimes. This skill's grant doesn't rotate to a new value; it's supposed to go away entirely, with nothing to replace it.
+- Doesn't audit whether the grant *should* have been issued in the first place (approval workflow, justification requirements, who can request break-glass access) — only whether an issued, time-boxed grant actually stops working when its own stated window ends.
+- Can't confirm a scheduled job's real-world execution history or an external IdP's actual deactivation behavior from source alone — say plainly when confirming the revocation mechanism actually fires needs job-run logs, a monitoring dashboard, or a live test against the real identity provider rather than a code read.
+- Doesn't design a break-glass or JIT-elevation system from scratch — reviews whether an existing time-boxed grant's expiry is actually enforced by the authorization path and the revocation mechanism behind it.

@@ -12,6 +12,52 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Drift-audit: `digest-guard` fact-check, due on schedule (2026-11-26)
+
+Git hygiene first: clone's `HEAD` was detached 2 commits ahead of the local `main` branch ref — at
+`7f0a4af` (`elevate-guard`, 2026-11-25) with `7c83405` (`lockscreen-guard`, 2026-11-24) in between —
+while local `main` was stale at `ef3a390`. `git fetch origin main` confirmed `origin/main` was
+already at `7f0a4af`, i.e. both prior days' commits had pushed fine; only the local `main` ref
+hadn't been fast-forwarded. Fixed with `git checkout main && git merge --ff-only 7f0a4af` (clean
+fast-forward, no conflict, nothing to push for that step alone). `python tools/validate.py` passed
+(`OK: 57 skills valid and consistent with README.`) before this round.
+
+Confirmed zero unchecked items anywhere in this file (`grep -n '^- \[ \]' BACKLOG.md` → no matches),
+so per process checked the drift-audit due-dates list instead of forcing a pick or inventing
+busywork: `digest-guard` (shipped 2026-11-12) was due ~2026-11-26 — today, exactly on schedule, not
+early like the last several audits — so ran its fact-check rather than starting a fresh
+novelty-research pass.
+
+Delegated independent re-verification of `digest-guard`'s three grounding claims to a subagent
+(kept the WebSearch output out of context), instructed to check primary sources (NVD/GHSA, the
+vendor's own docs) rather than secondary summaries. **All three held up — nothing drifted:**
+
+- **Metabase CVE-2023-23629** (GHSA-ch8f-hhq9-7gv5) — REAL-AND-MATCHES. NVD/GHSA confirm a
+  lower-privileged user viewing a dashboard could add themselves as a recipient of another user's
+  existing subscription and receive the creator's unfiltered data by email; fix versions
+  (0.43.7.1/0.44.6.1/0.45.2.1 and the 1.x equivalents) match exactly.
+- **Metabase CVE-2023-23628** (GHSA-492f-qxr3-9rrv) — REAL-AND-MATCHES. Confirmed as the sibling
+  advisory: a sandboxed user could see the recipient list of someone else's dashboard subscription.
+- **Splunk's own documentation** on scheduled report/alert permissions
+  (`docs.splunk.com`/`help.splunk.com`, Report/Managereportpermissions, mirrored current across
+  9.0–10.6) — REAL-AND-MATCHES, still live at the same page: changing a scheduled report's
+  permissions applies only to future-generated jobs, already-queued jobs keep their old grant until
+  changed separately via the job manager, and scheduled reports/alerts can only run as Owner —
+  matches the skill's framing exactly, no version has changed this behavior since.
+
+No change needed to `skills/digest-guard/SKILL.md`. `python tools/validate.py` →
+`OK: 57 skills valid and consistent with README.` (unchanged — this round touched no skill files,
+only `BACKLOG.md`).
+
+Follow-up for the next run: with `digest-guard` checked off the due-dates list, the next drift-audit
+due is `email-guard` (shipped 2026-11-13) ~2026-11-27 — due tomorrow. After that: `revoke-guard`
+(2026-11-16) ~2026-11-30, `subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard`
+(2026-11-18) ~2026-12-02, `mention-guard` (2026-11-20) ~2026-12-04, `payout-guard` (2026-11-21)
+~2026-12-05, `disconnect-guard` (2026-11-22) ~2026-12-06, `lockscreen-guard` (2026-11-24)
+~2026-12-08, `elevate-guard` (2026-11-25) ~2026-12-09. No unchecked new-skill candidates remain —
+if `email-guard`'s audit turns out too soon to run tomorrow, the next round should do a fresh
+novelty/research pass rather than invent busywork, per standing process.
+
 ## Shipped `elevate-guard`, resolving the distinctness call left open since 2026-11-23 (2026-11-25)
 
 Git hygiene first: `HEAD` was detached one commit ahead of the local `main` branch ref, at `7c83405`

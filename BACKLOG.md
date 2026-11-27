@@ -12,6 +12,52 @@ above, any currently unchecked items, and the most recent dated section(s). When
 whether a candidate was already researched and rejected/shipped, `grep` across this file and
 both archives.
 
+## Drift-audit: `email-guard` fact-check, due on schedule (2026-11-27)
+
+Git hygiene first: clone's `HEAD` was detached at `7522d97` (yesterday's `digest-guard` drift-audit
+commit) while the local `main` ref was stale at `ef3a390`, three commits behind. `git fetch origin
+main` confirmed `origin/main` was already at `7522d97` — the prior three days' commits had all
+pushed fine, only the local `main` ref hadn't been fast-forwarded (same recurring issue the last two
+rounds hit). Fixed with `git checkout main && git merge --ff-only 7522d97` (clean fast-forward, no
+conflict). `python tools/validate.py` passed (`OK: 57 skills valid and consistent with README.`)
+before this round.
+
+Confirmed zero unchecked items (`grep -n '^- \[ \]' BACKLOG.md` → no matches) and that `email-guard`
+(shipped 2026-11-13) was the next drift-audit due per yesterday's own follow-up note — due
+~2026-11-27, today, exactly on schedule.
+
+Delegated independent re-verification of `email-guard`'s two grounding claims to a subagent (kept the
+WebSearch output out of context), instructed to check primary sources rather than secondary
+summaries. **Both held up — nothing drifted:**
+
+- **GitLab CVE-2018-19580** (gitlab-org/gitlab-ce#39809) — REAL-AND-MATCHES. Confirmed via NVD,
+  Ubuntu Security, Debian Security Tracker, and GitLab's own 11.5.1 security-release notes. GitLab
+  changed a user's email with no notification sent to the *old* address, letting a session-hijack
+  account-takeover go unnoticed by the real owner. Fix versions confirmed exactly: 11.5.1 / 11.4.8 /
+  11.3.11. CVSS 5.3 medium (Ubuntu) is consistent with a missing-signal bug rather than a
+  direct-exploit one, matching how the skill frames it.
+- **Flowise GHSA-x39m-3393-3qp4** — REAL-AND-MATCHES, with one useful nuance to record: this advisory
+  is now also tracked as **CVE-2025-71337** (CWE-620, Unverified Password Change), confirmed via NVD,
+  VulnCheck, and the GitHub advisory itself. Mechanic matches exactly: an authenticated user could
+  change the account email with no verification step, and since email doubles as login/recovery
+  address, that's a direct account-takeover path. Affected versions converge on Flowise < 3.0.10. No
+  dispute or retraction found on either claim. Noting the CVE cross-reference here so a future audit
+  round searching by CVE number rather than GHSA ID doesn't wonder if it's a different issue — it
+  isn't.
+
+No change needed to `skills/email-guard/SKILL.md`. `python tools/validate.py` →
+`OK: 57 skills valid and consistent with README.` (unchanged — this round touched no skill files,
+only `BACKLOG.md`).
+
+Follow-up for the next run: with `email-guard` checked off the due-dates list, the next drift-audit
+due is `revoke-guard` (shipped 2026-11-16) ~2026-11-30 — still 3 days out, too soon for tomorrow. No
+unchecked new-skill candidates remain, so if no audit is due tomorrow (2026-11-28), the next round
+should run a fresh novelty/research pass rather than force a pick or invent busywork. Remaining
+due-dates queue after `revoke-guard`: `subscription-guard` (2026-11-17) ~2026-12-01, `recycle-guard`
+(2026-11-18) ~2026-12-02, `mention-guard` (2026-11-20) ~2026-12-04, `payout-guard` (2026-11-21)
+~2026-12-05, `disconnect-guard` (2026-11-22) ~2026-12-06, `lockscreen-guard` (2026-11-24) ~2026-12-08,
+`elevate-guard` (2026-11-25) ~2026-12-09.
+
 ## Drift-audit: `digest-guard` fact-check, due on schedule (2026-11-26)
 
 Git hygiene first: clone's `HEAD` was detached 2 commits ahead of the local `main` branch ref — at
